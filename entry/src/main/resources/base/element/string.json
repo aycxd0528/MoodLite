@@ -1,0 +1,36 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "MoodLite 情绪信箱 — 治愈系情绪追踪日记"
+    },
+    {
+      "name": "entryability_desc",
+      "value": "MoodLite 主服务"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "MoodLite"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "MoodLite"
+    },
+    {
+      "name": "app_name",
+      "value": "MoodLite"
+    },
+    {
+      "name": "btn_start",
+      "value": "开始体验"
+    },
+    {
+      "name": "add_title",
+      "value": "新记录"
+    },
+    {
+      "name": "add_done",
+      "value": "完成"
+    }
+  ]
+}

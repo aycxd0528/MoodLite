@@ -1,0 +1,241 @@
+/**
+ * AddEntry — v2.0 记录交互页
+ */
+
+import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
+import curves from '@ohos.curves';
+import { photoAccessHelper } from '@kit.MediaLibraryKit';
+import vibrator from '@ohos.vibrator';
+import DataManager from '../data/DataManager';
+import { Token, Dark, Shadow, R, S, F } from '../common/styles';
+import { GlassCard } from '../common/components/GlassCard';
+import { MoodRecord, generateUUID, formatDateStr } from '../model/MoodRecord';
+import { getEditPayload } from '../common/EditBridge';
+
+interface FaceEntry {
+  min: number; max: number; icon: Resource; label: string; color: string; ms: number;
+}
+
+const FT: FaceEntry[] = [
+  { min: 0,  max: 20, icon: $r('app.media.ic_face_terrible'), label: '很糟糕', color: '#8FB7E8', ms: -2 },
+  { min: 21, max: 40, icon: $r('app.media.ic_face_bad'),      label: '不太好', color: Token.BLUE,  ms: -1 },
+  { min: 41, max: 60, icon: $r('app.media.ic_face_neutral'),   label: '平静',   color: Token.TEXT_GRAY, ms:  0 },
+  { min: 61, max: 80, icon: $r('app.media.ic_face_good'),      label: '不错',   color: Token.PINK, ms:  1 },
+  { min: 81, max: 100,icon: $r('app.media.ic_face_awesome'),   label: '很棒',   color: Token.PINK, ms:  2 },
+];
+
+function findFace(v: number): FaceEntry {
+  for (const e of FT) { if (v >= e.min && v <= e.max) return e; }
+  return FT[2];
+}
+
+@Entry
+@Component
+struct AddEntry {
+  @StorageLink('darkMode') darkMode: boolean = false;
+  @State sv: number = 50;
+  @State txt: string = '';
+  @State saving: boolean = false;
+  private readonly MOOD_SNAPS: number[] = [10, 30, 50, 70, 90];
+  @State emojiScale: number = 1.0;
+  @State emojiOpacity: number = 1.0;
+  @State editId: string = '';
+  @State isEdit: boolean = false;
+  @State selectedImage: string = '';
+
+  aboutToAppear(): void {
+    const payload = getEditPayload();
+    if (payload) {
+      this.isEdit = true;
+      this.editId = payload.id;
+      this.txt = payload.text || '';
+      const s = payload.score;
+      if (s <= -2) this.sv = 10;
+      else if (s === -1) this.sv = 30;
+      else if (s === 0) this.sv = 50;
+      else if (s === 1) this.sv = 70;
+      else this.sv = 90;
+      return;
+    }
+    const p = router.getParams() as Record<string, number>;
+    if (p && typeof p['score'] === 'number') {
+      const sc = p['score'];
+      if (sc <= -2) this.sv = 10; else if (sc === -1) this.sv = 30;
+      else if (sc === 0) this.sv = 50; else if (sc === 1) this.sv = 70;
+      else this.sv = 90;
+    }
+  }
+
+  triggerEmojiBounce(): void {
+    animateTo({ duration: 80, curve: Curve.EaseIn }, () => {
+      this.emojiScale = 0.8;
+      this.emojiOpacity = 0.6;
+    });
+    animateTo({ curve: curves.springMotion(0.4, 0.6) }, () => {
+      this.emojiScale = 1.0;
+      this.emojiOpacity = 1.0;
+    });
+  }
+
+  async selectImage(): Promise<void> {
+    try {
+      const picker = new photoAccessHelper.PhotoViewPicker();
+      const result = await picker.select({
+        MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
+        maxSelectNumber: 1,
+      });
+      if (result && result.photoUris && result.photoUris.length > 0) {
+        this.selectedImage = result.photoUris[0];
+      }
+    } catch (err) {
+      promptAction.showToast({ message: '选择图片失败', duration: 1500 });
+    }
+  }
+
+  removeImage(): void { this.selectedImage = ''; }
+
+  async done(): Promise<void> {
+    if (this.saving) return;
+    if (this.txt.trim().length === 0 && !this.selectedImage) {
+      promptAction.showToast({ message: '请写点什么吧', duration: 1500 });
+      return;
+    }
+    this.saving = true;
+    try {
+      const f = findFace(this.sv);
+      const useId = (this.isEdit && this.editId && this.editId.length > 0)
+        ? this.editId : generateUUID();
+      const images: string[] = this.selectedImage ? [this.selectedImage] : [];
+      const record: MoodRecord = {
+        id: useId,
+        timestamp: Date.now(),
+        dateStr: formatDateStr(new Date()),
+        score: f.ms,
+        text: this.txt,
+        images: images,
+        location: '',
+      };
+      const ok = await DataManager.saveRecord(record);
+      if (ok) {
+        vibrator.vibrate(20);
+        promptAction.showToast({ message: '已保存 ✅', duration: 1500, bottom: 400 });
+        router.replaceUrl({ url: 'pages/MainPage' });
+      }
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  toast(msg: string): void { promptAction.showToast({ message: msg, duration: 2000 }); }
+
+  build() {
+    Column() {
+      Row() {
+        Button() { Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain) }
+          .width(40).height(40).backgroundColor('transparent').onClick(() => { router.back(); })
+        Blank()
+        Text(this.isEdit ? '编辑记录' : '新记录')
+          .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+        Blank()
+        Row({ space: 4 }) {
+          Text('✓').fontSize(14).fontWeight(FontWeight.Bold).fontColor(Token.TEXT_WHITE)
+          Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
+        }
+        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+        .backgroundColor(this.saving ? Token.TEXT_GRAY : Token.PINK).borderRadius(16)
+        .shadow({ radius: 30, color: this.darkMode ? Dark.SHADOW_COLOR : Token.SHADOW_COLOR, offsetY: 10 })
+        .onClick(() => { this.done(); })
+      }
+      .width('100%').padding({ top: S.HEADER_TOP, bottom: S.MD, left: S.MD, right: S.MD }).alignItems(VerticalAlign.Center)
+
+      Scroll() {
+        Column() {
+          GlassCard() {
+            Column() {
+              Image(findFace(this.sv).icon).width(160).height(160).objectFit(ImageFit.Contain)
+                .margin({ bottom: S.LG }).scale({ x: this.emojiScale, y: this.emojiScale }).opacity(this.emojiOpacity)
+              Text(findFace(this.sv).label).fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
+                .fontColor(findFace(this.sv).color).margin({ bottom: S.MD })
+              Slider({ value: this.sv, min: 0, max: 100, step: 1, style: SliderStyle.OutSet })
+                .width('100%').blockColor(Token.PINK)
+                .trackColor(this.darkMode ? Dark.BLUE_LIGHT : Token.BLUE_LIGHT)
+                .selectedColor(Token.PINK).showTips(false).onChange((v: number, mode: SliderChangeMode) => {
+                  const nearest = this.MOOD_SNAPS.reduce((prev, curr) =>
+                    Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev
+                  );
+                  if (mode === SliderChangeMode.Moving) {
+                    if (nearest !== this.sv) {
+                      this.sv = nearest;
+                      vibrator.vibrate(15);
+                      this.triggerEmojiBounce();
+                    }
+                  } else if (mode === SliderChangeMode.End) {
+                    this.sv = nearest;
+                  }
+                })
+              Row() {
+                ForEach(FT, (f: FaceEntry, i: number) => {
+                  Image(f.icon)
+                    .width(28).height(28).objectFit(ImageFit.Contain)
+                    .opacity(this.sv >= f.min && this.sv <= f.max ? 1 : 0.3)
+                }, (f: FaceEntry) => String(f.min))
+              }
+              .width('100%').justifyContent(FlexAlign.SpaceAround).margin({ top: S.SM })
+            }
+            .width('100%').alignItems(HorizontalAlign.Center)
+          }
+
+          Column() {
+            GlassCard() {
+              Stack({ alignContent: Alignment.BottomEnd }) {
+                TextArea({ placeholder: '今天有什么想记录的吗…', text: this.txt })
+                  .width('100%').height(100).backgroundColor('transparent').borderRadius(0)
+                  .fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                  .padding({ bottom: 40 })
+                  .onChange((v: string) => { this.txt = v; })
+
+                Image($r('app.media.ic_image'))
+                  .width(24).height(24).margin(12)
+                  .opacity(0.6).fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                  .onClick(() => { this.selectImage(); })
+              }
+            }
+          }
+          .margin({ top: S.MD })
+
+          // 选中图片预览
+          if (this.selectedImage) {
+            Column() {
+              Stack() {
+                Image(this.selectedImage)
+                  .width('100%').height(200).objectFit(ImageFit.Cover)
+                  .borderRadius(R.SMALL)
+
+                Row() {
+                  Image($r('app.media.ic_delete')).width(20).height(20).fillColor(Color.White)
+                }
+                .width(32).height(32)
+                .backgroundColor('rgba(0,0,0,0.45)')
+                .borderRadius(16)
+                .justifyContent(FlexAlign.Center)
+                .position({ top: 8, right: 8 })
+                .onClick(() => { this.removeImage(); })
+              }
+              .width('100%')
+            }
+            .margin({ top: S.MD })
+          }
+
+          Row()
+            .width('100%')
+            .height(S.BOTTOM_BREATH)
+        }
+        .padding({ left: S.LG, right: S.LG })
+      }
+      .layoutWeight(1).scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
+    }
+    .width('100%').height('100%').backgroundColor(this.darkMode ? Dark.BG : Token.BG)
+  }
+
+}

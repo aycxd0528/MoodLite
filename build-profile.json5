@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "D:/MoodLite/Moodlite_key/moodlite.p12",
+          "storePassword": "000000196384F6FE6AD1D0758A3661BCD0ABC641D36BCF1C1E02B5EEA240648254A53F50DA332D892B",
+          "keyAlias": "moodlite",
+          "keyPassword": "000000194075BB668594312063995521134B0D352795FF1E047E0D55D608780A091C8E0276DB2DC073",
+          "signAlg": "SHA256withECDSA",
+          "profile": "D:/MoodLite/Moodlite_key/MoodLiteRelease.p7b",
+          "certpath": "D:/MoodLite/Moodlite_key/MoodLite.cer"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.1(21)",
+        "compatibleSdkVersion": "6.0.1(21)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

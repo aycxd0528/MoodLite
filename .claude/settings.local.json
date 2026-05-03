@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(hvigorw clean *)",
+      "Bash(hvigorw assembleHap --no-daemon)",
+      "Bash(hvigorw assembleHap --no-daemon -p buildMode=debug)"
+    ]
+  }
+}
