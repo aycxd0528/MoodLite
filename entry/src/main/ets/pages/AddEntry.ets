@@ -12,6 +12,7 @@ import { Token, Dark, Shadow, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, generateUUID, formatDateStr } from '../model/MoodRecord';
 import { getEditPayload } from '../common/EditBridge';
+import { analyzeMood } from '../common/utils/AiAgentClient';
 
 interface FaceEntry {
   min: number; max: number; icon: Resource; label: string; color: string; ms: number;
@@ -89,7 +90,7 @@ struct AddEntry {
         this.selectedImage = result.photoUris[0];
       }
     } catch (err) {
-      promptAction.showToast({ message: '选择图片失败', duration: 1500 });
+      try { promptAction.showToast({ message: '选择图片失败', duration: 1500 }); } catch (_e) { /* ignore */ }
     }
   }
 
@@ -98,7 +99,7 @@ struct AddEntry {
   async done(): Promise<void> {
     if (this.saving) return;
     if (this.txt.trim().length === 0 && !this.selectedImage) {
-      promptAction.showToast({ message: '请写点什么吧', duration: 1500 });
+      try { promptAction.showToast({ message: '请写点什么吧', duration: 1500 }); } catch (_e) { /* ignore */ }
       return;
     }
     this.saving = true;
@@ -118,8 +119,20 @@ struct AddEntry {
       };
       const ok = await DataManager.saveRecord(record);
       if (ok) {
-        vibrator.vibrate(20);
-        promptAction.showToast({ message: '已保存 ✅', duration: 1500, bottom: 400 });
+        try { vibrator.vibrate(20); } catch (_e) { /* ignore */ }
+        try { promptAction.showToast({ message: '已保存 ✅', duration: 1500, bottom: 400 }); } catch (_e) { /* ignore */ }
+
+        // 异步触发 AI 分析（非阻塞）
+        if (record.score <= -1 && this.txt.trim().length > 0) {
+          analyzeMood(this.txt).then((suggestion) => {
+            if (suggestion) {
+              AppStorage.setOrCreate('activeIntent', JSON.stringify(suggestion));
+            }
+          });
+        } else {
+          AppStorage.setOrCreate('activeIntent', null);
+        }
+
         router.replaceUrl({ url: 'pages/MainPage' });
       }
     } finally {
@@ -127,19 +140,26 @@ struct AddEntry {
     }
   }
 
-  toast(msg: string): void { promptAction.showToast({ message: msg, duration: 2000 }); }
+  toast(msg: string): void {
+    try { promptAction.showToast({ message: msg, duration: 2000 }); } catch (_e) { /* ignore */ }
+  }
 
   build() {
     Column() {
       Row() {
-        Button() { Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain) }
-          .width(40).height(40).backgroundColor('transparent').onClick(() => { router.back(); })
+        Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
+          .fillColor(this.darkMode ? '#E8E8EC' : '#1F2937')
+          .colorFilter(
+            this.darkMode
+              ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
+              : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+          )
+          .onClick(() => { router.back(); })
         Blank()
         Text(this.isEdit ? '编辑记录' : '新记录')
           .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
         Blank()
         Row({ space: 4 }) {
-          Text('✓').fontSize(14).fontWeight(FontWeight.Bold).fontColor(Token.TEXT_WHITE)
           Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
         }
         .padding({ left: 14, right: 14, top: 6, bottom: 6 })
@@ -167,7 +187,7 @@ struct AddEntry {
                   if (mode === SliderChangeMode.Moving) {
                     if (nearest !== this.sv) {
                       this.sv = nearest;
-                      vibrator.vibrate(15);
+                      try { vibrator.vibrate(15); } catch (_e) { /* ignore */ }
                       this.triggerEmojiBounce();
                     }
                   } else if (mode === SliderChangeMode.End) {
@@ -236,6 +256,7 @@ struct AddEntry {
       .layoutWeight(1).scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
     }
     .width('100%').height('100%').backgroundColor(this.darkMode ? Dark.BG : Token.BG)
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 
 }

@@ -1,24 +1,46 @@
 import UIAbility from '@ohos.app.ability.UIAbility';
 import type Want from '@ohos.app.ability.Want';
 import type AbilityConstant from '@ohos.app.ability.AbilityConstant';
-import Window from '@ohos.window';
+import window from '@ohos.window';
+import router from '@ohos.router';
+import type { BusinessError } from '@ohos.base';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     console.info('[MoodLite] EntryAbility onCreate');
   }
 
+  onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    this.handleWidgetRoute(want);
+  }
+
   onDestroy(): void {
     console.info('[MoodLite] EntryAbility onDestroy');
   }
 
-  onWindowStageCreate(windowStage: Window.WindowStage): void {
-    windowStage.loadContent('pages/Index', (err: BusinessError) => {
+  onWindowStageCreate(windowStage: window.WindowStage): void {
+    const mainWindow = windowStage.getMainWindowSync();
+    mainWindow.setWindowLayoutFullScreen(true);
+    mainWindow.setWindowSystemBarProperties({
+      statusBarColor: '#00000000',
+      navigationBarColor: '#00000000',
+      isStatusBarLightIcon: false,
+    });
+
+    let targetPage = 'pages/Index';
+    const params = this.launchWant.parameters as Record<string, Object>;
+    if (params && params['targetPage']) {
+      targetPage = params['targetPage'] as string;
+      this.applyWidgetParams(params);
+      console.info('[MoodLite] Widget card routed to: ' + targetPage);
+    }
+
+    windowStage.loadContent(targetPage, (err: BusinessError) => {
       if (err.code) {
         console.error('[MoodLite] Failed to load content: ' + JSON.stringify(err));
         return;
       }
-      console.info('[MoodLite] Index page loaded');
+      console.info('[MoodLite] ' + targetPage + ' loaded');
     });
   }
 
@@ -32,5 +54,20 @@ export default class EntryAbility extends UIAbility {
 
   onBackground(): void {
     console.info('[MoodLite] EntryAbility onBackground');
+  }
+
+  private applyWidgetParams(params: Record<string, Object>): void {
+    if (params['tab'] !== undefined) {
+      AppStorage.setOrCreate('moodlite_tab', params['tab'] as number);
+    }
+  }
+
+  private handleWidgetRoute(want: Want): void {
+    const params = want.parameters as Record<string, Object>;
+    if (!params || !params['targetPage']) return;
+    this.applyWidgetParams(params);
+    const target = params['targetPage'] as string;
+    console.info('[MoodLite] onNewWant route to: ' + target);
+    router.replaceUrl({ url: target });
   }
 }

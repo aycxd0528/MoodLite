@@ -23,7 +23,14 @@ struct Index {
   aboutToAppear(): void {
     console.info('[MoodLite] Index.aboutToAppear — begin');
     try {
-      const ctx = getContext(this);
+      const uiCtx: UIContext = this.getUIContext();
+      const hostCtx: Context | undefined = uiCtx.getHostContext();
+      if (!hostCtx) {
+        this.status = 'EMPTY';
+        this.statusMsg = '无法获取应用上下文';
+        return;
+      }
+      const ctx: Context = hostCtx;
       console.info('[MoodLite] Index — context acquired');
 
       // 3 秒超时熔断 —— 防止异步链静默挂起

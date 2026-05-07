@@ -38,6 +38,8 @@ export interface CalendarDayItem {
   dayOfWeek: number;
   /** 是否为当月日期（用于过滤前后月填充格） */
   isCurrentMonth: boolean;
+  /** 情绪简码: 0=无, 1=低落, 2=平静, 3=愉悦, 4=混合(大喜大悲) */
+  moodCode: number;
 }
 
 /**
