@@ -9,6 +9,7 @@
 
 import dataPreferences from '@ohos.data.preferences';
 import { MoodRecord } from '../model/MoodRecord';
+import WidgetSyncManager from '../common/utils/WidgetSyncManager';
 
 const STORE_NAME = 'moodlite_db';
 const KEY_RECORDS = 'records';
@@ -111,6 +112,7 @@ class DataManager {
       filtered.unshift(record);
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
+      await this.syncWidgets();
       return true;
     });
   }
@@ -123,6 +125,7 @@ class DataManager {
       const filtered = records.filter(r => r.id !== id);
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
+      await this.syncWidgets();
       return true;
     });
   }
@@ -139,6 +142,15 @@ class DataManager {
         }
       });
     });
+  }
+
+  // ========== 卡片数据同步（委托 WidgetSyncManager） ==========
+
+  /** saveRecord / deleteRecord 成功后触发卡片刷新 */
+  private async syncWidgets(): Promise<void> {
+    if (!this.context) return;
+    const records = await this.getAllRecords();
+    await WidgetSyncManager.updateWidgets(this.context, records);
   }
 
   // ========== 启动状态 ==========

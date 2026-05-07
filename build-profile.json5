@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "D:/MoodLite/Moodlite_key/moodlite.p12",
-          "storePassword": "000000196384F6FE6AD1D0758A3661BCD0ABC641D36BCF1C1E02B5EEA240648254A53F50DA332D892B",
-          "keyAlias": "moodlite",
-          "keyPassword": "000000194075BB668594312063995521134B0D352795FF1E047E0D55D608780A091C8E0276DB2DC073",
+          "certpath": "C:/Users/王钊杰/.ohos/config/default_MoodLite_final_-hoCRxwZjPKY7Clul3wTTFFb1V_3N7KtwWkm9EJ-r14=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B95E3C7981D3E8E5B1A54A708774C1D76076B6FB877EECD07CAB29B9AFD8FCC7EC9DCDFAD0ECB08",
+          "profile": "C:/Users/王钊杰/.ohos/config/default_MoodLite_final_-hoCRxwZjPKY7Clul3wTTFFb1V_3N7KtwWkm9EJ-r14=.p7b",
           "signAlg": "SHA256withECDSA",
-          "profile": "D:/MoodLite/Moodlite_key/MoodLiteRelease.p7b",
-          "certpath": "D:/MoodLite/Moodlite_key/MoodLite.cer"
+          "storeFile": "C:/Users/王钊杰/.ohos/config/default_MoodLite_final_-hoCRxwZjPKY7Clul3wTTFFb1V_3N7KtwWkm9EJ-r14=.p12",
+          "storePassword": "0000001B7678B4C896EA8018E1F077A76796A75906B1C79DBE5F2CCF8101B83DBF30F664700C3DD2F2A274"
         }
       }
     ],

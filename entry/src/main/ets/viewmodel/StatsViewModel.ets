@@ -120,6 +120,7 @@ export function generateCalendarGrid(
       count: 0,
       dayOfWeek: i,
       isCurrentMonth: false,
+      moodCode: 0,
     });
   }
 
@@ -128,13 +129,33 @@ export function generateCalendarGrid(
     const dateStr = formatDateStr(date);
     let daySum = 0;
     let dayCount = 0;
+    let posCount = 0;
+    let negCount = 0;
     for (const r of records) {
       if (r.dateStr === dateStr) {
         daySum += r.score;
         dayCount++;
+        if (r.score >= 1) posCount++;
+        if (r.score <= -1) negCount++;
       }
     }
     const avg = dayCount > 0 ? daySum / dayCount : 0;
+
+    let code = 0;
+    if (dayCount > 0) {
+      if (posCount > 0 && negCount > 0) {
+        // 正负都有：比数量，谁多就谁主导
+        if (posCount > negCount) code = 3;       // 开心多 → 粉色
+        else if (negCount > posCount) code = 1;  // 不开心多 → 蓝色
+        else code = 4;                            // 一样多 → 紫色
+      } else if (posCount > 0) {
+        code = 3;
+      } else if (negCount > 0) {
+        code = 1;
+      } else {
+        code = 2;
+      }
+    }
 
     grid.push({
       dateStr: dateStr,
@@ -142,6 +163,7 @@ export function generateCalendarGrid(
       count: dayCount,
       dayOfWeek: date.getDay(),
       isCurrentMonth: true,
+      moodCode: code,
     });
   }
 
@@ -154,6 +176,7 @@ export function generateCalendarGrid(
       count: 0,
       dayOfWeek: date.getDay(),
       isCurrentMonth: false,
+      moodCode: 0,
     });
   }
 
@@ -168,55 +191,43 @@ export function calcMonthlyStats(
   records: MoodRecord[]
 ): MonthlyStats {
   const monthRecords: MoodRecord[] = [];
+  const daySet = new Set<string>();
   for (const r of records) {
     const ym = parseYearMonth(r.dateStr);
     if (ym[0] === year && ym[1] === month) {
       monthRecords.push(r);
+      daySet.add(r.dateStr);
     }
   }
 
-  const dayMap = new Map<string, number[]>();
-  for (const r of monthRecords) {
-    let list = dayMap.get(r.dateStr);
-    if (!list) {
-      list = [];
-    }
-    list.push(r.score);
-    dayMap.set(r.dateStr, list);
-  }
-
-  let happyDays = 0;
-  let neutralDays = 0;
-  let sadDays = 0;
+  // 按「条」计数，不是按「天」
+  let happyCount = 0;
+  let neutralCount = 0;
+  let sadCount = 0;
   let totalScore = 0;
   let maxScore = -3;
   let minScore = 3;
 
-  const scoreLists: number[][] = [];
-  dayMap.forEach((scores: number[]) => {
-    scoreLists.push(scores);
-  });
-
-  for (const scores of scoreLists) {
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    totalScore += avg;
-    maxScore = Math.max(maxScore, maxOfArray(scores));
-    minScore = Math.min(minScore, minOfArray(scores));
-    if (avg >= 1) happyDays++;
-    else if (avg <= -1) sadDays++;
-    else neutralDays++;
+  for (const r of monthRecords) {
+    totalScore += r.score;
+    maxScore = Math.max(maxScore, r.score);
+    minScore = Math.min(minScore, r.score);
+    if (r.score >= 1) happyCount++;
+    else if (r.score <= -1) sadCount++;
+    else neutralCount++;
   }
 
-  const totalDays = dayMap.size;
+  const totalDays = daySet.size;
+  const totalRecords = monthRecords.length;
 
   return {
     year: year,
     month: month,
     totalDays: totalDays,
-    happyDays: happyDays,
-    neutralDays: neutralDays,
-    sadDays: sadDays,
-    averageScore: totalDays > 0 ? Math.round((totalScore / totalDays) * 10) / 10 : 0,
+    happyDays: happyCount,
+    neutralDays: neutralCount,
+    sadDays: sadCount,
+    averageScore: totalRecords > 0 ? Math.round((totalScore / totalRecords) * 10) / 10 : 0,
     maxScore: maxScore === -3 ? 0 : maxScore,
     minScore: minScore === 3 ? 0 : minScore,
   };
@@ -224,14 +235,32 @@ export function calcMonthlyStats(
 
 // ========== 热力图颜色 ==========
 
-export function heatmapColor(avgScore: number, isCurrentMonth: boolean): string {
+// 颜色由 moodCode(类别) + absScore(强度) 共同决定，由浅到深
+export function heatmapColor(moodCode: number, absScore: number, isCurrentMonth: boolean): string {
   if (!isCurrentMonth) return 'transparent';
-  if (avgScore >= 1.5) return '#FF8BA7';
-  if (avgScore >= 0.5) return '#FFB3C5';
-  if (avgScore >= 0) return '#FFDCE5';
-  if (avgScore >= -0.5) return '#E8F0F7';
-  if (avgScore >= -1) return '#AEC6CF';
-  return '#8BA9B8';
+  if (moodCode === 0) return '#F5F6F8'; // 无记录
+
+  const strong = absScore >= 1.5;
+  const mid = absScore >= 0.5;
+
+  if (moodCode === 1) { // 低落 → 蓝色
+    if (strong) return '#8BA9B8';
+    if (mid) return '#AEC6CF';
+    return '#D6E6F2';
+  }
+  if (moodCode === 2) return '#E8E8E8'; // 平静
+
+  if (moodCode === 3) { // 愉悦 → 粉色
+    if (strong) return '#FF8BA7';
+    if (mid) return '#FFB3C5';
+    return '#FFDCE5';
+  }
+  if (moodCode === 4) { // 混合 → 紫色
+    if (strong) return '#A78BBA';
+    if (mid) return '#C4A0D8';
+    return '#E0CCF0';
+  }
+  return '#F5F6F8';
 }
 
 export const WEEKDAY_HEADERS: string[] = ['日', '一', '二', '三', '四', '五', '六'];

@@ -5,6 +5,8 @@
 import { Token, Dark, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
+import common from '@ohos.app.ability.common';
+import type Want from '@ohos.app.ability.Want';
 
 PersistentStorage.persistProp('isReminderOn', false);
 PersistentStorage.persistProp('reminderHour', 20);
@@ -69,6 +71,15 @@ export struct Profile {
   @StorageLink('reminderHour') reminderHour: number = 20;
   @StorageLink('reminderMinute') reminderMinute: number = 0;
 
+  private appContext(): Context {
+    const uiCtx: UIContext = this.getUIContext();
+    const hostCtx: Context | undefined = uiCtx.getHostContext();
+    if (!hostCtx) {
+      throw new Error('Failed to get application context');
+    }
+    return hostCtx;
+  }
+
   private timeDialog: CustomDialogController = new CustomDialogController({
     builder: TimePickerDialog({
       hour: this.reminderHour,
@@ -76,7 +87,7 @@ export struct Profile {
       onConfirm: (h: number, m: number) => {
         this.reminderHour = h;
         this.reminderMinute = m;
-        enableDailyReminder(getContext(this), h, m);
+        enableDailyReminder(this.appContext(), h, m);
       }
     }),
     autoCancel: true,
@@ -91,7 +102,7 @@ export struct Profile {
         onConfirm: (h: number, m: number) => {
           this.reminderHour = h;
           this.reminderMinute = m;
-          enableDailyReminder(getContext(this), h, m);
+          enableDailyReminder(this.appContext(), h, m);
         }
       }),
       autoCancel: true,
@@ -118,7 +129,7 @@ export struct Profile {
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)
-      .padding({ top: 32, bottom: S.MD, left: S.LG, right: S.LG })
+      .padding({ top: S.HEADER_TOP, bottom: S.MD, left: S.LG, right: S.LG })
 
       Scroll() {
         Column() {
@@ -175,10 +186,34 @@ export struct Profile {
                     } else {
                       Image($r('app.media.ic_right_arrow')).width(16).height(16)
                         .objectFit(ImageFit.Contain)
-                        .fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                        .fillColor(this.darkMode ? '#E8E8EC' : '#9CA3AF')
+                        .colorFilter(
+                          this.darkMode
+                            ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
+                            : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+                        )
                     }
                   }
                   .width('100%').height(56).alignItems(VerticalAlign.Center)
+                  .onClick(() => {
+                    if (it.label === '给我们反馈') {
+                      const want: Want = {
+                        action: 'ohos.want.action.viewData',
+                        entities: ['entity.system.browsable'],
+                        uri: 'https://qcnvafay57br.feishu.cn/share/base/form/shrcnYp5ebjhkpaHKc6FA0Lw1me'
+                      };
+                      const ctx = getContext(this) as common.UIAbilityContext;
+                      ctx.startAbility(want);
+                    } else if (it.label === '关于 MoodLite') {
+                      const want: Want = {
+                        action: 'ohos.want.action.viewData',
+                        entities: ['entity.system.browsable'],
+                        uri: 'https://qcnvafay57br.feishu.cn/wiki/JVzvwaxhmiRMv4kyv8Rcyjz9nBe'
+                      };
+                      const ctx = getContext(this) as common.UIAbilityContext;
+                      ctx.startAbility(want);
+                    }
+                  })
                 }
               })
             }

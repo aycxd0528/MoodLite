@@ -31,6 +31,46 @@
     {
       "name": "add_done",
       "value": "完成"
+    },
+    {
+      "name": "widget1_desc",
+      "value": "This is a service widget."
+    },
+    {
+      "name": "widget1_display_name",
+      "value": "widget1"
+    },
+    {
+      "name": "card_list_title",
+      "value": "Title"
+    },
+    {
+      "name": "card_list_content",
+      "value": "Introduction"
+    },
+    {
+      "name": "widget_search",
+      "value": "discover more"
+    },
+    {
+      "name": "widget_explored",
+      "value": "explored"
+    },
+    {
+      "name": "widget_study",
+      "value": "study"
+    },
+    {
+      "name": "widget_activity",
+      "value": "activity"
+    },
+    {
+      "name": "widget_mine",
+      "value": "mine"
+    },
+    {
+      "name": "widget_more",
+      "value": "more Info"
     }
   ]
 }

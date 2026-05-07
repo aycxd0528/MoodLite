@@ -38,7 +38,12 @@ struct EntryDetail {
       Row() {
         Button() {
           Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
-            .fillColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fillColor(this.darkMode ? '#E8E8EC' : '#1F2937')
+            .colorFilter(
+              this.darkMode
+                ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
+                : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+            )
         }
         .width(40).height(40).backgroundColor('transparent')
         .onClick(() => { router.back(); })

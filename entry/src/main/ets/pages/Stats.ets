@@ -1,97 +1,62 @@
 /**
- * StatsContent — 情绪统计看板 (内嵌组件，实时数据)
+ * StatsContent — 情绪统计看板 (内嵌组件，使用 StatsViewModel 聚合层)
  */
 
+import promptAction from '@ohos.promptAction';
 import DataManager from '../data/DataManager';
-import { MoodRecord } from '../model/MoodRecord';
+import { MoodRecord, CalendarDayItem, getMoodLabel } from '../model/MoodRecord';
 import { Token, Dark, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
+import {
+  generateCalendarGrid,
+  calcMonthlyStats,
+  heatmapColor,
+  WEEKDAY_HEADERS,
+} from '../viewmodel/StatsViewModel';
 
-interface HeatCell { day: number; score: number | null; active: boolean; }
-
-function hColor(c: HeatCell, isDark: boolean): string {
-  if (!c.active) return 'transparent';
-  if (c.score === null) return isDark ? '#3D3D5A' : Token.BAR_BG;
-  if (c.score === 0) return isDark ? '#4A4A6A' : Token.HEAT_NEUTRAL;
-  if (c.score > 0) return 'rgba(255,139,167,' + (0.25 + c.score * 0.375).toFixed(2) + ')';
-  return 'rgba(143,183,232,' + (0.25 + Math.abs(c.score) * 0.375).toFixed(2) + ')';
-}
-
-const WD: string[] = ['日', '一', '二', '三', '四', '五', '六'];
-const MN: string[] = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const MONTH_NAMES: string[] = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
 @Component
 export struct StatsContent {
   @StorageLink('darkMode') darkMode: boolean = false;
-  @State y: number = new Date().getFullYear();
-  @State m: number = new Date().getMonth() + 1;
-  @State cells: HeatCell[] = [];
-  @State overviewHp: number = 0;
-  @State overviewSp: number = 0;
-  @State overviewNp: number = 0;
+  @State year: number = new Date().getFullYear();
+  @State month: number = new Date().getMonth() + 1;
+  @State calendarCells: CalendarDayItem[] = [];
+  @State happyPercent: number = 0;
+  @State sadPercent: number = 0;
+  @State neutralPercent: number = 0;
   @State recordDays: number = 0;
 
   aboutToAppear(): void { this.refresh(); }
 
   async refresh(): Promise<void> {
-    const records = await DataManager.getAllRecords();
-    this.cells = this.buildHeatmap(records);
-    this.buildOverview(records);
+    const records: MoodRecord[] = await DataManager.getAllRecords();
+
+    this.calendarCells = generateCalendarGrid(this.year, this.month, records);
+
+    const monthlyStats = calcMonthlyStats(this.year, this.month, records);
+    const totalRecords = monthlyStats.happyDays + monthlyStats.neutralDays + monthlyStats.sadDays;
+    if (totalRecords > 0) {
+      this.happyPercent = Math.round((monthlyStats.happyDays / totalRecords) * 100);
+      this.sadPercent = Math.round((monthlyStats.sadDays / totalRecords) * 100);
+      this.neutralPercent = 100 - this.happyPercent - this.sadPercent;
+    } else {
+      this.happyPercent = 0;
+      this.sadPercent = 0;
+      this.neutralPercent = 0;
+    }
+    this.recordDays = monthlyStats.totalDays;
   }
 
-  buildHeatmap(records: MoodRecord[]): HeatCell[] {
-    const byDay = new Map<string, MoodRecord[]>();
-    for (const r of records) {
-      let arr = byDay.get(r.dateStr);
-      if (!arr) { arr = []; byDay.set(r.dateStr, arr); }
-      arr.push(r);
-    }
-    const fd = new Date(this.y, this.m - 1, 1);
-    const sw = fd.getDay();
-    const dim = new Date(this.y, this.m, 0).getDate();
-    const arr: HeatCell[] = [];
-    for (let i = 0; i < sw; i++) arr.push({ day: 0, score: null, active: false });
-    for (let d = 1; d <= dim; d++) {
-      const ds = this.y + '-' + String(this.m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-      const dayRecs = byDay.get(ds);
-      if (!dayRecs || dayRecs.length === 0) {
-        arr.push({ day: d, score: null, active: true });
-      } else {
-        const sum = dayRecs.reduce((s, r) => s + r.score, 0);
-        arr.push({ day: d, score: sum / dayRecs.length, active: true });
-      }
-    }
-    while (arr.length < 42) arr.push({ day: 0, score: null, active: false });
-    return arr;
+  prevMonth(): void {
+    if (this.month === 1) { this.month = 12; this.year--; } else this.month--;
+    this.refresh();
   }
 
-  buildOverview(records: MoodRecord[]): void {
-    const yStr = String(this.y);
-    const mStr = String(this.m).padStart(2, '0');
-    const monthRecords: MoodRecord[] = [];
-    for (const r of records) {
-      const parts = r.dateStr.split('-');
-      if (parts.length === 3 && parts[0] === yStr && parts[1] === mStr) monthRecords.push(r);
-    }
-    if (monthRecords.length === 0) {
-      this.overviewHp = 0; this.overviewSp = 0; this.overviewNp = 0; this.recordDays = 0;
-      return;
-    }
-    let h = 0; let s = 0; let n = 0;
-    const daysSet = new Set<string>();
-    for (const r of monthRecords) {
-      if (r.score >= 1) h++; else if (r.score <= -1) s++; else n++;
-      daysSet.add(r.dateStr);
-    }
-    const total = monthRecords.length;
-    this.overviewHp = Math.round((h / total) * 100);
-    this.overviewSp = Math.round((s / total) * 100);
-    this.overviewNp = 100 - this.overviewHp - this.overviewSp;
-    this.recordDays = daysSet.size;
+  nextMonth(): void {
+    if (this.month === 12) { this.month = 1; this.year++; } else this.month++;
+    this.refresh();
   }
-
-  prv(): void { if (this.m === 1) { this.m = 12; this.y--; } else this.m--; this.refresh(); }
-  nxt(): void { if (this.m === 12) { this.m = 1; this.y++; } else this.m++; this.refresh(); }
 
   build() {
     Scroll() {
@@ -100,40 +65,58 @@ export struct StatsContent {
         // ====== 1. 情绪热力图 ======
         GlassCard() {
           Column() {
+            // 月份导航
             Row() {
               Button() { Text('〈').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN) }
-                .width(32).height(32).backgroundColor('transparent').onClick(() => { this.prv(); })
+                .width(32).height(32).backgroundColor('transparent').onClick(() => { this.prevMonth(); })
               Blank()
-              Text(this.y + '年' + MN[this.m - 1]).fontSize(18).fontWeight(FontWeight.Bold)
+              Text(this.year + '年' + MONTH_NAMES[this.month - 1]).fontSize(18).fontWeight(FontWeight.Bold)
                 .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
               Blank()
               Button() { Text('〉').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN) }
-                .width(32).height(32).backgroundColor('transparent').onClick(() => { this.nxt(); })
+                .width(32).height(32).backgroundColor('transparent').onClick(() => { this.nextMonth(); })
             }
             .width('100%').margin({ bottom: S.SM })
 
+            // 星期表头
             Row() {
-              ForEach(WD, (d: string) => {
-                Column() { Text(d).fontSize(F.SMALL).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY) }
+              ForEach(WEEKDAY_HEADERS, (day: string) => {
+                Column() { Text(day).fontSize(F.SMALL).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY) }
                 .layoutWeight(1).alignItems(HorizontalAlign.Center)
-              }, (d: string) => d)
+              }, (day: string) => day)
             }
             .width('100%')
 
+            // 热力图网格
             Grid() {
-              ForEach(this.cells, (c: HeatCell, i: number) => {
+              ForEach(this.calendarCells, (cell: CalendarDayItem, index: number) => {
                 GridItem() {
                   Column()
                     .width('100%').height('100%')
-                    .borderRadius(4).backgroundColor(hColor(c, this.darkMode))
+                    .borderRadius(4)
+                    .backgroundColor(
+                      !cell.isCurrentMonth
+                        ? 'transparent'
+                        : (cell.count === 0
+                          ? (this.darkMode ? '#3D3D5A' : Token.BAR_BG)
+                          : heatmapColor(cell.moodCode, Math.abs(cell.avgScore), true))
+                    )
+                    .onClick(() => {
+                      if (!cell.isCurrentMonth || cell.count === 0) return;
+                      const scoreInt = Math.round(cell.avgScore);
+                      const moodLabel = getMoodLabel(scoreInt);
+                      const msg = cell.dateStr + '  ' + moodLabel + ' (' + cell.avgScore.toFixed(1) + ')';
+                      try { promptAction.showToast({ message: msg, duration: 2000 }); } catch (_e) { /* ignore */ }
+                    })
                 }
-              }, (c: HeatCell, i: number) => this.y + '_' + this.m + '_' + i + '_' + c.score)
+              }, (cell: CalendarDayItem, index: number) => cell.dateStr + '_' + index)
             }
             .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
             .rowsTemplate('1fr 1fr 1fr 1fr 1fr 1fr')
             .columnsGap(6).rowsGap(6)
             .width('100%').aspectRatio(1.16).margin({ top: S.XS })
 
+            // 色阶图例
             Row() {
               Text('低').fontSize(F.TINY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
               Column().width(12).height(12).backgroundColor('rgba(143,183,232,0.25)').borderRadius(2).margin({ left: 2 })
@@ -147,9 +130,10 @@ export struct StatsContent {
             }
             .width('100%').justifyContent(FlexAlign.Center).margin({ top: S.SM })
 
+            // 提示
             Row() {
               Image($r('app.media.ic_sparkles')).width(14).height(14).objectFit(ImageFit.Contain)
-              Text('颜色深浅代表情绪强度，点击日期可查看当天记录')
+              Text('颜色深浅代表情绪强度')
                 .fontSize(11).fontColor(this.darkMode ? Dark.INFO_TIP : Token.INFO_TIP).margin({ left: S.XS })
             }
             .width('100%')
@@ -168,45 +152,49 @@ export struct StatsContent {
               .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ bottom: S.MD })
 
             Row() {
+              // 愉悦
               Column() {
                 Image($r('app.media.ic_face_good')).width(32).height(32).objectFit(ImageFit.Contain)
-                Text(this.overviewHp + '%').fontSize(20).fontWeight(FontWeight.Bold)
+                Text(this.happyPercent + '%').fontSize(20).fontWeight(FontWeight.Bold)
                   .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
                 Text('愉悦').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0').borderRadius(2)
-                  Column().width(40 * this.overviewHp / 100).height(4).backgroundColor(Token.PINK).borderRadius(2)
+                  Column().width(40 * this.happyPercent / 100).height(4).backgroundColor(Token.PINK).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
 
               Divider().vertical(true).height(60).color(this.darkMode ? Dark.DIVIDER : Token.DIVIDER)
 
+              // 低落
               Column() {
                 Image($r('app.media.ic_face_bad')).width(32).height(32).objectFit(ImageFit.Contain)
-                Text(this.overviewSp + '%').fontSize(20).fontWeight(FontWeight.Bold)
+                Text(this.sadPercent + '%').fontSize(20).fontWeight(FontWeight.Bold)
                   .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
                 Text('低落').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0').borderRadius(2)
-                  Column().width(40 * this.overviewSp / 100).height(4).backgroundColor(Token.BLUE_DEEP).borderRadius(2)
+                  Column().width(40 * this.sadPercent / 100).height(4).backgroundColor(Token.BLUE_DEEP).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
 
               Divider().vertical(true).height(60).color(this.darkMode ? Dark.DIVIDER : Token.DIVIDER)
 
+              // 平静
               Column() {
                 Image($r('app.media.ic_face_neutral')).width(32).height(32).objectFit(ImageFit.Contain)
-                Text(this.overviewNp + '%').fontSize(20).fontWeight(FontWeight.Bold)
+                Text(this.neutralPercent + '%').fontSize(20).fontWeight(FontWeight.Bold)
                   .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
                 Text('平静').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0').borderRadius(2)
-                  Column().width(40 * this.overviewNp / 100).height(4).backgroundColor(this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL).borderRadius(2)
+                  Column().width(40 * this.neutralPercent / 100).height(4).backgroundColor(this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
 
               Divider().vertical(true).height(60).color(this.darkMode ? Dark.DIVIDER : Token.DIVIDER)
 
+              // 记录天数
               Column() {
                 Image($r('app.media.bullseye')).width(32).height(32).objectFit(ImageFit.Contain)
                 Text(String(this.recordDays)).fontSize(20).fontWeight(FontWeight.Bold)
@@ -214,7 +202,7 @@ export struct StatsContent {
                 Text('记录天数').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
             }
-            .width('100%')
+            .width('100%').alignItems(VerticalAlign.Top)
           }
           .width('100%')
         }
