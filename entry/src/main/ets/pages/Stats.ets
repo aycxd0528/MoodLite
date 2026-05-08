@@ -99,7 +99,7 @@ export struct StatsContent {
                         ? 'transparent'
                         : (cell.count === 0
                           ? (this.darkMode ? '#3D3D5A' : Token.BAR_BG)
-                          : heatmapColor(cell.moodCode, Math.abs(cell.avgScore), true))
+                          : heatmapColor(cell.moodCode, Math.abs(cell.avgScore), cell.count, true))
                     )
                     .onClick(() => {
                       if (!cell.isCurrentMonth || cell.count === 0) return;
@@ -116,19 +116,25 @@ export struct StatsContent {
             .columnsGap(6).rowsGap(6)
             .width('100%').aspectRatio(1.16).margin({ top: S.XS })
 
-            // 色阶图例
+            // 色阶图例：5蓝 + 1灰 + 5粉
             Row() {
               Text('低').fontSize(F.TINY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-              Column().width(12).height(12).backgroundColor('rgba(143,183,232,0.25)').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor('rgba(143,183,232,0.62)').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor('rgba(143,183,232,1)').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor(this.darkMode ? '#3D3D5A' : Token.BAR_BG).borderRadius(2).margin({ left: 6 })
-              Column().width(12).height(12).backgroundColor('rgba(255,139,167,0.25)').borderRadius(2).margin({ left: 6 })
-              Column().width(12).height(12).backgroundColor('rgba(255,139,167,0.62)').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor('rgba(255,139,167,1)').borderRadius(2).margin({ left: 2 })
-              Text('高').fontSize(F.TINY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ left: 2 })
+              Column().width(12).height(12).backgroundColor('#E6EEF4').borderRadius(2).margin({ left: 4 })
+              Column().width(12).height(12).backgroundColor('#D6E6F2').borderRadius(2).margin({ left: 2 })
+              Column().width(12).height(12).backgroundColor('#C0D5E3').borderRadius(2).margin({ left: 2 })
+              Column().width(12).height(12).backgroundColor('#AEC6CF').borderRadius(2).margin({ left: 2 })
+              Column().width(12).height(12).backgroundColor('#8BA9B8').borderRadius(2).margin({ left: 2 })
+              Blank()
+              Column().width(12).height(12).backgroundColor(this.darkMode ? '#3D3D5A' : Token.BAR_BG).borderRadius(2)
+              Blank()
+              Column().width(12).height(12).backgroundColor('#FFEEF3').borderRadius(2).margin({ right: 2 })
+              Column().width(12).height(12).backgroundColor('#FFDCE5').borderRadius(2).margin({ right: 2 })
+              Column().width(12).height(12).backgroundColor('#FFCBD8').borderRadius(2).margin({ right: 2 })
+              Column().width(12).height(12).backgroundColor('#FFB3C5').borderRadius(2).margin({ right: 2 })
+              Column().width(12).height(12).backgroundColor('#FF8BA7').borderRadius(2).margin({ right: 4 })
+              Text('高').fontSize(F.TINY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
             }
-            .width('100%').justifyContent(FlexAlign.Center).margin({ top: S.SM })
+            .width('100%').margin({ top: S.SM })
 
             // 提示
             Row() {

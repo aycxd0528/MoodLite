@@ -6,24 +6,30 @@ struct Widget1Card {
   getHeatColor(val: number): string {
     if (val === 0) return '#F5F6F8';                          // 无记录
     const moodCode = Math.floor(val / 10);                    // 1=低落 2=平静 3=愉悦 4=混合
-    const inten = val % 10;                                   // 0=弱 1=中 2=强
+    const inten = val % 10;                                   // 0-4 五级强度
 
     if (moodCode === 1) { // 低落 → 蓝色 由浅到深
-      if (inten === 2) return '#8BA9B8';
-      if (inten === 1) return '#AEC6CF';
-      return '#D6E6F2';
+      if (inten === 4) return '#8BA9B8';
+      if (inten === 3) return '#AEC6CF';
+      if (inten === 2) return '#C0D5E3';
+      if (inten === 1) return '#D6E6F2';
+      return '#E6EEF4';
     }
     if (moodCode === 2) return '#E8E8E8';                     // 平静
 
     if (moodCode === 3) { // 愉悦 → 粉色 由浅到深
-      if (inten === 2) return '#FF8BA7';
-      if (inten === 1) return '#FFB3C5';
-      return '#FFDCE5';
+      if (inten === 4) return '#FF8BA7';
+      if (inten === 3) return '#FFB3C5';
+      if (inten === 2) return '#FFCBD8';
+      if (inten === 1) return '#FFDCE5';
+      return '#FFEEF3';
     }
     if (moodCode === 4) { // 混合 → 紫色 由浅到深
-      if (inten === 2) return '#A78BBA';
-      if (inten === 1) return '#C4A0D8';
-      return '#E0CCF0';
+      if (inten === 4) return '#A78BBA';
+      if (inten === 3) return '#C4A0D8';
+      if (inten === 2) return '#D2B8E5';
+      if (inten === 1) return '#E0CCF0';
+      return '#F2E8F7';
     }
     return '#F5F6F8';
   }
