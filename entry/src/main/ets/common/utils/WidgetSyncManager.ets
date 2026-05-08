@@ -75,7 +75,7 @@ class WidgetSyncManager {
 
   /**
    * 生成本月 7×5 紧凑日历数组
-   * 编码 = moodCode × 10 + intensity (0=弱, 1=中, 2=强)
+   * 编码 = moodCode × 10 + intensity (0-4 五级强度)
    * moodCode: 0=无 1=低落 2=平静 3=愉悦 4=混合
    */
   getCompactMonthData(records: MoodRecord[]): number[] {
@@ -109,7 +109,8 @@ class WidgetSyncManager {
     for (let i = 0; i < 31; i++) {
       if (posCnt[i] === 0 && negCnt[i] === 0 && neuCnt[i] === 0) continue;
 
-      const intensity = maxAbs[i] >= 2 ? 2 : (maxAbs[i] >= 1 ? 1 : 0);
+      const dayCnt = posCnt[i] + negCnt[i] + neuCnt[i];
+      const intensity = Math.min(4, maxAbs[i] * 2 + (dayCnt > 1 ? 1 : 0));
 
       let moodCode = 2;
       if (posCnt[i] > 0 && negCnt[i] > 0) {

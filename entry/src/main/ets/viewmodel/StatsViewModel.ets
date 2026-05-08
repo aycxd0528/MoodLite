@@ -235,32 +235,69 @@ export function calcMonthlyStats(
 
 // ========== 热力图颜色 ==========
 
-// 颜色由 moodCode(类别) + absScore(强度) 共同决定，由浅到深
-export function heatmapColor(moodCode: number, absScore: number, isCurrentMonth: boolean): string {
+// ========== 热力图颜色 (支持 5 色阶 & 深浅模式) ==========
+export function heatmapColor(moodCode: number, absScore: number, isCurrentMonth: boolean, isDarkMode: boolean = false): string {
   if (!isCurrentMonth) return 'transparent';
-  if (moodCode === 0) return '#F5F6F8'; // 无记录
+  if (moodCode === 0) return isDarkMode ? '#3D3D5A' : '#F5F6F8'; // 无记录
 
-  const strong = absScore >= 1.5;
-  const mid = absScore >= 0.5;
+  // 将 absScore (0~3分) 划分为 5 个真实色阶
+  const lvl5 = absScore >= 2.4;
+  const lvl4 = absScore >= 1.8 && absScore < 2.4;
+  const lvl3 = absScore >= 1.2 && absScore < 1.8;
+  const lvl2 = absScore >= 0.6 && absScore < 1.2;
+  // 小于 0.6 的全部归为 lvl1
 
-  if (moodCode === 1) { // 低落 → 蓝色
-    if (strong) return '#8BA9B8';
-    if (mid) return '#AEC6CF';
-    return '#D6E6F2';
+  if (moodCode === 1) { // 低落 → 清透天空蓝 (5色阶)
+    if (isDarkMode) {
+      if (lvl5) return '#4A7EC2';
+      if (lvl4) return '#3A67A3';
+      if (lvl3) return '#2E5385';
+      if (lvl2) return '#224066';
+      return '#182D4A'; // lvl1
+    } else {
+      if (lvl5) return '#7BB0FF';
+      if (lvl4) return '#96CAFF';
+      if (lvl3) return '#BDE0FF';
+      if (lvl2) return '#DCEBFF';
+      return '#EEF5FF'; // lvl1 (最浅)
+    }
   }
-  if (moodCode === 2) return '#E8E8E8'; // 平静
 
-  if (moodCode === 3) { // 愉悦 → 粉色
-    if (strong) return '#FF8BA7';
-    if (mid) return '#FFB3C5';
-    return '#FFDCE5';
+  if (moodCode === 2) return isDarkMode ? '#4E4E6A' : '#E8E8E8'; // 平静
+
+  if (moodCode === 3) { // 愉悦 → 蜜桃粉 (5色阶)
+    if (isDarkMode) {
+      if (lvl5) return '#B84A65';
+      if (lvl4) return '#964055';
+      if (lvl3) return '#7A3546';
+      if (lvl2) return '#5A2C3A';
+      return '#3D212A'; // lvl1
+    } else {
+      if (lvl5) return '#FF8BA7';
+      if (lvl4) return '#FFA3B8';
+      if (lvl3) return '#FFC2D1';
+      if (lvl2) return '#FFDCE5';
+      return '#FFF0F3'; // lvl1 (最浅)
+    }
   }
-  if (moodCode === 4) { // 混合 → 紫色
-    if (strong) return '#A78BBA';
-    if (mid) return '#C4A0D8';
-    return '#E0CCF0';
+
+  if (moodCode === 4) { // 混合 → 香芋紫 (5色阶)
+    if (isDarkMode) {
+      if (lvl5) return '#7B5CA3';
+      if (lvl4) return '#684A8A';
+      if (lvl3) return '#563E78';
+      if (lvl2) return '#43315C';
+      return '#302342'; // lvl1
+    } else {
+      if (lvl5) return '#B69CE2';
+      if (lvl4) return '#C8B3F0';
+      if (lvl3) return '#DCCDF5';
+      if (lvl2) return '#EDE6FA';
+      return '#F7F3FC'; // lvl1
+    }
   }
-  return '#F5F6F8';
+
+  return isDarkMode ? '#3D3D5A' : '#F5F6F8';
 }
 
 export const WEEKDAY_HEADERS: string[] = ['日', '一', '二', '三', '四', '五', '六'];
