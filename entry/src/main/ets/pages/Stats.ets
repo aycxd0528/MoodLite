@@ -11,6 +11,8 @@ import {
   generateCalendarGrid,
   calcMonthlyStats,
   heatmapColor,
+  calcTagDistribution,
+  TagDistribution,
   WEEKDAY_HEADERS,
 } from '../viewmodel/StatsViewModel';
 
@@ -26,6 +28,7 @@ export struct StatsContent {
   @State sadPercent: number = 0;
   @State neutralPercent: number = 0;
   @State recordDays: number = 0;
+  @State tagDistributions: TagDistribution[] = [];
 
   aboutToAppear(): void { this.refresh(); }
 
@@ -46,6 +49,7 @@ export struct StatsContent {
       this.neutralPercent = 0;
     }
     this.recordDays = monthlyStats.totalDays;
+    this.tagDistributions = calcTagDistribution(records);
   }
 
   prevMonth(): void {
@@ -211,6 +215,57 @@ export struct StatsContent {
             .width('100%').alignItems(VerticalAlign.Top)
           }
           .width('100%')
+        }
+
+        // ====== 3. 情绪场景分布 ======
+        if (this.tagDistributions.length > 0) {
+          GlassCard() {
+            Column() {
+              Text('情绪场景分布').fontSize(F.BODY).fontWeight(FontWeight.Bold)
+                .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ bottom: S.MD })
+
+              ForEach(this.tagDistributions, (td: TagDistribution) => {
+                Row() {
+                  Text(td.tag)
+                    .fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
+                    .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    .width(48)
+
+                  Column() {
+                    Row() {
+                      Column()
+                        .height(8)
+                        .width(Math.max(4, 140 * td.count / this.tagDistributions[0].count))
+                        .backgroundColor(
+                          td.avgScore >= 0.5 ? Token.PINK
+                          : td.avgScore <= -0.5 ? Token.BLUE_DEEP
+                          : (this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL)
+                        )
+                        .borderRadius(4)
+                    }
+                    .width(140).height(8)
+                    .backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0')
+                    .borderRadius(4)
+                  }
+                  .margin({ left: S.SM }).layoutWeight(1)
+
+                  Column() {
+                    Text(td.count + '次').fontSize(F.SMALL).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    Text((td.avgScore >= 0 ? '+' : '') + td.avgScore.toFixed(1))
+                      .fontSize(F.TINY)
+                      .fontColor(
+                        td.avgScore >= 0.5 ? Token.PINK
+                        : td.avgScore <= -0.5 ? Token.BLUE_DEEP
+                        : Token.TEXT_GRAY
+                      )
+                  }
+                  .alignItems(HorizontalAlign.End).width(48)
+                }
+                .width('100%').margin({ bottom: S.SM })
+              }, (td: TagDistribution) => td.tag)
+            }
+            .width('100%')
+          }
         }
 
         Row().width('100%').height(S.BOTTOM_BREATH)

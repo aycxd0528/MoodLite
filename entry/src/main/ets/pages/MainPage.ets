@@ -86,6 +86,7 @@ struct MainPage {
             ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
             : [[Token.PINK_LIGHT, 0.0], [Token.TEXT_WHITE, 1.0]],
         })
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
       Column() {
         Tabs({ index: this.tab, barPosition: BarPosition.End }) {
@@ -110,7 +111,7 @@ struct MainPage {
         }
         .barHeight(0).barWidth('100%')
         .scrollable(false)
-        .animationDuration(0)
+        .animationDuration(200)
         .onChange((i: number) => { this.tab = i; })
       }
       .width('100%').height('100%')

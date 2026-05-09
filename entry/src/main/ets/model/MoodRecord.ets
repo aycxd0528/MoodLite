@@ -22,6 +22,8 @@ export interface MoodRecord {
   images: string[];
   /** 结构化位置信息 */
   location: string;
+  /** 标签列表，如 #工作 #社交 */
+  tags: string[];
 }
 
 /**
@@ -119,6 +121,7 @@ export function createMockRecord(
     text: '',
     images: [],
     location: '',
+    tags: [],
   };
 
   if (overrides) {
@@ -129,10 +132,14 @@ export function createMockRecord(
     if (overrides.text !== undefined) record.text = overrides.text as string;
     if (overrides.images !== undefined) record.images = overrides.images as string[];
     if (overrides.location !== undefined) record.location = overrides.location as string;
+    if (overrides.tags !== undefined) record.tags = overrides.tags as string[];
   }
 
   return record;
 }
+
+/** 快捷标签池 */
+export const DEFAULT_TAGS: string[] = ['工作', '社交', '独处', '运动', '休息', '阅读'];
 
 /**
  * 将 Date 格式化为 YYYY-MM-DD

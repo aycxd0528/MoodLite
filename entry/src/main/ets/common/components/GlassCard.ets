@@ -23,6 +23,7 @@ export struct GlassCard {
       .width('100%')
       .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
       .borderRadius(this.cardRadius)
+      .border({ width: 0.5, color: this.darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.40)' })
       .shadow({ radius: this.shadowRad, color: this.darkMode ? Dark.SHADOW_COLOR : Token.SHADOW_COLOR, offsetY: this.shadowOffY })
       .padding(this.cardPadding)
   }

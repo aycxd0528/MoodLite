@@ -56,7 +56,7 @@ export struct TimelineTab {
       .width(72).height('100%').backgroundColor(this.darkMode ? Dark.BLUE : Token.BLUE)
       .borderRadius({ topLeft: 12, bottomLeft: 12 })
       .onClick(() => {
-        setEditPayload({ id: r.id, text: r.text, score: r.score });
+        setEditPayload({ id: r.id, text: r.text, score: r.score, tags: r.tags || [] });
         router.pushUrl({ url: 'pages/AddEntry', params: { fromTab: this.fromTab } });
       })
 
@@ -118,6 +118,7 @@ export struct TimelineTab {
                         recordDate: r.dateStr,
                         recordScore: r.score,
                         recordText: r.text,
+                        recordTags: r.tags || [],
                       }
                     });
                   })

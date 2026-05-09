@@ -7,6 +7,7 @@ export interface EditPayload {
   id: string;
   text: string;
   score: number;
+  tags: string[];
 }
 
 let _payload: EditPayload | null = null;

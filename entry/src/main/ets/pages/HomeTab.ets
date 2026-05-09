@@ -142,33 +142,15 @@ export struct HomeTab {
               }
               .justifyContent(FlexAlign.Center)
 
-              Text('每一次记录\n都是你关心自己的方式')
-                .fontSize(14).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                .textAlign(TextAlign.Center).lineHeight(22)
-                .margin({ top: 16, bottom: 50 })
-
-              Column({ space: 16 }) {
-                Row({ space: 4 }) {
-                  Image($r('app.media.ic_sparkles')).width(14).height(14).objectFit(ImageFit.Contain)
-                  Text('坚持记录可以帮助你更好地理解自己的情绪模式。')
-                    .fontSize(11)
-                    .fontColor(this.darkMode ? Dark.INFO_TIP : Token.INFO_TIP)
-                    .maxLines(1)
-                }
-                .width('100%').justifyContent(FlexAlign.Center)
-                .padding({ top: 10, bottom: 10 })
-                .backgroundColor(this.darkMode ? Dark.BUBBLE_BG : Token.BUBBLE_BG).borderRadius(R.TINY)
-
-                Button('开始记录今天的心情')
-                  .width('100%').height(48)
-                  .backgroundColor(Token.PINK).borderRadius(24)
-                  .fontSize(16).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
-                  .shadow(Shadow.CARD)
-                  .onClick(() => {
-                    router.pushUrl({ url: 'pages/AddEntry', params: { fromTab: 0 } });
-                  })
-              }
-              .width('100%')
+              Button('开始记录今天的心情')
+                .width('100%').height(48)
+                .backgroundColor(Token.PINK).borderRadius(24)
+                .fontSize(16).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
+                .shadow(Shadow.CARD)
+                .margin({ top: 32 })
+                .onClick(() => {
+                  router.pushUrl({ url: 'pages/AddEntry', params: { fromTab: 0 } });
+                })
             }
             .width('100%')
             .padding({ top: 24, bottom: 24, left: 20, right: 20 })

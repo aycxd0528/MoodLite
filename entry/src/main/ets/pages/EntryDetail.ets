@@ -16,19 +16,21 @@ struct EntryDetail {
   @State dateStr: string = '';
   @State score: number = 0;
   @State text: string = '';
+  @State tags: string[] = [];
 
   aboutToAppear(): void {
-    const p = router.getParams() as Record<string, string | number>;
+    const p = router.getParams() as Record<string, string | number | string[]>;
     if (p) {
       this.recordId = (p['recordId'] as string) || '';
       this.dateStr = (p['recordDate'] as string) || '';
       this.score = (p['recordScore'] as number) || 0;
       this.text = (p['recordText'] as string) || '';
+      this.tags = (p['recordTags'] as string[]) || [];
     }
   }
 
   onEdit(): void {
-    setEditPayload({ id: this.recordId, text: this.text, score: this.score });
+    setEditPayload({ id: this.recordId, text: this.text, score: this.score, tags: this.tags });
     router.replaceUrl({ url: 'pages/AddEntry', params: { fromTab: 1 } });
   }
 

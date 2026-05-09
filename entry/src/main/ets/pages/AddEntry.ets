@@ -10,7 +10,7 @@ import vibrator from '@ohos.vibrator';
 import DataManager from '../data/DataManager';
 import { Token, Dark, Shadow, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
-import { MoodRecord, generateUUID, formatDateStr } from '../model/MoodRecord';
+import { MoodRecord, generateUUID, formatDateStr, DEFAULT_TAGS } from '../model/MoodRecord';
 import { getEditPayload } from '../common/EditBridge';
 import { analyzeMood } from '../common/utils/AiAgentClient';
 
@@ -44,7 +44,7 @@ struct AddEntry {
   @State editId: string = '';
   @State isEdit: boolean = false;
   @State selectedImage: string = '';
-
+  @State selectedTags: string[] = [];
   @State fromTab: number = 0;
 
   aboutToAppear(): void {
@@ -57,6 +57,7 @@ struct AddEntry {
       this.isEdit = true;
       this.editId = payload.id;
       this.txt = payload.text || '';
+      this.selectedTags = payload.tags || [];
       const s = payload.score;
       if (s <= -2) this.sv = 10;
       else if (s === -1) this.sv = 30;
@@ -121,6 +122,7 @@ struct AddEntry {
         text: this.txt,
         images: images,
         location: '',
+        tags: this.selectedTags,
       };
       const ok = await DataManager.saveRecord(record);
       if (ok) {
@@ -225,6 +227,37 @@ struct AddEntry {
                   .opacity(0.6).fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
                   .onClick(() => { this.selectImage(); })
               }
+            }
+          }
+          .margin({ top: S.MD })
+
+          // 快捷标签
+          Column() {
+            GlassCard() {
+              Column({ space: S.SM }) {
+                Text('选择场景标签').fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                Flex({ wrap: FlexWrap.Wrap }) {
+                  ForEach(DEFAULT_TAGS, (tag: string) => {
+                    Text(tag)
+                      .fontSize(F.CAPTION)
+                      .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+                      .borderRadius(R.FULL)
+                      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.TEXT_WHITE : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
+                      .backgroundColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : (this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG))
+                      .margin({ right: S.XS, bottom: S.XS })
+                      .onClick(() => {
+                        const idx = this.selectedTags.indexOf(tag);
+                        if (idx >= 0) {
+                          this.selectedTags.splice(idx, 1);
+                        } else {
+                          this.selectedTags.push(tag);
+                        }
+                      })
+                  }, (tag: string) => tag)
+                }
+                .width('100%')
+              }
+              .width('100%')
             }
           }
           .margin({ top: S.MD })

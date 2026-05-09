@@ -538,3 +538,38 @@ export function calcTrendDirection(
   if (diff < -0.3) return 'declining';
   return 'stable';
 }
+
+// ========== 标签分布 ==========
+
+export interface TagDistribution {
+  tag: string;
+  count: number;
+  avgScore: number;
+}
+
+interface TagAcc {
+  count: number;
+  totalScore: number;
+}
+
+export function calcTagDistribution(records: MoodRecord[]): TagDistribution[] {
+  const tagMap = new Map<string, TagAcc>();
+  for (const r of records) {
+    if (!r.tags || r.tags.length === 0) continue;
+    for (const tag of r.tags) {
+      const entry = tagMap.get(tag);
+      if (entry) {
+        entry.count++;
+        entry.totalScore += r.score;
+      } else {
+        tagMap.set(tag, { count: 1, totalScore: r.score } as TagAcc);
+      }
+    }
+  }
+  const result: TagDistribution[] = [];
+  tagMap.forEach((v, k) => {
+    result.push({ tag: k, count: v.count, avgScore: Math.round((v.totalScore / v.count) * 10) / 10 } as TagDistribution);
+  });
+  result.sort((a, b) => b.count - a.count);
+  return result;
+}
