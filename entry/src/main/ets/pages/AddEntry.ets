@@ -222,39 +222,49 @@ struct AddEntry {
                   .onChange((v: string) => { this.txt = v; })
 
                 Row() {
-                  ForEach(DEFAULT_TAGS, (tag: string) => {
-                    Text(tag)
-                      .fontSize(F.SMALL)
-                      .padding({ left: 12, right: 12, top: 5, bottom: 5 })
-                      .borderRadius(R.SMALL)
-                      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.TEXT_WHITE : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
-                      .backgroundColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : (this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG))
-                      .margin({ right: S.XS })
-                      .onClick(() => {
-                        const idx = this.selectedTags.indexOf(tag);
-                        if (idx >= 0) {
-                          this.selectedTags.splice(idx, 1);
-                        } else {
-                          this.selectedTags.push(tag);
-                        }
-                      })
-                  }, (tag: string) => tag)
-                }
-
-                Row() {
-                  Text('🏷').fontSize(16)
-                    .opacity(this.selectedTags.length > 0 ? 1 : 0.35)
-                  Blank()
                   Image($r('app.media.ic_image'))
                     .width(22).height(22)
                     .opacity(0.5).fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
                     .onClick(() => { this.selectImage(); })
                 }
-                .width('100%')
+                .width('100%').justifyContent(FlexAlign.End)
               }
               .width('100%')
             }
           }
+          .margin({ top: S.MD })
+
+          // 快捷标签 — 独立区域，浅底色区隔
+          Column() {
+            Text('🏷 选择场景标签')
+              .fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
+              .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+              .margin({ bottom: S.SM })
+
+            Row() {
+              ForEach(DEFAULT_TAGS, (tag: string) => {
+                Text(tag)
+                  .fontSize(F.BODY)
+                  .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+                  .borderRadius(R.SMALL)
+                  .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.TEXT_WHITE : Token.TEXT_MAIN)
+                  .backgroundColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : '#E8EBF0')
+                  .margin({ right: S.SM })
+                  .onClick(() => {
+                    const idx = this.selectedTags.indexOf(tag);
+                    if (idx >= 0) {
+                      this.selectedTags.splice(idx, 1);
+                    } else {
+                      this.selectedTags.push(tag);
+                    }
+                  })
+              }, (tag: string) => tag)
+            }
+          }
+          .width('100%')
+          .padding({ left: S.LG, right: S.LG, top: S.MD, bottom: S.MD })
+          .backgroundColor(this.darkMode ? Dark.BUBBLE_BG : '#EEF0F4')
+          .borderRadius(R.CARD)
           .margin({ top: S.MD })
 
           // 选中图片预览
