@@ -215,27 +215,12 @@ struct AddEntry {
 
           Column() {
             GlassCard() {
-              Stack({ alignContent: Alignment.BottomEnd }) {
+              Column({ space: S.SM }) {
                 TextArea({ placeholder: '今天有什么想记录的吗…', text: this.txt })
-                  .width('100%').height(100).backgroundColor('transparent').borderRadius(0)
+                  .width('100%').height(80).backgroundColor('transparent').borderRadius(0)
                   .fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                  .padding({ bottom: 40 })
                   .onChange((v: string) => { this.txt = v; })
 
-                Image($r('app.media.ic_image'))
-                  .width(24).height(24).margin(12)
-                  .opacity(0.6).fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                  .onClick(() => { this.selectImage(); })
-              }
-            }
-          }
-          .margin({ top: S.MD })
-
-          // 快捷标签
-          Column() {
-            GlassCard() {
-              Column({ space: S.SM }) {
-                Text('选择场景标签').fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
                 Flex({ wrap: FlexWrap.Wrap }) {
                   ForEach(DEFAULT_TAGS, (tag: string) => {
                     Text(tag)
@@ -254,6 +239,19 @@ struct AddEntry {
                         }
                       })
                   }, (tag: string) => tag)
+                }
+                .width('100%')
+
+                Row() {
+                  Image($r('app.media.ic_tag'))
+                    .width(22).height(22)
+                    .opacity(this.selectedTags.length > 0 ? 1 : 0.35)
+                    .fillColor(this.selectedTags.length > 0 ? Token.PINK : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
+                  Blank()
+                  Image($r('app.media.ic_image'))
+                    .width(22).height(22)
+                    .opacity(0.5).fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    .onClick(() => { this.selectImage(); })
                 }
                 .width('100%')
               }
