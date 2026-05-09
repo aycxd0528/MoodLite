@@ -45,7 +45,13 @@ struct AddEntry {
   @State isEdit: boolean = false;
   @State selectedImage: string = '';
 
+  @State fromTab: number = 0;
+
   aboutToAppear(): void {
+    const p = router.getParams() as Record<string, number>;
+    if (p && typeof p['fromTab'] === 'number') {
+      this.fromTab = p['fromTab'];
+    }
     const payload = getEditPayload();
     if (payload) {
       this.isEdit = true;
@@ -59,7 +65,6 @@ struct AddEntry {
       else this.sv = 90;
       return;
     }
-    const p = router.getParams() as Record<string, number>;
     if (p && typeof p['score'] === 'number') {
       const sc = p['score'];
       if (sc <= -2) this.sv = 10; else if (sc === -1) this.sv = 30;
@@ -133,7 +138,7 @@ struct AddEntry {
           AppStorage.setOrCreate('activeIntent', null);
         }
 
-        router.replaceUrl({ url: 'pages/MainPage' });
+        router.replaceUrl({ url: 'pages/MainPage', params: { fromTab: this.fromTab } });
       }
     } finally {
       this.saving = false;

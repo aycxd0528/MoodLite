@@ -29,8 +29,7 @@ struct EntryDetail {
 
   onEdit(): void {
     setEditPayload({ id: this.recordId, text: this.text, score: this.score });
-    AppStorage.setOrCreate('moodlite_tab', 1);
-    router.replaceUrl({ url: 'pages/AddEntry' });
+    router.replaceUrl({ url: 'pages/AddEntry', params: { fromTab: 1 } });
   }
 
   build() {
