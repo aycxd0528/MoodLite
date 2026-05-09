@@ -16,6 +16,13 @@ import { Profile } from './Profile';
 import { StatsContent } from './Stats';
 import { MonthGroup } from '../viewmodel/LazyDataSource';
 
+const TAB_ICONS: Record<number, [Resource, Resource]> = {
+  0: [$r('app.media.ic_today'), $r('app.media.ic_today_active')],
+  1: [$r('app.media.ic_tab_record'), $r('app.media.ic_tab_record')],
+  3: [$r('app.media.ic_stats'), $r('app.media.ic_stats_active')],
+  4: [$r('app.media.ic_profile'), $r('app.media.ic_profile_active')],
+};
+
 @Entry
 @Component
 struct MainPage {
@@ -119,11 +126,11 @@ struct MainPage {
       .width('100%').height('100%')
 
       Row() {
-        this.Btn(0, '今日', 'ic_today', 'ic_today_active')
-        this.Btn(1, '记录', 'ic_tab_record', 'ic_tab_record')
+        this.Btn(0, '今日', TAB_ICONS[0][0], TAB_ICONS[0][1])
+        this.Btn(1, '记录', TAB_ICONS[1][0], TAB_ICONS[1][1])
         this.CenterPlus()
-        this.Btn(3, '统计', 'ic_stats', 'ic_stats_active')
-        this.Btn(4, '我的', 'ic_profile', 'ic_profile_active')
+        this.Btn(3, '统计', TAB_ICONS[3][0], TAB_ICONS[3][1])
+        this.Btn(4, '我的', TAB_ICONS[4][0], TAB_ICONS[4][1])
       }
       .width('92%').height(L.TAB_BAR_H)
       .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD).borderRadius(R.CARD)
@@ -135,7 +142,7 @@ struct MainPage {
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 
-  @Builder Btn(i: number, lbl: string, ni: string, ai: string) {
+  @Builder Btn(i: number, lbl: string, normalIcon: Resource, activeIcon: Resource) {
     Stack({ alignContent: Alignment.Center }) {
       Row()
         .width(56).height(56)
@@ -144,7 +151,7 @@ struct MainPage {
         .animation({ duration: 250, curve: Curve.EaseInOut })
 
       Column() {
-        Image($r('app.media.' + (this.tab === i ? ai : ni)))
+        Image(this.tab === i ? activeIcon : normalIcon)
           .width(24).height(24).objectFit(ImageFit.Contain)
           .fillColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY)
           .animation({ duration: 200, curve: Curve.EaseOut })

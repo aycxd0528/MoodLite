@@ -135,7 +135,9 @@ class DataManager {
       filtered.unshift(record);
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
-      await this.syncWidgets();
+      if (this.context) {
+        await WidgetSyncManager.updateWidgets(this.context, filtered);
+      }
 
       // 成就结算
       const newAchievements = checkNewAchievements(filtered, this.unlockedAchievements);
@@ -155,11 +157,14 @@ class DataManager {
   async deleteRecord(id: string): Promise<boolean> {
     return this.enqueue(async () => {
       if (!this.preferences) return false;
-      const records = await this.getAllRecords();
+      const raw = await this.preferences.get(KEY_RECORDS, '[]') as string;
+      const records: MoodRecord[] = JSON.parse(raw);
       const filtered = records.filter(r => r.id !== id);
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
-      await this.syncWidgets();
+      if (this.context) {
+        await WidgetSyncManager.updateWidgets(this.context, filtered);
+      }
       return true;
     });
   }
@@ -178,7 +183,7 @@ class DataManager {
     });
   }
 
-  // ========== 卡片数据同步（委托 WidgetSyncManager） ==========
+  // ========== 成就通知 ==========
 
   /** 成就结算后通知 UI */
   private notifyAchievements(records: MoodRecord[]): void {
@@ -191,13 +196,6 @@ class DataManager {
       list.push(item);
     }
     AppStorage.set('achievements', JSON.stringify(list));
-  }
-
-  /** saveRecord / deleteRecord 成功后触发卡片刷新 */
-  private async syncWidgets(): Promise<void> {
-    if (!this.context) return;
-    const records = await this.getAllRecords();
-    await WidgetSyncManager.updateWidgets(this.context, records);
   }
 
   // ========== 启动状态 ==========

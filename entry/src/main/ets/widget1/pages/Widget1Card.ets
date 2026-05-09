@@ -71,35 +71,13 @@ struct Widget1Card {
 
             // 右侧：7x5 热力图网格
             Column({ space: 5 }) {
-              Row({ space: 5 }) {
-                ForEach(this.monthDays.slice(0, 7), (v: number) => {
-                  Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
-                })
-              }.width('100%').justifyContent(FlexAlign.Center)
-
-              Row({ space: 5 }) {
-                ForEach(this.monthDays.slice(7, 14), (v: number) => {
-                  Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
-                })
-              }.width('100%').justifyContent(FlexAlign.Center)
-
-              Row({ space: 5 }) {
-                ForEach(this.monthDays.slice(14, 21), (v: number) => {
-                  Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
-                })
-              }.width('100%').justifyContent(FlexAlign.Center)
-
-              Row({ space: 5 }) {
-                ForEach(this.monthDays.slice(21, 28), (v: number) => {
-                  Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
-                })
-              }.width('100%').justifyContent(FlexAlign.Center)
-
-              Row({ space: 5 }) {
-                ForEach(this.monthDays.slice(28, 35), (v: number) => {
-                  Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
-                })
-              }.width('100%').justifyContent(FlexAlign.Center)
+              ForEach([0, 1, 2, 3, 4], (row: number) => {
+                Row({ space: 5 }) {
+                  ForEach(this.monthDays.slice(row * 7, (row + 1) * 7), (v: number) => {
+                    Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
+                  })
+                }.width('100%').justifyContent(FlexAlign.Center)
+              }, (row: number) => row.toString())
             }
             .layoutWeight(6)
             .height('100%')

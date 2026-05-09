@@ -29,27 +29,43 @@ export struct StatsContent {
   @State neutralPercent: number = 0;
   @State recordDays: number = 0;
   @State tagDistributions: TagDistribution[] = [];
+  private monthCache: Map<string, MoodRecord[]> = new Map();
+  private allRecords: MoodRecord[] = [];
 
   aboutToAppear(): void { this.refresh(); }
 
   async refresh(): Promise<void> {
     const records: MoodRecord[] = await DataManager.getAllRecords();
 
+    if (records !== this.allRecords) {
+      this.allRecords = records;
+      this.monthCache.clear();
+      for (const r of records) {
+        const mk = r.dateStr.substring(0, 7);
+        let arr = this.monthCache.get(mk);
+        if (!arr) { arr = []; this.monthCache.set(mk, arr); }
+        arr.push(r);
+      }
+    }
+
+    const key = this.year + '-' + String(this.month).padStart(2, '0');
+    const monthRecords = this.monthCache.get(key) || [];
+
     this.calendarCells = generateCalendarGrid(this.year, this.month, records);
+    this.tagDistributions = calcTagDistribution(records);
 
     const monthlyStats = calcMonthlyStats(this.year, this.month, records);
-    const totalRecords = monthlyStats.happyDays + monthlyStats.neutralDays + monthlyStats.sadDays;
+    const totalRecords = monthlyStats.happyRecords + monthlyStats.neutralRecords + monthlyStats.sadRecords;
     if (totalRecords > 0) {
-      this.happyPercent = Math.round((monthlyStats.happyDays / totalRecords) * 100);
-      this.sadPercent = Math.round((monthlyStats.sadDays / totalRecords) * 100);
-      this.neutralPercent = 100 - this.happyPercent - this.sadPercent;
+      this.happyPercent = Math.round((monthlyStats.happyRecords / totalRecords) * 100);
+      this.sadPercent = Math.round((monthlyStats.sadRecords / totalRecords) * 100);
+      this.neutralPercent = Math.max(0, 100 - this.happyPercent - this.sadPercent);
     } else {
       this.happyPercent = 0;
       this.sadPercent = 0;
       this.neutralPercent = 0;
     }
     this.recordDays = monthlyStats.totalDays;
-    this.tagDistributions = calcTagDistribution(records);
   }
 
   prevMonth(): void {
@@ -115,7 +131,7 @@ export struct StatsContent {
                       try { promptAction.showToast({ message: msg, duration: 2000 }); } catch (_e) { /* ignore */ }
                     })
                 }
-              }, (cell: CalendarDayItem, index: number) => cell.dateStr + '_' + index)
+              }, (cell: CalendarDayItem) => cell.dateStr + (cell.isCurrentMonth ? '_c' : '_p'))
             }
             .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
             .rowsTemplate('1fr 1fr 1fr 1fr 1fr 1fr')
@@ -180,17 +196,6 @@ export struct StatsContent {
             }
             .width('100%').margin({ top: S.SM })
 
-            // 提示
-            Row() {
-              Image($r('app.media.ic_sparkles')).width(14).height(14).objectFit(ImageFit.Contain)
-              Text('颜色深浅代表情绪强度')
-                .fontSize(11).fontColor(this.darkMode ? Dark.INFO_TIP : Token.INFO_TIP).margin({ left: S.XS })
-            }
-            .width('100%')
-            .padding({ top: 10, bottom: 10 })
-            .backgroundColor(this.darkMode ? Dark.BUBBLE_BG : Token.BUBBLE_BG).borderRadius(R.TINY)
-            .justifyContent(FlexAlign.Center).alignItems(VerticalAlign.Center)
-            .margin({ top: S.SM })
           }
           .width('100%')
         }

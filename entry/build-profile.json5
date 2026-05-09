@@ -1,6 +1,12 @@
 {
   "apiType": "stageMode",
   "buildOption": {
+    "arkOptions": {
+      "buildProfileFields": {
+        "DIFY_API_KEY": "app-S6zhHuzyIKdblmTqC4g7esFi",
+        "DIFY_BASE_URL": "https://api.dify.ai/v1/workflow/run"
+      }
+    },
     "resOptions": {
       "copyCodeResource": {
         "enable": false
