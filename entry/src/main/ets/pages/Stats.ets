@@ -99,7 +99,7 @@ export struct StatsContent {
                         ? 'transparent'
                         : (cell.count === 0
                           ? (this.darkMode ? '#3D3D5A' : Token.BAR_BG)
-                          : heatmapColor(cell.moodCode, Math.abs(cell.avgScore), cell.count, true))
+                          : heatmapColor(cell.moodCode, Math.abs(cell.avgScore), cell.isCurrentMonth, this.darkMode))
                     )
                     .onClick(() => {
                       if (!cell.isCurrentMonth || cell.count === 0) return;
