@@ -103,7 +103,9 @@ export struct StatsContent {
                         ? 'transparent'
                         : (cell.count === 0
                           ? (this.darkMode ? '#3D3D5A' : Token.BAR_BG)
-                          : heatmapColor(cell.moodCode, Math.abs(cell.avgScore), cell.isCurrentMonth, this.darkMode))
+                          : heatmapColor(cell.moodCode,
+                      (cell.moodCode === 4 || cell.moodCode === 2) ? Math.min(2, cell.count * 0.5) : Math.abs(cell.avgScore),
+                      cell.isCurrentMonth, this.darkMode))
                     )
                     .onClick(() => {
                       if (!cell.isCurrentMonth || cell.count === 0) return;
@@ -120,23 +122,61 @@ export struct StatsContent {
             .columnsGap(6).rowsGap(6)
             .width('100%').aspectRatio(1.16).margin({ top: S.XS })
 
-            // 色阶图例：5蓝 + 1灰 + 5粉
-            Row() {
-              Text('低').fontSize(F.TINY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-              Column().width(12).height(12).backgroundColor('#E6EEF4').borderRadius(2).margin({ left: 4 })
-              Column().width(12).height(12).backgroundColor('#D6E6F2').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor('#C0D5E3').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor('#AEC6CF').borderRadius(2).margin({ left: 2 })
-              Column().width(12).height(12).backgroundColor('#8BA9B8').borderRadius(2).margin({ left: 2 })
-              Blank()
-              Column().width(12).height(12).backgroundColor(this.darkMode ? '#3D3D5A' : Token.BAR_BG).borderRadius(2)
-              Blank()
-              Column().width(12).height(12).backgroundColor('#FFEEF3').borderRadius(2).margin({ right: 2 })
-              Column().width(12).height(12).backgroundColor('#FFDCE5').borderRadius(2).margin({ right: 2 })
-              Column().width(12).height(12).backgroundColor('#FFCBD8').borderRadius(2).margin({ right: 2 })
-              Column().width(12).height(12).backgroundColor('#FFB3C5').borderRadius(2).margin({ right: 2 })
-              Column().width(12).height(12).backgroundColor('#FF8BA7').borderRadius(2).margin({ right: 4 })
-              Text('高').fontSize(F.TINY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            // 色阶图例：2×2
+            Column({ space: S.XS }) {
+              Row() {
+                Column() {
+                  Row() {
+                    Text('低落').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Column().width(10).height(10).backgroundColor('#B5D8F7').borderRadius(2).margin({ left: 2 })
+                    Column().width(10).height(10).backgroundColor('#90C4F0').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#6DADE5').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#5095D8').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#3B7EC2').borderRadius(2).margin({ left: 1 })
+                  }
+                }
+                .layoutWeight(1)
+
+                Column() {
+                  Row() {
+                    Text('愉悦').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Column().width(10).height(10).backgroundColor('#FFCCDD').borderRadius(2).margin({ left: 2 })
+                    Column().width(10).height(10).backgroundColor('#FAAEC7').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#F590AE').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#E87398').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#D0557A').borderRadius(2).margin({ left: 1 })
+                  }
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
+
+              Row() {
+                Column() {
+                  Row() {
+                    Text('平静').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Column().width(10).height(10).backgroundColor('#FFFAE0').borderRadius(2).margin({ left: 2 })
+                    Column().width(10).height(10).backgroundColor('#FFF5B3').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#FFED80').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#FFE44D').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#FFD700').borderRadius(2).margin({ left: 1 })
+                  }
+                }
+                .layoutWeight(1)
+
+                Column() {
+                  Row() {
+                    Text('混合').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Column().width(10).height(10).backgroundColor('#D49DE4').borderRadius(2).margin({ left: 2 })
+                    Column().width(10).height(10).backgroundColor('#C265D2').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#AB47BC').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#8E24AA').borderRadius(2).margin({ left: 1 })
+                    Column().width(10).height(10).backgroundColor('#6A1B9A').borderRadius(2).margin({ left: 1 })
+                  }
+                }
+                .layoutWeight(1)
+              }
+              .width('100%')
             }
             .width('100%').margin({ top: S.SM })
 

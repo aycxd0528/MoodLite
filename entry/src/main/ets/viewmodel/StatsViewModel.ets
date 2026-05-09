@@ -240,60 +240,74 @@ export function heatmapColor(moodCode: number, absScore: number, isCurrentMonth:
   if (!isCurrentMonth) return 'transparent';
   if (moodCode === 0) return isDarkMode ? '#3D3D5A' : '#F5F6F8'; // 无记录
 
-  // 将 absScore (0~3分) 划分为 5 个真实色阶
-  const lvl5 = absScore >= 2.4;
-  const lvl4 = absScore >= 1.8 && absScore < 2.4;
-  const lvl3 = absScore >= 1.2 && absScore < 1.8;
-  const lvl2 = absScore >= 0.6 && absScore < 1.2;
-  // 小于 0.6 的全部归为 lvl1
+  // absScore 真实范围 0~2，5 个档位各占 0.4
+  const lvl5 = absScore >= 1.8;              // ±2
+  const lvl4 = absScore >= 1.4 && absScore < 1.8;  // ±1.5
+  const lvl3 = absScore >= 1.0 && absScore < 1.4;  // ±1
+  const lvl2 = absScore >= 0.5 && absScore < 1.0;  // ±0.5
+  // < 0.5 → lvl1（含混合情绪 avg=0）
 
-  if (moodCode === 1) { // 低落 → 清透天空蓝 (5色阶)
+  if (moodCode === 1) { // 低落 → 蓝
     if (isDarkMode) {
-      if (lvl5) return '#4A7EC2';
-      if (lvl4) return '#3A67A3';
-      if (lvl3) return '#2E5385';
-      if (lvl2) return '#224066';
-      return '#182D4A'; // lvl1
+      if (lvl5) return '#7BB8F0';
+      if (lvl4) return '#5EA3E0';
+      if (lvl3) return '#458ED0';
+      if (lvl2) return '#3078B8';
+      return '#1E5E9A';
     } else {
-      if (lvl5) return '#7BB0FF';
-      if (lvl4) return '#96CAFF';
-      if (lvl3) return '#BDE0FF';
-      if (lvl2) return '#DCEBFF';
-      return '#EEF5FF'; // lvl1 (最浅)
+      if (lvl5) return '#3B7EC2';
+      if (lvl4) return '#5095D8';
+      if (lvl3) return '#6DADE5';
+      if (lvl2) return '#90C4F0';
+      return '#B5D8F7';
     }
   }
 
-  if (moodCode === 2) return isDarkMode ? '#4E4E6A' : '#E8E8E8'; // 平静
-
-  if (moodCode === 3) { // 愉悦 → 蜜桃粉 (5色阶)
+  if (moodCode === 2) { // 平静 → 金
     if (isDarkMode) {
-      if (lvl5) return '#B84A65';
-      if (lvl4) return '#964055';
-      if (lvl3) return '#7A3546';
-      if (lvl2) return '#5A2C3A';
-      return '#3D212A'; // lvl1
+      if (lvl5) return '#FFD700';
+      if (lvl4) return '#E0C200';
+      if (lvl3) return '#C0A800';
+      if (lvl2) return '#A09000';
+      return '#807000';
     } else {
-      if (lvl5) return '#FF8BA7';
-      if (lvl4) return '#FFA3B8';
-      if (lvl3) return '#FFC2D1';
-      if (lvl2) return '#FFDCE5';
-      return '#FFF0F3'; // lvl1 (最浅)
+      if (lvl5) return '#FFD700';
+      if (lvl4) return '#FFE44D';
+      if (lvl3) return '#FFED80';
+      if (lvl2) return '#FFF5B3';
+      return '#FFFAE0';
     }
   }
 
-  if (moodCode === 4) { // 混合 → 香芋紫 (5色阶)
+  if (moodCode === 3) { // 愉悦 → 粉
     if (isDarkMode) {
-      if (lvl5) return '#7B5CA3';
-      if (lvl4) return '#684A8A';
-      if (lvl3) return '#563E78';
-      if (lvl2) return '#43315C';
-      return '#302342'; // lvl1
+      if (lvl5) return '#F080A0';
+      if (lvl4) return '#D06888';
+      if (lvl3) return '#B85070';
+      if (lvl2) return '#A04060';
+      return '#803048';
     } else {
-      if (lvl5) return '#B69CE2';
-      if (lvl4) return '#C8B3F0';
-      if (lvl3) return '#DCCDF5';
-      if (lvl2) return '#EDE6FA';
-      return '#F7F3FC'; // lvl1
+      if (lvl5) return '#D0557A';
+      if (lvl4) return '#E87398';
+      if (lvl3) return '#F590AE';
+      if (lvl2) return '#FAAEC7';
+      return '#FFCCDD';
+    }
+  }
+
+  if (moodCode === 4) { // 混合 → 紫
+    if (isDarkMode) {
+      if (lvl5) return '#C080F0';
+      if (lvl4) return '#A860D8';
+      if (lvl3) return '#9050C0';
+      if (lvl2) return '#7840A8';
+      return '#603090';
+    } else {
+      if (lvl5) return '#6A1B9A';
+      if (lvl4) return '#8E24AA';
+      if (lvl3) return '#AB47BC';
+      if (lvl2) return '#C265D2';
+      return '#D49DE4';
     }
   }
 

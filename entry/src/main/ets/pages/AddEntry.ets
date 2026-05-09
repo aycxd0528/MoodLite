@@ -5,7 +5,6 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import curves from '@ohos.curves';
-import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import vibrator from '@ohos.vibrator';
 import DataManager from '../data/DataManager';
 import { Token, Dark, Shadow, R, S, F } from '../common/styles';
@@ -43,8 +42,9 @@ struct AddEntry {
   @State emojiOpacity: number = 1.0;
   @State editId: string = '';
   @State isEdit: boolean = false;
-  @State selectedImage: string = '';
   @State selectedTags: string[] = [];
+  @State customTag: string = '';
+  @State showCustomInput: boolean = false;
   @State fromTab: number = 0;
 
   aboutToAppear(): void {
@@ -85,26 +85,9 @@ struct AddEntry {
     });
   }
 
-  async selectImage(): Promise<void> {
-    try {
-      const picker = new photoAccessHelper.PhotoViewPicker();
-      const result = await picker.select({
-        MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1,
-      });
-      if (result && result.photoUris && result.photoUris.length > 0) {
-        this.selectedImage = result.photoUris[0];
-      }
-    } catch (err) {
-      try { promptAction.showToast({ message: '选择图片失败', duration: 1500 }); } catch (_e) { /* ignore */ }
-    }
-  }
-
-  removeImage(): void { this.selectedImage = ''; }
-
   async done(): Promise<void> {
     if (this.saving) return;
-    if (this.txt.trim().length === 0 && !this.selectedImage) {
+    if (this.txt.trim().length === 0) {
       try { promptAction.showToast({ message: '请写点什么吧', duration: 1500 }); } catch (_e) { /* ignore */ }
       return;
     }
@@ -113,14 +96,13 @@ struct AddEntry {
       const f = findFace(this.sv);
       const useId = (this.isEdit && this.editId && this.editId.length > 0)
         ? this.editId : generateUUID();
-      const images: string[] = this.selectedImage ? [this.selectedImage] : [];
       const record: MoodRecord = {
         id: useId,
         timestamp: Date.now(),
         dateStr: formatDateStr(new Date()),
         score: f.ms,
         text: this.txt,
-        images: images,
+        images: [],
         location: '',
         tags: this.selectedTags,
       };
@@ -151,37 +133,62 @@ struct AddEntry {
     try { promptAction.showToast({ message: msg, duration: 2000 }); } catch (_e) { /* ignore */ }
   }
 
+  addCustomTag(): void {
+    const t = this.customTag.trim();
+    if (t && this.selectedTags.indexOf(t) < 0) {
+      this.selectedTags.push(t);
+      this.customTag = '';
+    }
+  }
+
+  hasCustomTags(): string[] {
+    return this.selectedTags.filter(t => DEFAULT_TAGS.indexOf(t) < 0);
+  }
+
+  @Builder tagChip(tag: string) {
+    Text(tag)
+      .fontSize(F.CAPTION)
+      .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+      .borderRadius(R.FULL)
+      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
+      .backgroundColor(this.selectedTags.indexOf(tag) >= 0
+        ? (this.darkMode ? 'rgba(255,139,167,0.18)' : Token.PINK_LIGHT)
+        : (this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG))
+      .margin({ right: S.SM })
+      .onClick(() => {
+        const idx = this.selectedTags.indexOf(tag);
+        if (idx >= 0) {
+          this.selectedTags.splice(idx, 1);
+        } else {
+          this.selectedTags.push(tag);
+        }
+      })
+  }
+
   build() {
     Column() {
       Row() {
         Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
-          .fillColor(this.darkMode ? '#E8E8EC' : '#1F2937')
-          .colorFilter(
-            this.darkMode
-              ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-              : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
-          )
+          .fillColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
           .onClick(() => { router.back(); })
         Blank()
         Text(this.isEdit ? '编辑记录' : '新记录')
           .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
         Blank()
-        Row({ space: 4 }) {
-          Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
-        }
-        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-        .backgroundColor(this.saving ? Token.TEXT_GRAY : Token.PINK).borderRadius(16)
-        .shadow({ radius: 30, color: this.darkMode ? Dark.SHADOW_COLOR : Token.SHADOW_COLOR, offsetY: 10 })
-        .onClick(() => { this.done(); })
+        Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
+          .padding({ left: 16, right: 16, top: 7, bottom: 7 })
+          .backgroundColor(this.saving ? Token.TEXT_GRAY : Token.PINK).borderRadius(R.FULL)
+          .shadow(Shadow.CARD)
+          .onClick(() => { this.done(); })
       }
-      .width('100%').padding({ top: S.HEADER_TOP, bottom: S.MD, left: S.MD, right: S.MD }).alignItems(VerticalAlign.Center)
+      .width('100%').padding({ top: S.HEADER_TOP, bottom: S.MD, left: S.LG, right: S.LG }).alignItems(VerticalAlign.Center)
 
       Scroll() {
-        Column() {
+        Column({ space: S.MD }) {
           GlassCard() {
             Column() {
-              Image(findFace(this.sv).icon).width(160).height(160).objectFit(ImageFit.Contain)
-                .margin({ bottom: S.LG }).scale({ x: this.emojiScale, y: this.emojiScale }).opacity(this.emojiOpacity)
+              Image(findFace(this.sv).icon).width(120).height(120).objectFit(ImageFit.Contain)
+                .margin({ bottom: S.MD }).scale({ x: this.emojiScale, y: this.emojiScale }).opacity(this.emojiOpacity)
               Text(findFace(this.sv).label).fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                 .fontColor(findFace(this.sv).color).margin({ bottom: S.MD })
               Slider({ value: this.sv, min: 0, max: 100, step: 1, style: SliderStyle.OutSet })
@@ -202,9 +209,9 @@ struct AddEntry {
                   }
                 })
               Row() {
-                ForEach(FT, (f: FaceEntry, i: number) => {
+                ForEach(FT, (f: FaceEntry) => {
                   Image(f.icon)
-                    .width(28).height(28).objectFit(ImageFit.Contain)
+                    .width(24).height(24).objectFit(ImageFit.Contain)
                     .opacity(this.sv >= f.min && this.sv <= f.max ? 1 : 0.3)
                 }, (f: FaceEntry) => String(f.min))
               }
@@ -213,92 +220,76 @@ struct AddEntry {
             .width('100%').alignItems(HorizontalAlign.Center)
           }
 
-          Column() {
-            GlassCard() {
-              Column({ space: S.SM }) {
-                TextArea({ placeholder: '今天有什么想记录的吗…', text: this.txt })
-                  .width('100%').height(80).backgroundColor('transparent').borderRadius(0)
-                  .fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                  .onChange((v: string) => { this.txt = v; })
+          GlassCard() {
+            Column({ space: S.SM }) {
+              Text('选择场景标签')
+                .fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
+                .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
 
+              Column({ space: S.XS }) {
                 Row() {
-                  Image($r('app.media.ic_image'))
-                    .width(22).height(22)
-                    .opacity(0.5).fillColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                    .onClick(() => { this.selectImage(); })
+                  ForEach(DEFAULT_TAGS.slice(0, 3), (tag: string) => {
+                    this.tagChip(tag)
+                  }, (tag: string) => tag)
                 }
-                .width('100%').justifyContent(FlexAlign.End)
-              }
-              .width('100%')
-            }
-          }
-          .margin({ top: S.MD })
-
-          // 快捷标签 — 独立区域，浅底色区隔
-          Column() {
-            Text('🏷 选择场景标签')
-              .fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
-              .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-              .margin({ bottom: S.SM })
-
-            Row() {
-              ForEach(DEFAULT_TAGS, (tag: string) => {
-                Text(tag)
-                  .fontSize(F.BODY)
-                  .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-                  .borderRadius(R.SMALL)
-                  .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.TEXT_WHITE : Token.TEXT_MAIN)
-                  .backgroundColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : '#E8EBF0')
-                  .margin({ right: S.SM })
-                  .onClick(() => {
-                    const idx = this.selectedTags.indexOf(tag);
-                    if (idx >= 0) {
-                      this.selectedTags.splice(idx, 1);
-                    } else {
-                      this.selectedTags.push(tag);
-                    }
-                  })
-              }, (tag: string) => tag)
-            }
-          }
-          .width('100%')
-          .padding({ left: S.LG, right: S.LG, top: S.MD, bottom: S.MD })
-          .backgroundColor(this.darkMode ? Dark.BUBBLE_BG : '#EEF0F4')
-          .borderRadius(R.CARD)
-          .margin({ top: S.MD })
-
-          // 选中图片预览
-          if (this.selectedImage) {
-            Column() {
-              Stack() {
-                Image(this.selectedImage)
-                  .width('100%').height(200).objectFit(ImageFit.Cover)
-                  .borderRadius(R.SMALL)
-
                 Row() {
-                  Image($r('app.media.ic_delete')).width(20).height(20).fillColor(Color.White)
+                  ForEach(DEFAULT_TAGS.slice(3, 6), (tag: string) => {
+                    this.tagChip(tag)
+                  }, (tag: string) => tag)
+                  ForEach(this.hasCustomTags(), (tag: string) => {
+                    this.tagChip(tag)
+                  }, (tag: string) => tag)
                 }
-                .width(32).height(32)
-                .backgroundColor('rgba(0,0,0,0.45)')
-                .borderRadius(16)
-                .justifyContent(FlexAlign.Center)
-                .position({ top: 8, right: 8 })
-                .onClick(() => { this.removeImage(); })
               }
-              .width('100%')
-            }
-            .margin({ top: S.MD })
-          }
 
-          Row()
+              if (this.showCustomInput) {
+                Row({ space: S.XS }) {
+                  TextInput({ placeholder: '输入自定义标签', text: this.customTag })
+                    .height(36).layoutWeight(1)
+                    .fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    .placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    .backgroundColor(this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG)
+                    .borderRadius(R.TINY)
+                    .onChange((v: string) => { this.customTag = v; })
+                    .onSubmit(() => { this.addCustomTag(); })
+
+                  Button('确定')
+                    .height(36).fontSize(F.CAPTION)
+                    .backgroundColor(Token.PINK).borderRadius(R.TINY)
+                    .fontColor(Token.TEXT_WHITE)
+                    .onClick(() => { this.addCustomTag(); })
+                }
+                .width('100%')
+              } else {
+                Text('+ 自定义标签')
+                  .fontSize(F.CAPTION).fontColor(Token.PINK)
+                  .padding({ top: 2 })
+                  .onClick(() => { this.showCustomInput = true; })
+              }
+            }
             .width('100%')
-            .height(S.BOTTOM_BREATH)
+          }
+
+          GlassCard() {
+            TextArea({ placeholder: '今天有什么想记录的吗…', text: this.txt })
+              .width('100%').height(100).backgroundColor('transparent').borderRadius(0)
+              .fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+              .onChange((v: string) => { this.txt = v; })
+          }
+
+          Row().height(S.BOTTOM_BREATH)
         }
         .padding({ left: S.LG, right: S.LG })
       }
       .layoutWeight(1).scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
     }
-    .width('100%').height('100%').backgroundColor(this.darkMode ? Dark.BG : Token.BG)
+    .width('100%').height('100%')
+    .linearGradient({
+      direction: GradientDirection.Bottom,
+      colors: this.darkMode
+        ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
+        : [[Token.PINK_LIGHT, 0.0], [Token.TEXT_WHITE, 1.0]],
+    })
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 

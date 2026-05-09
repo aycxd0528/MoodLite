@@ -10,10 +10,13 @@
 import dataPreferences from '@ohos.data.preferences';
 import { MoodRecord } from '../model/MoodRecord';
 import WidgetSyncManager from '../common/utils/WidgetSyncManager';
+import { checkNewAchievements } from '../viewmodel/AchievementChecker';
+import { AchievementItem } from '../model/Achievement';
 
 const STORE_NAME = 'moodlite_db';
 const KEY_RECORDS = 'records';
 const KEY_FIRST_LAUNCH = 'first_launch';
+const KEY_ACHIEVEMENTS = 'unlocked_achievements';
 
 class DataManager {
   private static instance: DataManager;
@@ -22,6 +25,7 @@ class DataManager {
   private writeQueue: Promise<void> = Promise.resolve();
   private initPromise: Promise<void> | null = null;
   private ready: boolean = false;
+  private unlockedAchievements: Record<string, string> = {};
 
   static getInstance(): DataManager {
     if (!DataManager.instance) {
@@ -56,14 +60,33 @@ class DataManager {
   private async doInit(): Promise<void> {
     try {
       this.preferences = await dataPreferences.getPreferences(this.context!, STORE_NAME);
+      const raw = await this.preferences.get(KEY_ACHIEVEMENTS, '{}') as string;
+      this.unlockedAchievements = JSON.parse(raw) as Record<string, string>;
+      this.syncAchievementsToUI();
       this.ready = true;
-      console.info('[MoodLite] DataManager init complete — preferences ready');
+      console.info('[MoodLite] DataManager init complete');
     } catch (err) {
       this.ready = false;
       const msg = '[MoodLite] Preferences init failed: ' + JSON.stringify(err);
       console.error(msg);
       throw new Error(msg);
     }
+  }
+
+  getUnlockedAchievements(): Record<string, string> {
+    return this.unlockedAchievements;
+  }
+
+  syncAchievementsToUI(): void {
+    const list: Record<string, string>[] = [];
+    const keys = Object.keys(this.unlockedAchievements);
+    for (const k of keys) {
+      const item: Record<string, string> = {};
+      item['id'] = k;
+      item['date'] = this.unlockedAchievements[k];
+      list.push(item);
+    }
+    AppStorage.set('achievements', JSON.stringify(list));
   }
 
   /** 阻塞直到 DataManager 完全就绪（搭配超时使用） */
@@ -113,6 +136,17 @@ class DataManager {
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
       await this.syncWidgets();
+
+      // 成就结算
+      const newAchievements = checkNewAchievements(filtered, this.unlockedAchievements);
+      if (newAchievements.length > 0) {
+        for (const a of newAchievements) {
+          this.unlockedAchievements[a.id] = a.unlockedDate;
+        }
+        await this.preferences.put(KEY_ACHIEVEMENTS, JSON.stringify(this.unlockedAchievements));
+        await this.preferences.flush();
+        this.notifyAchievements(filtered);
+      }
       return true;
     });
   }
@@ -145,6 +179,19 @@ class DataManager {
   }
 
   // ========== 卡片数据同步（委托 WidgetSyncManager） ==========
+
+  /** 成就结算后通知 UI */
+  private notifyAchievements(records: MoodRecord[]): void {
+    const list: Record<string, string>[] = [];
+    const keys = Object.keys(this.unlockedAchievements);
+    for (const k of keys) {
+      const item: Record<string, string> = {};
+      item['id'] = k;
+      item['date'] = this.unlockedAchievements[k];
+      list.push(item);
+    }
+    AppStorage.set('achievements', JSON.stringify(list));
+  }
 
   /** saveRecord / deleteRecord 成功后触发卡片刷新 */
   private async syncWidgets(): Promise<void> {

@@ -64,7 +64,9 @@ struct MainPage {
     const map = new Map<string, MoodRecord[]>();
     for (const r of this.records) {
       const parts = r.dateStr.split('-');
-      const key = parts[0] + '年' + parts[1] + '月';
+      const y = parseInt(parts[0]);
+      const m = parseInt(parts[1]);
+      const key = y + '年' + m + '月';
       let arr = map.get(key);
       if (!arr) { arr = []; map.set(key, arr); }
       arr.push(r);
@@ -134,14 +136,24 @@ struct MainPage {
   }
 
   @Builder Btn(i: number, lbl: string, ni: string, ai: string) {
-    Column() {
-      Image($r('app.media.' + (this.tab === i ? ai : ni)))
-        .width(24).height(24).objectFit(ImageFit.Contain)
-        .fillColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY)
-      Text(lbl).fontSize(F.SMALL)
-        .fontColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY).margin({ top: 2 })
+    Stack({ alignContent: Alignment.Center }) {
+      Row()
+        .width(56).height(56)
+        .backgroundColor(this.tab === i ? (this.darkMode ? 'rgba(255,139,167,0.18)' : 'rgba(255,139,167,0.12)') : 'transparent')
+        .borderRadius(28)
+        .animation({ duration: 250, curve: Curve.EaseInOut })
+
+      Column() {
+        Image($r('app.media.' + (this.tab === i ? ai : ni)))
+          .width(24).height(24).objectFit(ImageFit.Contain)
+          .fillColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY)
+          .animation({ duration: 200, curve: Curve.EaseOut })
+        Text(lbl).fontSize(F.SMALL)
+          .fontColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY).margin({ top: 2 })
+          .animation({ duration: 200, curve: Curve.EaseOut })
+      }
+      .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
     }
-    .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
     .layoutWeight(1).onClick(() => { this.tab = i; })
   }
 

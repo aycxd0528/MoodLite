@@ -1,12 +1,34 @@
 /**
- * EntryDetail — 记录详情页（深色模式适配）
+ * EntryDetail — 记录详情页
  */
 
 import router from '@ohos.router';
+import DataManager from '../data/DataManager';
 import { Token, Dark, Shadow, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
 import { setEditPayload } from '../common/EditBridge';
+
+@CustomDialog
+struct DeleteConfirmDialog {
+  controller: CustomDialogController = new CustomDialogController({ builder: '' });
+  onConfirm: () => void = () => {};
+
+  build() {
+    Column() {
+      Text('删除记录').fontSize(18).fontWeight(FontWeight.Bold).margin({ bottom: 12 })
+      Text('确定要删除这条记录吗？').fontSize(14).fontColor('#999999').margin({ bottom: 24 })
+      Row({ space: 12 }) {
+        Button('取消').fontSize(14).backgroundColor('#F0F0F0').fontColor('#666666')
+          .layoutWeight(1).onClick(() => { this.controller.close(); })
+        Button('删除').fontSize(14).backgroundColor(Token.DELETE_RED).fontColor(Color.White)
+          .layoutWeight(1).onClick(async () => { await this.onConfirm(); this.controller.close(); })
+      }
+      .width('100%')
+    }
+    .padding(24)
+  }
+}
 
 @Entry
 @Component
@@ -17,8 +39,16 @@ struct EntryDetail {
   @State score: number = 0;
   @State text: string = '';
   @State tags: string[] = [];
+  deleteDialog!: CustomDialogController;
 
   aboutToAppear(): void {
+    this.deleteDialog = new CustomDialogController({
+      builder: DeleteConfirmDialog({
+        onConfirm: () => { this.doDelete(); }
+      }),
+      autoCancel: true,
+      alignment: DialogAlignment.Center,
+    });
     const p = router.getParams() as Record<string, string | number | string[]>;
     if (p) {
       this.recordId = (p['recordId'] as string) || '';
@@ -34,82 +64,99 @@ struct EntryDetail {
     router.replaceUrl({ url: 'pages/AddEntry', params: { fromTab: 1 } });
   }
 
+  onDelete(): void {
+    this.deleteDialog.open();
+  }
+
+  async doDelete(): Promise<void> {
+    await DataManager.deleteRecord(this.recordId);
+    router.replaceUrl({ url: 'pages/MainPage', params: { fromTab: 1 } });
+  }
+
+  formatDate(dateStr: string): string {
+    const parts = dateStr.split('-');
+    return parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
+  }
+
   build() {
     Column() {
+      // 头部
       Row() {
-        Button() {
-          Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
-            .fillColor(this.darkMode ? '#E8E8EC' : '#1F2937')
-            .colorFilter(
-              this.darkMode
-                ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
-            )
-        }
-        .width(40).height(40).backgroundColor('transparent')
-        .onClick(() => { router.back(); })
-
+        Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
+          .fillColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+          .onClick(() => { router.back(); })
         Blank()
-
         Text('详情').fontSize(F.BODY).fontWeight(FontWeight.Medium)
           .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
-
         Blank()
-
         Row({ space: 4 }) {
           Image($r('app.media.ic_edit')).width(14).height(14).fillColor(Token.TEXT_WHITE)
           Text('编辑').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
         }
         .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-        .backgroundColor(Token.PINK).borderRadius(16)
-        .shadow({ radius: 30, color: this.darkMode ? Dark.SHADOW_COLOR : Token.SHADOW_COLOR, offsetY: 10 })
+        .backgroundColor(Token.PINK).borderRadius(R.FULL)
+        .shadow(Shadow.CARD)
         .onClick(() => { this.onEdit(); })
       }
       .width('100%')
-      .padding({ top: 32, bottom: S.XS, left: S.MD, right: S.MD })
+      .padding({ top: S.HEADER_TOP, bottom: S.SM, left: S.LG, right: S.LG })
       .alignItems(VerticalAlign.Center)
 
       Scroll() {
-        Column() {
+        Column({ space: S.MD }) {
           GlassCard() {
             Column() {
-              Row() {
-                Image($r('app.media.ic_sparkles')).width(20).height(20).objectFit(ImageFit.Contain)
-                  .opacity(0.6)
-              }
-              .width('100%').justifyContent(FlexAlign.End)
-
               Image(getMoodIconResource(this.score))
-                .width(120).height(120).objectFit(ImageFit.Contain)
-                .margin({ top: 10, bottom: 20 })
+                .width(80).height(80).objectFit(ImageFit.Contain)
+                .margin({ bottom: 12 })
 
               Text(getMoodLabel(this.score))
-                .fontSize(24).fontWeight(FontWeight.Bold)
+                .fontSize(22).fontWeight(FontWeight.Bold)
                 .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
 
-              Text(this.dateStr)
+              Text(this.formatDate(this.dateStr))
                 .fontSize(14)
                 .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                .margin({ top: 8, bottom: 30 })
+                .margin({ top: 4, bottom: 20 })
 
-              Column() {
-                Text(this.text || '没有记录文字')
-                  .fontSize(18)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
-                  .lineHeight(30).textAlign(TextAlign.Center)
+              if (this.tags && this.tags.length > 0) {
+                Row() {
+                  ForEach(this.tags, (t: string) => {
+                    Text(t)
+                      .fontSize(F.CAPTION).padding({ left: 10, right: 10, top: 3, bottom: 3 })
+                      .borderRadius(R.FULL)
+                      .fontColor(Token.PINK)
+                      .backgroundColor(this.darkMode ? 'rgba(255,139,167,0.15)' : Token.PINK_LIGHT)
+                      .margin({ right: 6 })
+                  }, (t: string) => t)
+                }
+                .margin({ bottom: 16 })
               }
-              .width('100%').padding({ left: 10, right: 10 })
 
-              Row() {
-                Image($r('app.media.ic_sparkles')).width(16).height(16).objectFit(ImageFit.Contain)
-                  .opacity(0.4)
-              }
-              .width('100%').margin({ top: 40 })
+              Text(this.text || '没有记录文字')
+                .fontSize(F.BODY)
+                .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                .lineHeight(26).textAlign(TextAlign.Center)
+                .width('100%')
             }
-            .width('100%').alignItems(HorizontalAlign.Center).padding(24)
+            .width('100%').alignItems(HorizontalAlign.Center).padding(20)
           }
+
+          // 删除按钮
+          Button() {
+            Row({ space: 6 }) {
+              Image($r('app.media.ic_delete')).width(16).height(16).fillColor(Token.DELETE_RED)
+              Text('删除记录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .width('100%').height(44)
+          .backgroundColor(this.darkMode ? Dark.CARD : '#FFFFFF')
+          .borderRadius(12)
+          .shadow({ radius: 12, color: 'rgba(0,0,0,0.08)', offsetY: 4 })
+          .onClick(() => { this.onDelete(); })
         }
-        .padding({ left: S.LG, right: S.LG })
+        .padding({ left: S.LG, right: S.LG, top: S.XS })
       }
       .layoutWeight(1).scrollBar(BarState.Off)
     }
