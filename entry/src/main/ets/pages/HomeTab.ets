@@ -89,8 +89,6 @@ export struct HomeTab {
             .fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
           Image($r('app.media.ic_sparkles')).width(22).height(22).objectFit(ImageFit.Contain)
         }
-        Text('记录情绪，了解自己。')
-          .fontSize(14).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 6 })
       }
       .width('100%').alignItems(HorizontalAlign.Start)
       .padding({ top: S.HEADER_TOP, bottom: 24, left: 24, right: 24 })

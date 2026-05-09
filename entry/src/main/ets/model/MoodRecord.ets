@@ -54,12 +54,12 @@ export interface MonthlyStats {
   month: number;
   /** 总记录天数 */
   totalDays: number;
-  /** 愉悦天数 (score >= 1) */
-  happyDays: number;
-  /** 平静天数 (score = 0) */
-  neutralDays: number;
-  /** 低落天数 (score <= -1) */
-  sadDays: number;
+  /** 愉悦记录数 (score >= 1) */
+  happyRecords: number;
+  /** 平静记录数 (score = 0) */
+  neutralRecords: number;
+  /** 低落记录数 (score <= -1) */
+  sadRecords: number;
   /** 月度平均分 */
   averageScore: number;
   /** 情绪最高分 */
@@ -100,10 +100,12 @@ export function getMoodColor(score: number): string {
 }
 
 /**
- * UUID 生成器（毫秒时间戳 + 6 位随机字符）
+ * UUID 生成器（毫秒时间戳 + 随机字符 + 递增计数器，防碰撞）
  */
+let _uuidCounter = 0;
 export function generateUUID(): string {
-  return Date.now().toString() + '_' + Math.random().toString(36).slice(2, 10);
+  _uuidCounter++;
+  return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10) + '_' + _uuidCounter.toString(36);
 }
 
 /**

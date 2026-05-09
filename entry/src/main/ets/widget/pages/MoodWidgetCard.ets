@@ -16,7 +16,6 @@ struct MoodWidgetCard {
           .margin({ bottom: 8 })
 
         Text('MoodLite').fontSize(14).fontWeight(FontWeight.Bold).fontColor('#1A1A1A')
-        Text('点击记心情').fontSize(10).fontColor('#999999').margin({ top: 4 })
       }
       .width('100%').height('100%')
       .justifyContent(FlexAlign.Center)

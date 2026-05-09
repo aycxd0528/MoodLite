@@ -8,19 +8,13 @@ import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
 import common from '@ohos.app.ability.common';
 import type Want from '@ohos.app.ability.Want';
 
-PersistentStorage.persistProp('isReminderOn', false);
-PersistentStorage.persistProp('reminderHour', 20);
-PersistentStorage.persistProp('reminderMinute', 0);
-PersistentStorage.persistProp('mood_reminder_id', -1);
-PersistentStorage.persistProp('darkMode', false);
-
-interface SItem { icon: string; label: string; toggle: boolean; }
+interface SItem { icon: Resource; label: string; toggle: boolean; }
 
 const ITEMS: SItem[] = [
-  { icon: 'ic_bell',            label: '提醒设置',     toggle: true  },
-  { icon: 'ic_moon',            label: '深色模式',     toggle: true  },
-  { icon: 'ic_message',         label: '给我们反馈',   toggle: false },
-  { icon: 'ic_info',            label: '关于 MoodLite',toggle: false },
+  { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
+  { icon: $r('app.media.ic_moon'),            label: '深色模式',     toggle: true  },
+  { icon: $r('app.media.ic_message'),         label: '给我们反馈',   toggle: false },
+  { icon: $r('app.media.ic_info'),            label: '关于 MoodLite',toggle: false },
 ];
 
 @CustomDialog
@@ -120,12 +114,6 @@ export struct Profile {
       Column() {
         Text('设置').fontSize(F.TITLE).fontWeight(FontWeight.Bold)
           .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
-        Row({ space: 6 }) {
-          Text('个性化你的心情日记').fontSize(F.CAPTION)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-          Image($r('app.media.ic_smiling_hearts')).width(16).height(16).objectFit(ImageFit.Contain)
-        }
-        .alignItems(VerticalAlign.Center).margin({ top: S.XS })
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)
@@ -138,7 +126,7 @@ export struct Profile {
               ForEach(ITEMS, (it: SItem) => {
                 ListItem() {
                   Row() {
-                    Image($r('app.media.' + it.icon))
+                    Image(it.icon)
                       .width(24).height(24).objectFit(ImageFit.Contain)
                       .colorFilter(
                         this.darkMode

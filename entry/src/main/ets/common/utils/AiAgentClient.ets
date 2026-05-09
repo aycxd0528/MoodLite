@@ -7,10 +7,9 @@
  */
 
 import http from '@ohos.net.http';
+import BuildProfile from 'BuildProfile';
 import { formatDateStr } from '../../model/MoodRecord';
 
-const BASE_URL = 'https://api.dify.ai/v1/workflow/run';
-const API_KEY = 'app-S6zhHuzyIKdblmTqC4g7esFi';
 const USER_ID = 'aycxd';
 
 export interface AiSuggestion {
@@ -53,7 +52,7 @@ export async function analyzeMood(moodText: string): Promise<AiSuggestion | null
 
     const headerMap: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + API_KEY,
+      'Authorization': 'Bearer ' + BuildProfile.DIFY_API_KEY,
     };
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.POST,
@@ -63,7 +62,7 @@ export async function analyzeMood(moodText: string): Promise<AiSuggestion | null
       readTimeout: 30000,
     };
 
-    const response = await httpRequest.request(BASE_URL, options);
+    const response = await httpRequest.request(BuildProfile.DIFY_BASE_URL, options);
     httpRequest.destroy();
 
     if (response.responseCode === 200) {

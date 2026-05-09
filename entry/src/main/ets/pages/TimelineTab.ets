@@ -221,9 +221,17 @@ export struct TimelineTab {
 
       if (this.dayGroups.length === 0) {
         Column() {
+<<<<<<< Updated upstream
           Image($r('app.media.img_home_cloud')).width(120).height(120).objectFit(ImageFit.Contain).opacity(0.8)
           Text('还没有记录').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: S.MD })
           Text('点击底部 ⊕ 写下第一条心情吧').fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: S.XS })
+=======
+          Image($r('app.media.img_home_cloud'))
+            .width(120).height(120).objectFit(ImageFit.Contain)
+            .opacity(0.8)
+          Text('还没有记录').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            .margin({ top: S.MD })
+>>>>>>> Stashed changes
         }
         .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
       }
