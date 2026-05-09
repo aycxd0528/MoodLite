@@ -221,15 +221,15 @@ struct AddEntry {
                   .fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
                   .onChange((v: string) => { this.txt = v; })
 
-                Flex({ wrap: FlexWrap.Wrap }) {
+                Row() {
                   ForEach(DEFAULT_TAGS, (tag: string) => {
                     Text(tag)
-                      .fontSize(F.CAPTION)
-                      .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-                      .borderRadius(R.FULL)
+                      .fontSize(F.SMALL)
+                      .padding({ left: 12, right: 12, top: 5, bottom: 5 })
+                      .borderRadius(R.SMALL)
                       .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.TEXT_WHITE : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
                       .backgroundColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : (this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG))
-                      .margin({ right: S.XS, bottom: S.XS })
+                      .margin({ right: S.XS })
                       .onClick(() => {
                         const idx = this.selectedTags.indexOf(tag);
                         if (idx >= 0) {
@@ -240,13 +240,10 @@ struct AddEntry {
                       })
                   }, (tag: string) => tag)
                 }
-                .width('100%')
 
                 Row() {
-                  Image($r('app.media.ic_tag'))
-                    .width(22).height(22)
+                  Text('🏷').fontSize(16)
                     .opacity(this.selectedTags.length > 0 ? 1 : 0.35)
-                    .fillColor(this.selectedTags.length > 0 ? Token.PINK : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
                   Blank()
                   Image($r('app.media.ic_image'))
                     .width(22).height(22)
