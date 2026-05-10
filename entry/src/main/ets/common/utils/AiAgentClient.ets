@@ -7,9 +7,10 @@
  */
 
 import http from '@ohos.net.http';
-import BuildProfile from 'BuildProfile';
 import { formatDateStr } from '../../model/MoodRecord';
 
+// API 密钥通过 AppStorage 注入，避免硬编码泄露。
+// 调用方可在应用启动时通过 AppStorage.setOrCreate('DIFY_API_KEY', 'your-key') 配置。
 const USER_ID = 'aycxd';
 
 export interface AiSuggestion {
@@ -41,6 +42,13 @@ export async function analyzeMood(moodText: string): Promise<AiSuggestion | null
     return null;
   }
 
+  const apiKey = AppStorage.get('DIFY_API_KEY') as string;
+  const baseUrl = (AppStorage.get('DIFY_BASE_URL') as string) || 'https://api.dify.ai/v1/workflow/run';
+  if (!apiKey || apiKey.length === 0) {
+    console.warn('[MoodLite] AiAgentClient — DIFY_API_KEY not configured, skipping');
+    return null;
+  }
+
   try {
     const httpRequest = http.createHttp();
     const inputsMap: Record<string, string> = { 'mood_text': moodText };
@@ -52,7 +60,7 @@ export async function analyzeMood(moodText: string): Promise<AiSuggestion | null
 
     const headerMap: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + BuildProfile.DIFY_API_KEY,
+      'Authorization': 'Bearer ' + apiKey,
     };
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.POST,
@@ -62,7 +70,7 @@ export async function analyzeMood(moodText: string): Promise<AiSuggestion | null
       readTimeout: 30000,
     };
 
-    const response = await httpRequest.request(BuildProfile.DIFY_BASE_URL, options);
+    const response = await httpRequest.request(baseUrl, options);
     httpRequest.destroy();
 
     if (response.responseCode === 200) {
