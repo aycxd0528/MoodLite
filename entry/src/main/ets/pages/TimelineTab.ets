@@ -3,12 +3,11 @@
  * 月份导航 + 按日合并卡片 + 时间线竖线 + 精确设计规格
  */
 
-import router from '@ohos.router';
 import { Token, Dark, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
 import { MonthGroup } from '../viewmodel/LazyDataSource';
-import { heatmapColor } from '../viewmodel/StatsViewModel';
+import { heatmapColor, computeMoodCode as calcMoodCode } from '../viewmodel/StatsViewModel';
 
 interface DayGroup {
   dateStr: string;
@@ -84,21 +83,14 @@ export struct TimelineTab {
     return heatmapColor(mc, Math.abs(score) >= 1 ? 1.5 : 0.5, true, this.darkMode);
   }
 
-  // 和 generateCalendarGrid 完全一致的 moodCode 计算
+  // 委托至 StatsViewModel 共享实现
   computeMoodCode(records: MoodRecord[]): number {
     let pos = 0; let neg = 0;
     for (const r of records) {
       if (r.score >= 1) pos++;
       if (r.score <= -1) neg++;
     }
-    if (pos === 0 && neg === 0) return 2;
-    if (pos > 0 && neg > 0) {
-      if (pos > neg) return 3;
-      if (neg > pos) return 1;
-      return 4;
-    }
-    if (pos > 0) return 3;
-    return 1;
+    return calcMoodCode(pos, neg);
   }
 
   getMonthLabel(): string {
@@ -165,11 +157,11 @@ export struct TimelineTab {
                               .fontSize(18).fontWeight(600)
                               .fontColor(this.getEmotionColor(r.score))
                             Text('·')
-                              .fontSize(14).fontColor('#999999')
+                              .fontSize(14).fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
                               .margin({ left: 4, right: 4 })
                             Text(this.formatTime(r.timestamp))
                               .fontSize(14).fontWeight(400)
-                              .fontColor('#999999')
+                              .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
                           }
                           if (r.tags && r.tags.length > 0) {
                             Text(r.tags.join(' · '))
@@ -180,7 +172,7 @@ export struct TimelineTab {
                           if (r.text) {
                             Text(r.text)
                               .fontSize(F.BODY).fontWeight(400)
-                              .fontColor('#333333')
+                              .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
                               .margin({ top: 8 }).maxLines(3).lineHeight(22)
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                           }
@@ -190,13 +182,9 @@ export struct TimelineTab {
                       .width('100%').alignItems(VerticalAlign.Top)
                       .padding({ left: 16, right: 16 })
                       .onClick(() => {
-                        router.pushUrl({
+                        this.getUIContext().getRouter().pushUrl({
                           url: 'pages/EntryDetail',
-                          params: {
-                            recordId: r.id, recordDate: r.dateStr,
-                            recordScore: r.score, recordText: r.text,
-                            recordTags: r.tags || [],
-                          }
+                          params: { recordId: r.id }
                         });
                       })
                     }, (r: MoodRecord) => r.id)
@@ -204,7 +192,7 @@ export struct TimelineTab {
                   .margin({ top: 16 })
                 }
                 .width('100%')
-                .backgroundColor(this.darkMode ? Dark.CARD : '#FFFFFF')
+                .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
                 .borderRadius(12)
                 .shadow({ radius: 12, color: 'rgba(0,0,0,0.08)', offsetY: 4 })
                 .padding({ bottom: 16 })
@@ -221,17 +209,13 @@ export struct TimelineTab {
 
       if (this.dayGroups.length === 0) {
         Column() {
-<<<<<<< Updated upstream
-          Image($r('app.media.img_home_cloud')).width(120).height(120).objectFit(ImageFit.Contain).opacity(0.8)
-          Text('还没有记录').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: S.MD })
-          Text('点击底部 ⊕ 写下第一条心情吧').fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: S.XS })
-=======
           Image($r('app.media.img_home_cloud'))
             .width(120).height(120).objectFit(ImageFit.Contain)
             .opacity(0.8)
           Text('还没有记录').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
             .margin({ top: S.MD })
->>>>>>> Stashed changes
+          Text('点击底部 ⊕ 写下第一条心情吧').fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            .margin({ top: S.XS })
         }
         .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
       }

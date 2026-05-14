@@ -2,7 +2,6 @@
  * Welcome — v2.0 工业级玻璃拟态欢迎页
  */
 
-import router from '@ohos.router';
 import DataManager from '../data/DataManager';
 import { Token, Dark, R, S, F } from '../common/styles';
 
@@ -16,12 +15,12 @@ struct Welcome {
   @State btnOffY: number = 30;
 
   aboutToAppear(): void {
-    animateTo({ duration: 600, curve: Curve.EaseOut }, () => {
+    this.getUIContext()?.animateTo({ duration: 600, curve: Curve.EaseOut }, () => {
       this.cardOpacity = 1;
       this.cardOffY = 0;
     });
     setTimeout(() => {
-      animateTo({ duration: 500, curve: Curve.FastOutSlowIn }, () => {
+      this.getUIContext()?.animateTo({ duration: 500, curve: Curve.FastOutSlowIn }, () => {
         this.btnOpacity = 1;
         this.btnOffY = 0;
       });
@@ -45,7 +44,7 @@ struct Welcome {
         Column() {
           Text('欢迎使用')
             .fontSize(18)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : '#8C8C8C')
+            .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
             .letterSpacing(2)
             .margin({ bottom: S.XS })
           Text('MoodLite')
@@ -62,12 +61,12 @@ struct Welcome {
           Text('记录每日情绪')
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : '#1A1A1A')
+            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
             .margin({ top: S.XL, bottom: S.XS })
 
           Text('发现内心轨迹')
             .fontSize(14)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : '#8C8C8C')
+            .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
             .margin({ bottom: 36 })
 
           Column() {
@@ -81,7 +80,7 @@ struct Welcome {
               .shadow({ radius: 15, color: 'rgba(255,122,154,0.4)', offsetY: 8 })
               .onClick(() => {
                 DataManager.markLaunched();
-                router.replaceUrl({ url: 'pages/MainPage' });
+                this.getUIContext().getRouter().replaceUrl({ url: 'pages/MainPage' });
               })
           }
           .width('100%')

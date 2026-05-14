@@ -19,7 +19,7 @@
       "supportDimensions": [
         "2*2"
       ],
-      "formConfigAbility": "ability://EntryAbility"
+      "formConfigAbility": "ability://EntryFormAbility"
     },
     {
       "name": "widget1",
@@ -32,15 +32,16 @@
         "autoDesignWidth": true
       },
       "colorMode": "auto",
-      "isDynamic": false,
+      "isDynamic": true,
       "isDefault": false,
-      "updateEnabled": false,
+      "updateEnabled": true,
       "scheduledUpdateTime": "10:30",
       "updateDuration": 1,
       "defaultDimension": "2*4",
       "supportDimensions": [
         "2*4"
-      ]
+      ],
+      "formConfigAbility": "ability://EntryFormAbility"
     }
   ]
 }

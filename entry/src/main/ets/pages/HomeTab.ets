@@ -3,8 +3,6 @@
  * 展示今日心情摘要 / 欢迎引导 / AI 建议胶囊 / 成就徽章
  */
 
-import router from '@ohos.router';
-import promptAction from '@ohos.promptAction';
 import curves from '@ohos.curves';
 import DataManager from '../data/DataManager';
 import { Token, Dark, Shadow, R, S, F } from '../common/styles';
@@ -12,6 +10,8 @@ import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodEmoji, getMoodIconResource, getMoodLabel, formatDateStr } from '../model/MoodRecord';
 import { AiSuggestion } from '../common/utils/AiAgentClient';
 import { ACHIEVEMENTS, AchievementItem } from '../model/Achievement';
+import { computeAchievementProgress } from '../viewmodel/AchievementChecker';
+import { AchievementDialog } from '../common/components/AchievementDialog';
 
 interface AchievementUnlock {
   id: string;
@@ -30,17 +30,27 @@ export struct HomeTab {
   @State capsuleOpacity: number = 0;
   @State capsuleOffY: number = 20;
   @State achievementList: AchievementItem[] = [];
+  @State selectedAchievementId: string | null = null;
+  @State expandedAchievement: AchievementItem | null = null;
+  @State expandScale: number = 0.3;
+  @State expandOpacity: number = 0.0;
+  private achievementDialogController: CustomDialogController | null = null;
+  private isDialogShowing: boolean = false;
+  private dismissTimer: number | null = null;
+  private isAnimating: boolean = false;
 
   aboutToAppear(): void {
     this.updateMoodState();
     this.animateCapsule();
     this.achievementList = this.buildAchievementListNow();
+    this.checkPendingAchievements();
   }
 
   onRecordsChange(): void {
     this.updateMoodState();
     this.animateCapsule();
     this.achievementList = this.buildAchievementListNow();
+    this.checkPendingAchievements();
   }
 
   private updateMoodState(): void {
@@ -73,7 +83,7 @@ export struct HomeTab {
   private animateCapsule(): void {
     const intent = this.parseActiveIntent();
     if (intent) {
-      animateTo({ curve: curves.springMotion(0.4, 0.6) }, () => {
+      this.getUIContext()?.animateTo({ curve: curves.springMotion(0.4, 0.6) }, () => {
         this.capsuleOpacity = 1; this.capsuleOffY = 0;
       });
     } else {
@@ -81,17 +91,114 @@ export struct HomeTab {
     }
   }
 
-  build() {
-    Column() {
-      Column() {
-        Row({ space: 8 }) {
-          Text(this.isTodayRecorded() ? '今日心情' : '今天过得怎么样？')
-            .fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
-          Image($r('app.media.ic_sparkles')).width(22).height(22).objectFit(ImageFit.Contain)
+  // ========== 成就弹窗触发 ==========
+
+  private async checkPendingAchievements(): Promise<void> {
+    if (this.isDialogShowing) return;
+    const ids: string[] = await DataManager.getPendingAchievementIds();
+    if (ids.length === 0) return;
+
+    const achievement = ACHIEVEMENTS.find(a => a.id === ids[0]);
+    if (!achievement) return;
+
+    const displayItem: AchievementItem = {
+      id: achievement.id, title: achievement.title, desc: achievement.desc,
+      icon: achievement.icon, color: achievement.color, category: achievement.category,
+      unlocked: true,
+      unlockedDate: formatDateStr(new Date()),
+      progress: achievement.target,
+      target: achievement.target,
+      progressLabel: '已达成',
+    };
+
+    this.isDialogShowing = true;
+    this.achievementDialogController = new CustomDialogController({
+      builder: AchievementDialog({
+        achievement: displayItem,
+        onClaim: () => {
+          this.isDialogShowing = false;
+          // 异步标记已展示，等待关闭动画后检查下一个
+          DataManager.markPendingAsSeen(ids[0]).then(() => {
+            setTimeout(() => { this.checkPendingAchievements(); }, 500);
+          });
         }
-      }
-      .width('100%').alignItems(HorizontalAlign.Start)
-      .padding({ top: S.HEADER_TOP, bottom: 24, left: 24, right: 24 })
+      }),
+      autoCancel: false,
+      customStyle: true,
+      alignment: DialogAlignment.Center,
+    });
+    this.achievementDialogController.open();
+  }
+
+  // ========== 成就卡片展开（飞入中央） ==========
+
+  private triggerExpand(a: AchievementItem): void {
+    // 取消残留的 dismiss 定时器，防止竞态
+    if (this.dismissTimer !== null) {
+      clearTimeout(this.dismissTimer);
+      this.dismissTimer = null;
+    }
+
+    // 如果已有展开卡片，先同步重置至关闭态，间隔一帧再展开新卡片（防止覆盖旧动画时闪烁）
+    if (this.expandedAchievement !== null && this.expandedAchievement.id !== a.id) {
+      this.expandScale = 0.3;
+      this.expandOpacity = 0.0;
+      this.expandedAchievement = null;
+      this.selectedAchievementId = null;
+      // 下一帧再启动新卡片展开
+      setTimeout(() => { this.startExpand(a); }, 16);
+      return;
+    }
+
+    this.startExpand(a);
+  }
+
+  private startExpand(a: AchievementItem): void {
+    this.isAnimating = true;
+    this.selectedAchievementId = a.id;
+    this.expandedAchievement = a;
+    this.expandScale = 0.3;
+    this.expandOpacity = 0.0;
+
+    this.getUIContext()?.animateTo({ duration: 300, curve: Curve.EaseOut }, () => {
+      this.expandOpacity = 1.0;
+    });
+    this.getUIContext()?.animateTo({ duration: 450, curve: curves.springMotion(0.45, 0.88) }, () => {
+      this.expandScale = 1.0;
+    });
+  }
+
+  private dismissExpand(): void {
+    if (!this.isAnimating && this.expandedAchievement === null) return;
+    this.isAnimating = false;
+    // 取消残留定时器
+    if (this.dismissTimer !== null) {
+      clearTimeout(this.dismissTimer);
+    }
+    this.getUIContext()?.animateTo({ duration: 200, curve: Curve.EaseIn }, () => {
+      this.expandScale = 0.3;
+      this.expandOpacity = 0.0;
+    });
+    // 清理延迟设为动画时长的1.5倍（300ms），确保动画完成后再移除节点
+    this.dismissTimer = setTimeout(() => {
+      this.selectedAchievementId = null;
+      this.expandedAchievement = null;
+      this.dismissTimer = null;
+    }, 350);
+  }
+
+  build() {
+    Stack() {
+      Column() {
+        Column() {
+          Row({ space: 8 }) {
+            Text(this.isTodayRecorded() ? '今日心情' : '今天过得怎么样？')
+              .fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            Image($r('app.media.ic_sparkles')).width(22).height(22).objectFit(ImageFit.Contain)
+          }
+        }
+        .width('100%').alignItems(HorizontalAlign.Start)
+        .padding({ top: S.HEADER_TOP, bottom: 24, left: 24, right: 24 })
 
       Column({ space: S.MD }) {
         if (this.isTodayRecorded()) {
@@ -136,7 +243,7 @@ export struct HomeTab {
                 .width('100%').height(48).backgroundColor(Token.PINK).borderRadius(24)
                 .fontSize(16).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE).shadow(Shadow.CARD)
                 .margin({ top: 32 })
-                .onClick(() => { router.pushUrl({ url: 'pages/AddEntry', params: { fromTab: 0 } }); })
+                .onClick(() => { this.getUIContext().getRouter().pushUrl({ url: 'pages/AddEntry', params: { fromTab: 0 } }); })
             }
             .width('100%').padding({ top: 24, bottom: 24, left: 20, right: 20 })
           }
@@ -148,7 +255,7 @@ export struct HomeTab {
       Column() {
         Row() {
           Text('心情成就').fontSize(24).fontWeight(600)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : '#333333')
+            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
           Blank()
           Text(this.achievementList.filter(a => a.unlocked).length + '/7')
             .fontSize(14).fontColor(Token.PINK).fontWeight(FontWeight.Medium)
@@ -166,49 +273,125 @@ export struct HomeTab {
                 } else {
                   Column().height(16)
                 }
-                Image(a.icon).width(56).height(56).objectFit(ImageFit.Contain)
-                  .fillColor(a.unlocked ? a.color : '#D1D1D1')
+                Image(a.icon).width(76).height(76).objectFit(ImageFit.Contain)
+                  .fillColor(a.unlocked ? a.color : Token.BAR_NEUTRAL)
                 Text(a.title).fontSize(14).fontWeight(500)
                   .fontColor(a.unlocked
-                    ? (this.darkMode ? Dark.TEXT_MAIN : '#333333')
-                    : (this.darkMode ? Dark.TEXT_GRAY : '#999999'))
+                    ? (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
+                  .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
                   .margin({ top: 8 })
                 if (a.unlocked) {
                   Text('已解锁 · ' + a.unlockedDate).fontSize(10)
-                    .fontColor(this.darkMode ? Dark.TEXT_GRAY : '#999999').margin({ top: 6 })
+                    .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 6 })
                 } else {
                   Column() {
                     Row() {
                       Column().width(Math.max(4, 90 * a.progress / a.target))
                         .height(5).backgroundColor(a.color).borderRadius(3)
                     }.width(90).height(5)
-                    .backgroundColor(this.darkMode ? Dark.BAR_BG : '#EEEEEE').borderRadius(3)
+                    .backgroundColor(this.darkMode ? Dark.BAR_BG : Token.BAR_BG).borderRadius(3)
                     Text(a.progressLabel).fontSize(9)
-                      .fontColor(this.darkMode ? Dark.TEXT_GRAY : '#B0B0B0').margin({ top: 4 })
+                      .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 4 })
                   }.margin({ top: 6 })
                 }
               }
               .width(130).height(165).alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center)
               .backgroundColor(a.unlocked
-                ? (this.darkMode ? Dark.CARD : '#FFFFFF')
-                : (this.darkMode ? Dark.BUBBLE_BG : '#F8F5F2'))
+                ? (this.darkMode ? Dark.CARD : Token.CARD)
+                : (this.darkMode ? Dark.BUBBLE_BG : Token.BUBBLE_BG))
               .border({ width: a.unlocked ? 1.5 : 1,
-                color: a.unlocked ? a.color : (this.darkMode ? Dark.DIVIDER : '#EEEEEE') })
+                color: a.unlocked ? a.color : (this.darkMode ? Dark.DIVIDER : Token.DIVIDER) })
               .borderRadius(16)
               .shadow(a.unlocked ? { radius: 8, color: a.color + '33', offsetY: 2 } as ShadowOptions : ShadowStyle.OUTER_DEFAULT_XS)
               .padding({ top: 10, bottom: 14, left: 10, right: 10 })
-              .onClick(() => {
-                const msg = a.unlocked ? a.title + ' · ' + a.unlockedDate : a.title + '：' + a.desc + '（' + a.progressLabel + '）';
-                try { promptAction.showToast({ message: msg, duration: 2000 }); } catch (_e) {}
-              })
+              .onClick(() => { this.triggerExpand(a); })
             }, (a: AchievementItem) => a.id + '_' + a.progress + '_' + a.unlocked)
           }.height(175)
-        }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%')
+        }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').clip(false)
       }
       .width('100%').alignItems(HorizontalAlign.Start)
       .padding({ left: 24, right: 24 }).margin({ top: 32 })
-    }
+      }
     .width('100%').height('100%')
+
+      // ========== 全屏展开卡片遮罩 ==========
+      if (this.expandedAchievement !== null) {
+        Stack() {
+          // 半透明背景（跟随 expandOpacity 平滑渐变）
+          Column()
+            .width('100%').height('100%')
+            .backgroundColor('rgba(0,0,0,0.45)')
+            .opacity(this.expandOpacity)
+            .onClick(() => { this.dismissExpand(); })
+
+          // 中央展开卡片（直接展示详情，无翻转）
+          Stack() {
+            Column() {
+              // 顶部留空（为 ✕ 腾出空间）
+              Column().height(24)
+
+              // 中间内容（可滚动）
+              Scroll() {
+                Column({ space: 8 }) {
+                  Image(this.expandedAchievement.icon)
+                    .width(84).height(84).objectFit(ImageFit.Contain)
+                    .fillColor(this.expandedAchievement.color)
+                  Text(this.expandedAchievement.title)
+                    .fontSize(22).fontWeight(FontWeight.Bold)
+                    .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                  Text(this.expandedAchievement.desc)
+                    .fontSize(F.BODY)
+                    .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    .textAlign(TextAlign.Center)
+
+                  if (this.expandedAchievement.unlocked) {
+                    Text('解锁于 ' + this.expandedAchievement.unlockedDate)
+                      .fontSize(F.CAPTION).fontColor(Token.PINK).margin({ top: 8 })
+                  } else {
+                    Column() {
+                      Row() {
+                        Column().width(Math.max(4, 160 * this.expandedAchievement.progress / this.expandedAchievement.target))
+                          .height(6).backgroundColor(this.expandedAchievement.color).borderRadius(3)
+                      }.width(160).height(6)
+                      .backgroundColor(this.darkMode ? Dark.BAR_BG : Token.BAR_BG).borderRadius(3)
+                      Text(this.expandedAchievement.progressLabel).fontSize(F.CAPTION)
+                        .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 6 })
+                    }.margin({ top: 8 })
+                  }
+                }
+                .width('100%').alignItems(HorizontalAlign.Center)
+              }
+              .scrollBar(BarState.Off).scrollable(ScrollDirection.Vertical)
+              .layoutWeight(1).edgeEffect(EdgeEffect.Spring)
+
+              // 底部提示（固定在底部）
+              Text('点击空白关闭').fontSize(F.SMALL).fontColor(Token.PINK).opacity(0.5)
+                .margin({ bottom: 4 })
+            }
+            .width('100%').height('100%')
+            .alignItems(HorizontalAlign.Center)
+            .padding({ top: 4, bottom: 12, left: 20, right: 20 })
+
+            // ✕ 关闭按钮（始终在最上层，热区 44×44）
+            Text('✕').fontSize(18).fontWeight(FontWeight.Bold)
+              .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+              .padding(13)
+              .onClick(() => { this.dismissExpand(); })
+              .position({ top: 4, right: 10 })
+        }
+        .width(270).height(340)
+        .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
+        .borderRadius(R.CARD)
+        .padding(0)
+        .shadow({ radius: 30, color: 'rgba(0,0,0,0.15)', offsetY: 10 })
+        .scale({ x: this.expandScale, y: this.expandScale })
+        .opacity(this.expandOpacity)
+        .onClick(() => { /* 拦截点击穿透，防止误触遮罩导致关闭 */ })
+      }
+      .width('100%').height('100%')
+      }
+    }
   }
 
   buildAchievementListNow(): AchievementItem[] {
@@ -219,15 +402,15 @@ export struct HomeTab {
       const v: string = map[allIds[i]];
       if (v && v.length > 0) unlocked[allIds[i]] = v;
     }
-    const progress = this.getProgressMap();
+    const progress = computeAchievementProgress(this.records);
     const result: AchievementItem[] = [];
     const todayStr = formatDateStr(new Date());
 
     for (const a of ACHIEVEMENTS) {
-      const p: Record<string, number | string> = progress[a.id] || {};
-      const pv: number = (typeof p['value'] === 'number') ? p['value'] as number : 0;
-      const pt: number = (typeof p['target'] === 'number') ? p['target'] as number : 1;
-      const pl: string = (typeof p['label'] === 'string') ? p['label'] as string : '';
+      const p = progress[a.id];
+      const pv: number = p ? p.value : 0;
+      const pt: number = p ? p.target : 1;
+      const pl: string = p ? p.label : '';
 
       let isUnlocked: boolean = false;
       let uDate: string = '';
@@ -246,110 +429,6 @@ export struct HomeTab {
         progressLabel: isUnlocked ? '已达成' : pl,
       });
     }
-    return result;
-  }
-
-  getProgressMap(): Record<string, Record<string, number | string>> {
-    const result: Record<string, Record<string, number | string>> = {};
-    const r: MoodRecord[] = this.records;
-    const len: number = r ? r.length : 0;
-
-    const daySet: string[] = [];
-    for (const r0 of r) {
-      let found: boolean = false;
-      for (let k: number = 0; k < daySet.length; k++) { if (daySet[k] === r0.dateStr) { found = true; break; } }
-      if (!found) daySet.push(r0.dateStr);
-    }
-    for (let a: number = 0; a < daySet.length - 1; a++) {
-      for (let b: number = a + 1; b < daySet.length; b++) {
-        if (daySet[a] > daySet[b]) { const t: string = daySet[a]; daySet[a] = daySet[b]; daySet[b] = t; }
-      }
-    }
-    let maxStr: number = len > 0 ? 1 : 0;
-    let curS: number = len > 0 ? 1 : 0;
-    for (let i: number = 1; i < daySet.length; i++) {
-      const diff: number = new Date(daySet[i]).getTime() - new Date(daySet[i-1]).getTime();
-      if (diff <= 26 * 3600 * 1000) { curS++; if (curS > maxStr) maxStr = curS; }
-      else { curS = 1; }
-    }
-
-    const v1: Record<string, number | string> = {}; v1['value'] = len > 0 ? 1 : 0; v1['target'] = 1; v1['label'] = len > 0 ? '已记录 1/1 次' : '已记录 0/1 次';
-    result['first_record'] = v1;
-    const v2: Record<string, number | string> = {}; v2['value'] = maxStr; v2['target'] = 7; v2['label'] = '连续 ' + maxStr + '/7 天';
-    result['streak_7'] = v2;
-    const v3: Record<string, number | string> = {}; v3['value'] = len; v3['target'] = 30; v3['label'] = '累计 ' + len + '/30 篇';
-    result['total_30'] = v3;
-
-    const weekAgo: number = Date.now() - 7 * 24 * 3600 * 1000;
-    const scoreSet: number[] = [];
-    for (const r0 of r) {
-      if (r0.timestamp >= weekAgo) {
-        let found: boolean = false;
-        for (let k: number = 0; k < scoreSet.length; k++) { if (scoreSet[k] === r0.score) { found = true; break; } }
-        if (!found) scoreSet.push(r0.score);
-      }
-    }
-    const v4: Record<string, number | string> = {}; v4['value'] = scoreSet.length; v4['target'] = 4; v4['label'] = scoreSet.length + '/4 种心情';
-    result['palette'] = v4;
-
-    let hasDecoder: boolean = false;
-    for (const r0 of r) {
-      if (r0.tags && r0.tags.length >= 3 && r0.text.trim().length > 0) { hasDecoder = true; break; }
-    }
-    const v5: Record<string, number | string> = {}; v5['value'] = hasDecoder ? 1 : 0; v5['target'] = 1; v5['label'] = hasDecoder ? '已达成' : '未达成';
-    result['decoder'] = v5;
-
-    let hasRainbow: boolean = false;
-    const sorted: MoodRecord[] = [];
-    for (const r0 of r) sorted.push(r0);
-    for (let a: number = 0; a < sorted.length - 1; a++) {
-      for (let b: number = a + 1; b < sorted.length; b++) {
-        if (sorted[a].timestamp > sorted[b].timestamp) {
-          const t: MoodRecord = sorted[a]; sorted[a] = sorted[b]; sorted[b] = t;
-        }
-      }
-    }
-    for (let i: number = 0; i < sorted.length - 1; i++) {
-      if (sorted[i].score <= -1) {
-        const lowTs: number = sorted[i].timestamp;
-        for (let j: number = i + 1; j < sorted.length; j++) {
-          if (sorted[j].score >= 1 && sorted[j].timestamp - lowTs <= 48 * 3600 * 1000) { hasRainbow = true; break; }
-        }
-        if (hasRainbow) break;
-      }
-    }
-    const v6: Record<string, number | string> = {}; v6['value'] = hasRainbow ? 1 : 0; v6['target'] = 1; v6['label'] = hasRainbow ? '已达成' : '未达成';
-    result['rainbow'] = v6;
-
-    const badDays: string[] = [];
-    for (const r0 of r) {
-      if (r0.score < 0) {
-        let found: boolean = false;
-        for (let k: number = 0; k < badDays.length; k++) { if (badDays[k] === r0.dateStr) { found = true; break; } }
-        if (!found) badDays.push(r0.dateStr);
-      }
-    }
-    const allDays: string[] = [];
-    for (const r0 of r) {
-      let found: boolean = false;
-      for (let k: number = 0; k < allDays.length; k++) { if (allDays[k] === r0.dateStr) { found = true; break; } }
-      if (!found) allDays.push(r0.dateStr);
-    }
-    for (let a: number = 0; a < allDays.length - 1; a++) {
-      for (let b: number = a + 1; b < allDays.length; b++) {
-        if (allDays[a] > allDays[b]) { const t: string = allDays[a]; allDays[a] = allDays[b]; allDays[b] = t; }
-      }
-    }
-    let calmMax: number = 0; let calmCur: number = 0;
-    for (const d of allDays) {
-      let isBad: boolean = false;
-      for (let k: number = 0; k < badDays.length; k++) { if (badDays[k] === d) { isBad = true; break; } }
-      if (!isBad) { calmCur++; if (calmCur > calmMax) calmMax = calmCur; }
-      else { calmCur = 0; }
-    }
-    const v7: Record<string, number | string> = {}; v7['value'] = calmMax; v7['target'] = 5; v7['label'] = '连续 ' + calmMax + '/5 天';
-    result['calm_5'] = v7;
-
     return result;
   }
 }

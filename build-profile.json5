@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "C:/Users/王钊杰/.ohos/config/default_MoodLite_final_-hoCRxwZjPKY7Clul3wTTFFb1V_3N7KtwWkm9EJ-r14=.cer",
+          "certpath": "/Users/aycxd/.ohos/config/default_MoodLite_2nQ_4HR1Urj2REcMxoqvgo2o48RTODSD-XHfvSPcM-k=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B95E3C7981D3E8E5B1A54A708774C1D76076B6FB877EECD07CAB29B9AFD8FCC7EC9DCDFAD0ECB08",
-          "profile": "C:/Users/王钊杰/.ohos/config/default_MoodLite_final_-hoCRxwZjPKY7Clul3wTTFFb1V_3N7KtwWkm9EJ-r14=.p7b",
+          "keyPassword": "0000001B4CF1AC86B498397694846AC2225268FF6CB4FF82428828D47B06DE199FA8E50178D7E9DB589D45",
+          "profile": "/Users/aycxd/.ohos/config/default_MoodLite_2nQ_4HR1Urj2REcMxoqvgo2o48RTODSD-XHfvSPcM-k=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "C:/Users/王钊杰/.ohos/config/default_MoodLite_final_-hoCRxwZjPKY7Clul3wTTFFb1V_3N7KtwWkm9EJ-r14=.p12",
-          "storePassword": "0000001B7678B4C896EA8018E1F077A76796A75906B1C79DBE5F2CCF8101B83DBF30F664700C3DD2F2A274"
+          "storeFile": "/Users/aycxd/.ohos/config/default_MoodLite_2nQ_4HR1Urj2REcMxoqvgo2o48RTODSD-XHfvSPcM-k=.p12",
+          "storePassword": "0000001B120CB4A0BFE67703D68C069C760B99FDE4AF2A9534BCC4D47CCE7B3FDAB02D9133874BB0FE048C"
         }
       }
     ],

@@ -13,7 +13,7 @@ import formBindingData from '@ohos.app.form.formBindingData';
 import { MoodRecord, getMoodEmoji, getMoodLabel, formatDateStr } from '../../model/MoodRecord';
 import { calcStreak } from '../../viewmodel/StatsViewModel';
 
-const STORE_NAME = 'moodlite_db';
+const STORE_NAME = 'moodlite_widget';
 const KEY_FORM_IDS = 'form_ids';
 
 interface WidgetPayload {

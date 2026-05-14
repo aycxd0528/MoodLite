@@ -19,13 +19,18 @@ export default class EntryAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    const mainWindow = windowStage.getMainWindowSync();
-    mainWindow.setWindowLayoutFullScreen(true);
-    mainWindow.setWindowSystemBarProperties({
-      statusBarColor: '#00000000',
-      navigationBarColor: '#00000000',
-      isStatusBarLightIcon: false,
-    });
+    try {
+      const mainWindow = windowStage.getMainWindowSync();
+      mainWindow.setWindowLayoutFullScreen(true);
+      mainWindow.setWindowBackgroundColor('#F7F8FA');
+      mainWindow.setWindowSystemBarProperties({
+        statusBarColor: '#00000000',
+        navigationBarColor: '#00000000',
+        isStatusBarLightIcon: false,
+      });
+    } catch (err) {
+      console.error('[MoodLite] Window setup failed: ' + JSON.stringify(err));
+    }
 
     let targetPage = 'pages/Index';
     const params = this.launchWant.parameters as Record<string, Object>;
@@ -63,11 +68,17 @@ export default class EntryAbility extends UIAbility {
   }
 
   private handleWidgetRoute(want: Want): void {
-    const params = want.parameters as Record<string, Object>;
-    if (!params || !params['targetPage']) return;
-    this.applyWidgetParams(params);
-    const target = params['targetPage'] as string;
-    console.info('[MoodLite] onNewWant route to: ' + target);
-    router.replaceUrl({ url: target });
+    try {
+      const params = want.parameters as Record<string, Object>;
+      if (!params || !params['targetPage']) {
+        return;
+      }
+      this.applyWidgetParams(params);
+      const target = params['targetPage'] as string;
+      console.info('[MoodLite] onNewWant route to: ' + target);
+      router.replaceUrl({ url: target });
+    } catch (err) {
+      console.error('[MoodLite] handleWidgetRoute failed: ' + JSON.stringify(err));
+    }
   }
 }

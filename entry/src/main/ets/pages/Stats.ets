@@ -2,8 +2,6 @@
  * StatsContent — 情绪统计看板 (内嵌组件，使用 StatsViewModel 聚合层)
  */
 
-import promptAction from '@ohos.promptAction';
-import DataManager from '../data/DataManager';
 import { MoodRecord, CalendarDayItem, getMoodLabel } from '../model/MoodRecord';
 import { Token, Dark, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
@@ -21,6 +19,7 @@ const MONTH_NAMES: string[] = ['1月','2月','3月','4月','5月','6月','7月',
 @Component
 export struct StatsContent {
   @StorageLink('darkMode') darkMode: boolean = false;
+  @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
   @State year: number = new Date().getFullYear();
   @State month: number = new Date().getMonth() + 1;
   @State calendarCells: CalendarDayItem[] = [];
@@ -30,31 +29,33 @@ export struct StatsContent {
   @State recordDays: number = 0;
   @State tagDistributions: TagDistribution[] = [];
   private monthCache: Map<string, MoodRecord[]> = new Map();
-  private allRecords: MoodRecord[] = [];
+  private lastRecordKey: string = '';
 
-  aboutToAppear(): void { this.refresh(); }
+  aboutToAppear(): void { this.rebuildCache(); this.refresh(); }
 
-  async refresh(): Promise<void> {
-    const records: MoodRecord[] = await DataManager.getAllRecords();
+  onRecordsChange(): void { this.rebuildCache(); this.refresh(); }
 
-    if (records !== this.allRecords) {
-      this.allRecords = records;
-      this.monthCache.clear();
-      for (const r of records) {
-        const mk = r.dateStr.substring(0, 7);
-        let arr = this.monthCache.get(mk);
-        if (!arr) { arr = []; this.monthCache.set(mk, arr); }
-        arr.push(r);
-      }
+  rebuildCache(): void {
+    const newKey = this.records.length + '_' + (this.records.length > 0 ? this.records[0].id : 'empty');
+    if (newKey === this.lastRecordKey) return;
+    this.lastRecordKey = newKey;
+    this.monthCache.clear();
+    for (const r of this.records) {
+      const mk = r.dateStr.substring(0, 7);
+      let arr = this.monthCache.get(mk);
+      if (!arr) { arr = []; this.monthCache.set(mk, arr); }
+      arr.push(r);
     }
+  }
 
+  refresh(): void {
     const key = this.year + '-' + String(this.month).padStart(2, '0');
     const monthRecords = this.monthCache.get(key) || [];
 
-    this.calendarCells = generateCalendarGrid(this.year, this.month, records);
-    this.tagDistributions = calcTagDistribution(records);
+    this.calendarCells = generateCalendarGrid(this.year, this.month, monthRecords);
+    this.tagDistributions = calcTagDistribution(this.records);
 
-    const monthlyStats = calcMonthlyStats(this.year, this.month, records);
+    const monthlyStats = calcMonthlyStats(this.year, this.month, monthRecords);
     const totalRecords = monthlyStats.happyRecords + monthlyStats.neutralRecords + monthlyStats.sadRecords;
     if (totalRecords > 0) {
       this.happyPercent = Math.round((monthlyStats.happyRecords / totalRecords) * 100);
@@ -128,7 +129,7 @@ export struct StatsContent {
                       const scoreInt = Math.round(cell.avgScore);
                       const moodLabel = getMoodLabel(scoreInt);
                       const msg = cell.dateStr + '  ' + moodLabel + ' (' + cell.avgScore.toFixed(1) + ')';
-                      try { promptAction.showToast({ message: msg, duration: 2000 }); } catch (_e) { /* ignore */ }
+                      try { this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2000 }); } catch (_e) { console.debug('[MoodLite] toast failed: ' + JSON.stringify(_e)); }
                     })
                 }
               }, (cell: CalendarDayItem) => cell.dateStr + (cell.isCurrentMonth ? '_c' : '_p'))
@@ -214,7 +215,7 @@ export struct StatsContent {
                   .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
                 Text('愉悦').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
-                  Column().width(40).height(4).backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0').borderRadius(2)
+                  Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
                   Column().width(40 * this.happyPercent / 100).height(4).backgroundColor(Token.PINK).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
@@ -228,7 +229,7 @@ export struct StatsContent {
                   .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
                 Text('低落').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
-                  Column().width(40).height(4).backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0').borderRadius(2)
+                  Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
                   Column().width(40 * this.sadPercent / 100).height(4).backgroundColor(Token.BLUE_DEEP).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
@@ -242,7 +243,7 @@ export struct StatsContent {
                   .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
                 Text('平静').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
-                  Column().width(40).height(4).backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0').borderRadius(2)
+                  Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
                   Column().width(40 * this.neutralPercent / 100).height(4).backgroundColor(this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
@@ -289,7 +290,7 @@ export struct StatsContent {
                         .borderRadius(4)
                     }
                     .width(140).height(8)
-                    .backgroundColor(this.darkMode ? '#3D3D5A' : '#F0F0F0')
+                    .backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK)
                     .borderRadius(4)
                   }
                   .margin({ left: S.SM }).layoutWeight(1)

@@ -96,12 +96,38 @@ function parseYearMonth(dateStr: string): number[] {
   return [parseInt(parts[0]), parseInt(parts[1])];
 }
 
+// ========== 共享辅助函数 ==========
+
+/** 根据正/负记录数计算情绪代码 (1=低落 2=平静 3=愉悦 4=混合) */
+export function computeMoodCode(posCount: number, negCount: number): number {
+  if (posCount > 0 && negCount > 0) {
+    if (posCount > negCount) return 3;       // 开心多 → 粉色
+    if (negCount > posCount) return 1;       // 不开心多 → 蓝色
+    return 4;                                  // 一样多 → 紫色
+  }
+  if (posCount > 0) return 3;
+  if (negCount > 0) return 1;
+  return 2;  // 平静
+}
+
+/** 日内记录聚合（generateCalendarGrid 内部使用） */
+interface DayAgg {
+  sum: number;
+  count: number;
+  pos: number;
+  neg: number;
+}
+
+function makeDayAgg(): DayAgg {
+  return { sum: 0, count: 0, pos: 0, neg: 0 };
+}
+
 // ========== 热力图生成 ==========
 
 export function generateCalendarGrid(
   year: number,
   month: number,
-  records: MoodRecord[]
+  monthRecords: MoodRecord[]
 ): CalendarDayItem[] {
   const firstDay = new Date(year, month - 1, 1);
   const lastDay = new Date(year, month, 0);
@@ -124,37 +150,32 @@ export function generateCalendarGrid(
     });
   }
 
+  // Build day-indexed map for O(1) lookup
+  const dayMap = new Map<string, DayAgg>();
+  for (const r of monthRecords) {
+    let entry = dayMap.get(r.dateStr);
+    if (!entry) {
+      entry = makeDayAgg();
+      dayMap.set(r.dateStr, entry);
+    }
+    entry.sum += r.score;
+    entry.count++;
+    if (r.score >= 1) entry.pos++;
+    if (r.score <= -1) entry.neg++;
+  }
+
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d);
     const dateStr = formatDateStr(date);
-    let daySum = 0;
-    let dayCount = 0;
-    let posCount = 0;
-    let negCount = 0;
-    for (const r of records) {
-      if (r.dateStr === dateStr) {
-        daySum += r.score;
-        dayCount++;
-        if (r.score >= 1) posCount++;
-        if (r.score <= -1) negCount++;
-      }
-    }
-    const avg = dayCount > 0 ? daySum / dayCount : 0;
+    const entry = dayMap.get(dateStr);
+    const dayCount = entry ? entry.count : 0;
+    const avg = dayCount > 0 ? entry!.sum / dayCount : 0;
+    const posCount = entry ? entry.pos : 0;
+    const negCount = entry ? entry.neg : 0;
 
     let code = 0;
     if (dayCount > 0) {
-      if (posCount > 0 && negCount > 0) {
-        // 正负都有：比数量，谁多就谁主导
-        if (posCount > negCount) code = 3;       // 开心多 → 粉色
-        else if (negCount > posCount) code = 1;  // 不开心多 → 蓝色
-        else code = 4;                            // 一样多 → 紫色
-      } else if (posCount > 0) {
-        code = 3;
-      } else if (negCount > 0) {
-        code = 1;
-      } else {
-        code = 2;
-      }
+      code = computeMoodCode(posCount, negCount);
     }
 
     grid.push({
@@ -188,16 +209,11 @@ export function generateCalendarGrid(
 export function calcMonthlyStats(
   year: number,
   month: number,
-  records: MoodRecord[]
+  monthRecords: MoodRecord[]
 ): MonthlyStats {
-  const monthRecords: MoodRecord[] = [];
   const daySet = new Set<string>();
-  for (const r of records) {
-    const ym = parseYearMonth(r.dateStr);
-    if (ym[0] === year && ym[1] === month) {
-      monthRecords.push(r);
-      daySet.add(r.dateStr);
-    }
+  for (const r of monthRecords) {
+    daySet.add(r.dateStr);
   }
 
   // 按「条」计数，不是按「天」

@@ -155,7 +155,7 @@ export struct Profile {
                             .fontSize(F.BODY).fontWeight(FontWeight.Medium)
                             .fontColor(Token.PINK).margin({ right: S.SM })
                             .padding({ left: S.SM, right: S.SM, top: 4, bottom: 4 })
-                            .backgroundColor('#1AFF8BA7').borderRadius(12)
+                            .backgroundColor('rgba(255,139,167,0.10)').borderRadius(12)
                             .onClick(() => { this.showTimeDialog(); })
                         }
 
@@ -190,7 +190,7 @@ export struct Profile {
                         entities: ['entity.system.browsable'],
                         uri: 'https://qcnvafay57br.feishu.cn/share/base/form/shrcnYp5ebjhkpaHKc6FA0Lw1me'
                       };
-                      const ctx = getContext(this) as common.UIAbilityContext;
+                      const ctx = this.appContext() as common.UIAbilityContext;
                       ctx.startAbility(want);
                     } else if (it.label === '关于 MoodLite') {
                       const want: Want = {
@@ -198,7 +198,7 @@ export struct Profile {
                         entities: ['entity.system.browsable'],
                         uri: 'https://qcnvafay57br.feishu.cn/wiki/JVzvwaxhmiRMv4kyv8Rcyjz9nBe'
                       };
-                      const ctx = getContext(this) as common.UIAbilityContext;
+                      const ctx = this.appContext() as common.UIAbilityContext;
                       ctx.startAbility(want);
                     }
                   })

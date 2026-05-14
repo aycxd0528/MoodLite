@@ -13,6 +13,7 @@ export interface ColorTokens {
   SHADOW_COLOR: string; GRADIENT_START: string; GRADIENT_END: string;
   DIVIDER: string; BAR_BG: string; DELETE_RED: string;
   INFO_TIP: string; BUBBLE_BG: string; BAR_NEUTRAL: string; HEAT_NEUTRAL: string;
+  TEXT_HINT: string; BAR_TRACK: string; TEXT_SECONDARY: string;
 }
 
 export interface ShadowDef { radius: number; color: string; offsetY: number; }
@@ -51,6 +52,9 @@ export const Token: ColorTokens = {
   BUBBLE_BG:        '#F5F7FA',
   BAR_NEUTRAL:      '#D4D4D8',
   HEAT_NEUTRAL:     '#EDE4F0',
+  TEXT_HINT:        '#999999',
+  BAR_TRACK:        '#F0F0F0',
+  TEXT_SECONDARY:   '#666666',
 };
 
 // ========== 阴影（极度克制） ==========
@@ -104,6 +108,9 @@ export const Dark: ColorTokens = {
   BUBBLE_BG:        '#2A2A40',
   BAR_NEUTRAL:      '#5A5A6E',
   HEAT_NEUTRAL:     '#3D3D5A',
+  TEXT_HINT:        '#7A7A8C',
+  BAR_TRACK:        '#3D3D5A',
+  TEXT_SECONDARY:   '#999999',
 };
 
 /** 获取当前主题色（根据 AppStorage darkMode 切换） */

@@ -17,6 +17,7 @@ const STORE_NAME = 'moodlite_db';
 const KEY_RECORDS = 'records';
 const KEY_FIRST_LAUNCH = 'first_launch';
 const KEY_ACHIEVEMENTS = 'unlocked_achievements';
+const KEY_PENDING = 'pending_achievements';
 
 class DataManager {
   private static instance: DataManager;
@@ -26,6 +27,7 @@ class DataManager {
   private initPromise: Promise<void> | null = null;
   private ready: boolean = false;
   private unlockedAchievements: Record<string, string> = {};
+  private cache: MoodRecord[] = [];
 
   static getInstance(): DataManager {
     if (!DataManager.instance) {
@@ -62,9 +64,14 @@ class DataManager {
       this.preferences = await dataPreferences.getPreferences(this.context!, STORE_NAME);
       const raw = await this.preferences.get(KEY_ACHIEVEMENTS, '{}') as string;
       this.unlockedAchievements = JSON.parse(raw) as Record<string, string>;
+
+      // 预热内存缓存
+      const recordsRaw = await this.preferences.get(KEY_RECORDS, '[]') as string;
+      this.cache = JSON.parse(recordsRaw) as MoodRecord[];
+
       this.syncAchievementsToUI();
       this.ready = true;
-      console.info('[MoodLite] DataManager init complete');
+      console.info('[MoodLite] DataManager init complete — ' + this.cache.length + ' records cached');
     } catch (err) {
       this.ready = false;
       const msg = '[MoodLite] Preferences init failed: ' + JSON.stringify(err);
@@ -108,21 +115,30 @@ class DataManager {
 
   // ========== 记录 CRUD ==========
 
-  /** 读取全部记录（按时间戳倒序） */
+  /** 读取全部记录（按时间戳倒序，直接从内存缓存返回） */
   async getAllRecords(): Promise<MoodRecord[]> {
     if (!this.preferences) {
       console.warn('[MoodLite] getAllRecords — DataManager not initialized, returning []');
       return [];
     }
-    try {
-      const raw = await this.preferences.get(KEY_RECORDS, '[]') as string;
-      const parsed: MoodRecord[] = JSON.parse(raw);
-      console.info('[MoodLite] getAllRecords — loaded ' + parsed.length + ' records');
-      return parsed;
-    } catch (err) {
-      console.error('[MoodLite] getAllRecords failed, returning []: ' + JSON.stringify(err));
-      return [];
-    }
+    return [...this.cache];
+  }
+
+  /** 按 ID 获取单条记录 */
+  async getRecordById(id: string): Promise<MoodRecord | null> {
+    const found = this.cache.find(r => r.id === id);
+    return found || null;
+  }
+
+  /** 获取指定日期范围内的记录（含两端，dateStr YYYY-MM-DD 格式） */
+  async getRecordsInRange(startDate: string, endDate: string): Promise<MoodRecord[]> {
+    return this.cache.filter(r => r.dateStr >= startDate && r.dateStr <= endDate);
+  }
+
+  /** 获取指定月份的记录 */
+  async getRecordsByMonth(year: number, month: number): Promise<MoodRecord[]> {
+    const prefix: string = year + '-' + String(month).padStart(2, '0');
+    return this.cache.filter(r => r.dateStr.startsWith(prefix));
   }
 
   /** 保存/更新记录：同 ID 则删除旧记录后插入头部（串行化防竞态） */
@@ -133,20 +149,39 @@ class DataManager {
       const records: MoodRecord[] = JSON.parse(raw);
       const filtered = records.filter(r => r.id !== record.id);
       filtered.unshift(record);
-      await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
-      await this.preferences.flush();
-      if (this.context) {
-        await WidgetSyncManager.updateWidgets(this.context, filtered);
-      }
 
-      // 成就结算
+      // 成就结算（纯内存操作，先于落盘完成，保证记录+成就+待展示队列一起 flush）
       const newAchievements = checkNewAchievements(filtered, this.unlockedAchievements);
       if (newAchievements.length > 0) {
         for (const a of newAchievements) {
           this.unlockedAchievements[a.id] = a.unlockedDate;
         }
         await this.preferences.put(KEY_ACHIEVEMENTS, JSON.stringify(this.unlockedAchievements));
-        await this.preferences.flush();
+
+        const pendingRaw = await this.preferences.get(KEY_PENDING, '[]') as string;
+        const pendingIds: string[] = JSON.parse(pendingRaw);
+        for (const a of newAchievements) {
+          if (!pendingIds.includes(a.id)) {
+            pendingIds.push(a.id);
+          }
+        }
+        await this.preferences.put(KEY_PENDING, JSON.stringify(pendingIds));
+      }
+
+      // 唯一一次落盘：记录 + 成就 + 待展示队列原子写入
+      await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
+      await this.preferences.flush();
+
+      // 落盘成功，更新内存缓存
+      this.cache = filtered;
+
+      // 数据已安全落盘，异步通知（非阻塞）
+      if (this.context) {
+        WidgetSyncManager.updateWidgets(this.context, filtered).catch((e: Error) => {
+          console.error('[MoodLite] WidgetSync failed (non-blocking): ' + JSON.stringify(e));
+        });
+      }
+      if (newAchievements.length > 0) {
         this.notifyAchievements(filtered);
       }
       return true;
@@ -162,8 +197,14 @@ class DataManager {
       const filtered = records.filter(r => r.id !== id);
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
+
+      // 落盘成功，更新内存缓存
+      this.cache = filtered;
+
       if (this.context) {
-        await WidgetSyncManager.updateWidgets(this.context, filtered);
+        WidgetSyncManager.updateWidgets(this.context, filtered).catch((e: Error) => {
+          console.error('[MoodLite] WidgetSync failed (non-blocking): ' + JSON.stringify(e));
+        });
       }
       return true;
     });
@@ -181,6 +222,39 @@ class DataManager {
         }
       });
     });
+  }
+
+  // ========== 待展示成就队列 ==========
+
+  /** 获取尚未向用户展示的成就 ID 列表 */
+  async getPendingAchievementIds(): Promise<string[]> {
+    if (!this.preferences) return [];
+    try {
+      const raw = await this.preferences.get(KEY_PENDING, '[]') as string;
+      return JSON.parse(raw) as string[];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  /** 是否有待展示成就 */
+  async hasPendingAchievements(): Promise<boolean> {
+    const ids: string[] = await this.getPendingAchievementIds();
+    return ids.length > 0;
+  }
+
+  /** 标记成就已向用户展示（从队列移除） */
+  async markPendingAsSeen(id: string): Promise<void> {
+    if (!this.preferences) return;
+    try {
+      const raw = await this.preferences.get(KEY_PENDING, '[]') as string;
+      const ids: string[] = JSON.parse(raw);
+      const filtered = ids.filter(i => i !== id);
+      await this.preferences.put(KEY_PENDING, JSON.stringify(filtered));
+      await this.preferences.flush();
+    } catch (err) {
+      console.error('[MoodLite] markPendingAsSeen failed: ' + JSON.stringify(err));
+    }
   }
 
   // ========== 成就通知 ==========
@@ -227,6 +301,9 @@ class DataManager {
     try {
       await this.preferences.clear();
       await this.preferences.flush();
+      this.cache = [];
+      this.unlockedAchievements = {};
+      this.syncAchievementsToUI();
     } catch (err) {
       console.error('[MoodLite] clearAll failed: ' + JSON.stringify(err));
     }

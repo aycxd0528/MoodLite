@@ -6,7 +6,6 @@
  * EMPTY    → 兜底态，展示欢迎入口防止永久白屏
  */
 
-import router from '@ohos.router';
 import DataManager from '../data/DataManager';
 import { Token, Dark, S, F } from '../common/styles';
 
@@ -61,7 +60,7 @@ struct Index {
           this.status = 'SUCCESS';
           console.info('[MoodLite] Index — firstLaunch=' + String(first) + ', navigating...');
           const target = first ? 'pages/Welcome' : 'pages/MainPage';
-          router.replaceUrl({ url: target });
+          this.getUIContext().getRouter().replaceUrl({ url: target });
         })
         .catch((err: Object) => {
           clearTimeout(this.timeoutId);
@@ -139,7 +138,7 @@ struct Index {
             .shadow({ radius: 12, color: 'rgba(255,139,167,0.35)', offsetY: 6 })
             .onClick(() => {
               console.info('[MoodLite] Index EMPTY — manual navigation to MainPage');
-              router.replaceUrl({ url: 'pages/MainPage' });
+              this.getUIContext().getRouter().replaceUrl({ url: 'pages/MainPage' });
             })
         }
       }

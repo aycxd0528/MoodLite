@@ -5,7 +5,6 @@
  * 中心 ⊕(索引2) 凸起圆球 + offset({y:-15}) → router.pushUrl(AddEntry)
  */
 
-import router from '@ohos.router';
 import window from '@ohos.window';
 import DataManager from '../data/DataManager';
 import { Token, Dark, Shadow, R, S, F, L } from '../common/styles';
@@ -31,9 +30,16 @@ struct MainPage {
   @State records: MoodRecord[] = [];
   @State groupedRecords: MonthGroup[] = [];
 
+  pageTransition() {
+    PageTransitionEnter({ duration: 200, curve: Curve.EaseOut })
+      .opacity(0.6)
+    PageTransitionExit({ duration: 150, curve: Curve.EaseIn })
+      .opacity(0)
+  }
+
   aboutToAppear(): void {
     this.reload();
-    const rp = router.getParams() as Record<string, number>;
+    const rp = this.getUIContext().getRouter().getParams() as Record<string, Object>;
     if (rp && typeof rp['fromTab'] === 'number') {
       this.tab = rp['fromTab'];
     } else {
@@ -43,14 +49,36 @@ struct MainPage {
         AppStorage.delete('moodlite_tab');
       }
     }
-    window.getLastWindow(getContext(this)).then((wc) => {
+    this.syncWindow();
+  }
+
+  syncWindow(): void {
+    const ctx = this.getUIContext().getHostContext();
+    window.getLastWindow(ctx).then((wc) => {
+      wc.setWindowBackgroundColor(this.darkMode ? '#1A1A2E' : '#F7F8FA');
       wc.setWindowSystemBarProperties({
         statusBarContentColor: this.darkMode ? '#FFFFFF' : '#000000',
       });
+    }).catch((err: Error) => {
+      console.error('[MoodLite] syncWindow failed: ' + JSON.stringify(err));
     });
   }
 
-  onPageShow(): void { this.reload(); }
+  onPageShow(): void {
+    this.reload();
+    this.syncWindow();
+    const savedTab = AppStorage.get('moodlite_tab') as number;
+    if (typeof savedTab === 'number') {
+      this.tab = savedTab;
+      AppStorage.delete('moodlite_tab');
+    }
+    // 编辑流程重定向
+    const navToAdd = AppStorage.get('moodlite_nav_to_add') as boolean;
+    if (navToAdd === true) {
+      AppStorage.delete('moodlite_nav_to_add');
+      this.getUIContext().getRouter().pushUrl({ url: 'pages/AddEntry', params: { fromTab: this.tab } });
+    }
+  }
 
   async reload(): Promise<void> {
     await DataManager.ensureInitialized();
@@ -93,7 +121,7 @@ struct MainPage {
           direction: GradientDirection.Bottom,
           colors: this.darkMode
             ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
-            : [[Token.PINK_LIGHT, 0.0], [Token.TEXT_WHITE, 1.0]],
+            : [[Token.PINK_LIGHT, 0.0], [Token.CARD, 1.0]],
         })
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
@@ -120,10 +148,10 @@ struct MainPage {
         }
         .barHeight(0).barWidth('100%')
         .scrollable(false)
-        .animationDuration(200)
+        .animationDuration(300)
         .onChange((i: number) => { this.tab = i; })
-      }
-      .width('100%').height('100%')
+        }
+        .width('100%').height('100%')
 
       Row() {
         this.Btn(0, '今日', TAB_ICONS[0][0], TAB_ICONS[0][1])
@@ -145,9 +173,9 @@ struct MainPage {
   @Builder Btn(i: number, lbl: string, normalIcon: Resource, activeIcon: Resource) {
     Stack({ alignContent: Alignment.Center }) {
       Row()
-        .width(56).height(56)
+        .width(60).height(44)
         .backgroundColor(this.tab === i ? (this.darkMode ? 'rgba(255,139,167,0.18)' : 'rgba(255,139,167,0.12)') : 'transparent')
-        .borderRadius(28)
+        .borderRadius(20)
         .animation({ duration: 250, curve: Curve.EaseInOut })
 
       Column() {
@@ -174,7 +202,7 @@ struct MainPage {
       .shadow({ radius: 16, color: 'rgba(255,139,167,0.45)', offsetY: 6 })
       .offset({ y: -18 })
       .onClick(() => {
-        router.pushUrl({ url: 'pages/AddEntry', params: { fromTab: this.tab } });
+        this.getUIContext().getRouter().pushUrl({ url: 'pages/AddEntry', params: { fromTab: this.tab } });
       })
     }
     .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center).layoutWeight(1)
@@ -193,7 +221,7 @@ struct MainPage {
       .width('100%').alignItems(HorizontalAlign.Start)
       .padding({ top: S.HEADER_TOP, bottom: S.XS, left: S.LG, right: S.LG })
 
-      StatsContent()
+      StatsContent({ records: this.records })
     }
     .width('100%').height('100%')
   }
