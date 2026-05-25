@@ -12,12 +12,14 @@
 
 import curves from '@ohos.curves';
 import { AchievementItem, ACHIEVEMENTS } from '../../model/Achievement';
-import { Token, Dark, Shadow, R, S, F } from '../styles';
+import { Token, Shadow, R, S, F } from '../styles';
+import { resolveColors } from '../ThemeManager';
 
 @CustomDialog
 export struct AchievementDialog {
   controller: CustomDialogController;
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   achievement: AchievementItem = ACHIEVEMENTS[0];
   onClaim: () => void = () => {};
 
@@ -79,7 +81,7 @@ export struct AchievementDialog {
           // 标题
           Text(this.achievement.title)
             .fontSize(22).fontWeight(FontWeight.Bold)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             .opacity(this.contentOpacity).translate({ y: this.contentOffY })
             .margin({ bottom: S.XS })
             .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -87,7 +89,7 @@ export struct AchievementDialog {
           // 描述
           Text(this.achievement.desc)
             .fontSize(F.BODY)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
             .opacity(this.contentOpacity).translate({ y: this.contentOffY })
             .maxLines(6).textOverflow({ overflow: TextOverflow.Ellipsis })
         }
@@ -100,8 +102,8 @@ export struct AchievementDialog {
       // 收下按钮 — 固定在底部，始终可见
       Button('收下成就')
         .width('100%').height(44)
-        .backgroundColor(Token.PINK).borderRadius(R.BUTTON)
-        .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
+        .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.BUTTON)
+        .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
         .shadow(Shadow.CARD)
         .opacity(this.contentOpacity).translate({ y: this.contentOffY })
         .margin({ top: 16 })
@@ -113,10 +115,10 @@ export struct AchievementDialog {
     .width(280)
     .constraintSize({ maxHeight: 500 })
     .padding(20)
-    .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
+    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
     .borderRadius(R.CARD)
     .border({ width: 0.5, color: this.darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.40)' })
-    .shadow({ radius: Shadow.CARD.radius, color: this.darkMode ? Dark.SHADOW_COLOR : Token.SHADOW_COLOR, offsetY: Shadow.CARD.offsetY })
+    .shadow({ radius: Shadow.CARD.radius, color: resolveColors(this.darkMode, this.currentTheme).SHADOW_COLOR, offsetY: Shadow.CARD.offsetY })
     .alignItems(HorizontalAlign.Center)
   }
 }

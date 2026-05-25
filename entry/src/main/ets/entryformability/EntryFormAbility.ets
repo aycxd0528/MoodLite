@@ -4,15 +4,17 @@
  * 职责：
  * - 创建/更新/销毁桌面小组件卡片
  * - 通过 formBindingData 向卡片注入实时数据（同时服务 2x2 和 2x4）
+ * - 拦截 postCardAction message 事件，实现无感快捷记录（不拉起主应用）
  */
 
 import FormExtensionAbility from '@ohos.app.form.FormExtensionAbility';
 import formBindingData from '@ohos.app.form.formBindingData';
 import formProvider from '@ohos.app.form.formProvider';
 import dataPreferences from '@ohos.data.preferences';
-import { MoodRecord, getMoodEmoji, getMoodLabel, formatDateStr } from '../model/MoodRecord';
+import { MoodRecord, getMoodEmoji, getMoodLabel, formatDateStr, generateUUID } from '../model/MoodRecord';
 import { calcStreak } from '../viewmodel/StatsViewModel';
 import WidgetSyncManager from '../common/utils/WidgetSyncManager';
+import { quickSaveRecord } from '../data/DataManager';
 
 const STORE_NAME = 'moodlite_db';
 const KEY_RECORDS = 'records';
@@ -21,8 +23,14 @@ interface WidgetData {
   mood: string;
   moodLabel: string;
   todayMood: string;
+  todayScore: number;
   streak: number;
   monthDays: number[];
+}
+
+interface QuickLogMessage {
+  action: string;
+  score: number;
 }
 
 async function readRecords(context: Context): Promise<MoodRecord[]> {
@@ -43,6 +51,7 @@ function buildWidgetData(records: MoodRecord[]): WidgetData {
     mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
     moodLabel: todayRecord ? getMoodLabel(todayRecord.score) : 'MoodLite',
     todayMood: todayRecord ? getMoodLabel(todayRecord.score) : '--',
+    todayScore: todayRecord ? todayRecord.score : 0,
     streak: calcStreak(records).currentStreak,
     monthDays: WidgetSyncManager.getCompactMonthData(records),
   };
@@ -57,9 +66,8 @@ export default class EntryFormAbility extends FormExtensionAbility {
       WidgetSyncManager.addFormId(this.context, formId);
     }
 
-    // 返回初始数据，异步拉取真实数据后推送
     const initData: WidgetData = {
-      mood: '😐', moodLabel: 'MoodLite', todayMood: '--', streak: 0,
+      mood: '😐', moodLabel: 'MoodLite', todayMood: '--', todayScore: 0, streak: 0,
       monthDays: new Array(35).fill(0),
     };
     const result = formBindingData.createFormBindingData(initData);
@@ -76,7 +84,47 @@ export default class EntryFormAbility extends FormExtensionAbility {
     });
   }
 
-  onFormEvent(formId: string, message: string): void { /* 预留 */ }
+  /**
+   * 拦截卡片 message 事件 — 无感快捷记录。
+   * Widget 通过 postCardAction({ action: 'message', params: { action: 'quick_log', score: N } }) 触发。
+   * 直接写入 Preferences 并刷新卡片，不拉起主应用。
+   */
+  onFormEvent(formId: string, message: string): void {
+    console.info('[MoodLite] onFormEvent formId=' + formId + ' message=' + message);
+    try {
+      const parsed: QuickLogMessage = JSON.parse(message) as QuickLogMessage;
+      if (parsed.action !== 'quick_log') {
+        return;
+      }
+
+      const score: number = typeof parsed.score === 'number' ? parsed.score : 0;
+      const record: MoodRecord = {
+        id: generateUUID(),
+        timestamp: Date.now(),
+        dateStr: formatDateStr(new Date()),
+        score: score,
+        text: '',
+        images: [],
+        location: '',
+        tags: [],
+      };
+
+      quickSaveRecord(this.context, record).then((ok: boolean) => {
+        if (!ok) {
+          console.error('[MoodLite] onFormEvent quickSaveRecord 写入失败');
+          return;
+        }
+        // 立即刷新当前卡片显示
+        readRecords(this.context).then((records: MoodRecord[]) => {
+          const data = buildWidgetData(records);
+          formProvider.updateForm(formId, formBindingData.createFormBindingData(data));
+        });
+        console.info('[MoodLite] onFormEvent quick_log 完成，score=' + score);
+      });
+    } catch (err) {
+      console.error('[MoodLite] onFormEvent 解析失败: ' + JSON.stringify(err));
+    }
+  }
 
   onRemoveForm(formId: string): void {
     WidgetSyncManager.removeFormId(this.context, formId);

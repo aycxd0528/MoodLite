@@ -22,7 +22,8 @@ export default class EntryAbility extends UIAbility {
     try {
       const mainWindow = windowStage.getMainWindowSync();
       mainWindow.setWindowLayoutFullScreen(true);
-      mainWindow.setWindowBackgroundColor('#F7F8FA');
+      const dk: boolean = (AppStorage.get('darkMode') as boolean) || false;
+      mainWindow.setWindowBackgroundColor(dk ? '#1A1A2E' : '#F7F8FA');
       mainWindow.setWindowSystemBarProperties({
         statusBarColor: '#00000000',
         navigationBarColor: '#00000000',

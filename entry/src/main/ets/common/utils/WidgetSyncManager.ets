@@ -20,6 +20,7 @@ interface WidgetPayload {
   mood: string;
   moodLabel: string;
   todayMood: string;
+  todayScore: number;
   streak: number;
   monthDays: number[];
 }
@@ -151,6 +152,7 @@ class WidgetSyncManager {
         mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
         moodLabel: todayRecord ? getMoodLabel(todayRecord.score) : 'MoodLite',
         todayMood: todayRecord ? getMoodLabel(todayRecord.score) : '--',
+        todayScore: todayRecord ? todayRecord.score : 0,
         streak: calcStreak(records).currentStreak,
         monthDays: this.getCompactMonthData(records),
       };

@@ -7,7 +7,8 @@
  */
 
 import DataManager from '../data/DataManager';
-import { Token, Dark, S, F } from '../common/styles';
+import { Token, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 
 // 全局持久化状态初始化（应在应用入口最早执行）
 PersistentStorage.persistProp('isReminderOn', false);
@@ -15,6 +16,7 @@ PersistentStorage.persistProp('reminderHour', 20);
 PersistentStorage.persistProp('reminderMinute', 0);
 PersistentStorage.persistProp('mood_reminder_id', -1);
 PersistentStorage.persistProp('darkMode', false);
+PersistentStorage.persistProp('currentTheme', 'blossomPink');
 
 type LoadStatus = 'LOADING' | 'EMPTY' | 'SUCCESS';
 
@@ -22,6 +24,7 @@ type LoadStatus = 'LOADING' | 'EMPTY' | 'SUCCESS';
 @Component
 struct Index {
   @StorageProp('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State status: LoadStatus = 'LOADING';
   @State statusMsg: string = '正在初始化...';
   private timeoutId: number = -1;
@@ -90,10 +93,10 @@ struct Index {
         Text('MoodLite')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .fontColor(Token.PINK)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
         Text('轻心记')
           .fontSize(14)
-          .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
           .margin({ top: S.XS })
       }
       .width('100%')
@@ -110,7 +113,7 @@ struct Index {
             .opacity(0.6)
           Text(this.statusMsg)
             .fontSize(F.CAPTION)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
             .margin({ top: S.MD })
         } else if (this.status === 'EMPTY') {
           // 兜底态 —— 即使数据为空，入口按钮必须可点
@@ -121,20 +124,20 @@ struct Index {
             .margin({ bottom: S.MD })
           Text(this.statusMsg)
             .fontSize(F.BODY)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             .margin({ bottom: S.XS })
           Text('开始记录第一条心情吧')
             .fontSize(F.CAPTION)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
             .margin({ top: S.XS, bottom: S.LG })
 
           Button('开始记录')
             .width(180).height(48)
-            .backgroundColor(Token.PINK)
+            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
             .borderRadius(24)
             .fontSize(F.BODY)
             .fontWeight(FontWeight.Medium)
-            .fontColor(Token.TEXT_WHITE)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
             .shadow({ radius: 12, color: 'rgba(255,139,167,0.35)', offsetY: 6 })
             .onClick(() => {
               console.info('[MoodLite] Index EMPTY — manual navigation to MainPage');
@@ -150,11 +153,11 @@ struct Index {
       // ====== 底部提示（始终可见） ======
       Text('每一次记录 都是你关心自己的方式')
         .fontSize(F.SMALL)
-        .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
         .textAlign(TextAlign.Center)
         .padding({ bottom: S.XL, left: S.LG, right: S.LG })
     }
     .width('100%').height('100%')
-    .backgroundColor(this.darkMode ? Dark.BG : Token.BG)
+    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BG)
   }
 }

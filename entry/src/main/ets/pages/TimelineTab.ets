@@ -3,7 +3,8 @@
  * 月份导航 + 按日合并卡片 + 时间线竖线 + 精确设计规格
  */
 
-import { Token, Dark, S, F } from '../common/styles';
+import { Token, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
 import { MonthGroup } from '../viewmodel/LazyDataSource';
@@ -21,6 +22,7 @@ export struct TimelineTab {
   @Prop totalRecords: number = 0;
   @Prop fromTab: number = 1;
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State currentYear: number = new Date().getFullYear();
   @State currentMonth: number = new Date().getMonth() + 1;
   @State dayGroups: DayGroup[] = [];
@@ -103,7 +105,7 @@ export struct TimelineTab {
         // 标题
         Row() {
           Text('记录时间线').fontSize(F.TITLE).fontWeight(FontWeight.Bold)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
         }
         .width('100%').padding({ top: S.HEADER_TOP, bottom: S.SM, left: S.LG, right: S.LG })
 
@@ -111,12 +113,12 @@ export struct TimelineTab {
         Column() {
           GlassCard() {
             Row() {
-              Button() { Text('〈').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN) }
+              Button() { Text('〈').fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN) }
                 .width(32).height(32).backgroundColor('transparent').onClick(() => { this.prevMonth(); })
               Text(this.getMonthLabel()).fontSize(F.BODY).fontWeight(FontWeight.Medium)
-                .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                 .layoutWeight(1).textAlign(TextAlign.Center)
-              Button() { Text('〉').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN) }
+              Button() { Text('〉').fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN) }
                 .width(32).height(32).backgroundColor('transparent').onClick(() => { this.nextMonth(); })
             }
             .width('100%').alignItems(VerticalAlign.Center)
@@ -137,7 +139,7 @@ export struct TimelineTab {
                       .borderRadius(3)
                     Text(this.formatDate(day.dateStr))
                       .fontSize(14).fontWeight(500)
-                      .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                      .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                       .margin({ left: 8 })
                   }
                   .width('100%').height(32)
@@ -157,11 +159,11 @@ export struct TimelineTab {
                               .fontSize(18).fontWeight(600)
                               .fontColor(this.getEmotionColor(r.score))
                             Text('·')
-                              .fontSize(14).fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
+                              .fontSize(14).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
                               .margin({ left: 4, right: 4 })
                             Text(this.formatTime(r.timestamp))
                               .fontSize(14).fontWeight(400)
-                              .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
+                              .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
                           }
                           if (r.tags && r.tags.length > 0) {
                             Text(r.tags.join(' · '))
@@ -172,7 +174,7 @@ export struct TimelineTab {
                           if (r.text) {
                             Text(r.text)
                               .fontSize(F.BODY).fontWeight(400)
-                              .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                              .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                               .margin({ top: 8 }).maxLines(3).lineHeight(22)
                               .textOverflow({ overflow: TextOverflow.Ellipsis })
                           }
@@ -192,7 +194,7 @@ export struct TimelineTab {
                   .margin({ top: 16 })
                 }
                 .width('100%')
-                .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
+                .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
                 .borderRadius(12)
                 .shadow({ radius: 12, color: 'rgba(0,0,0,0.08)', offsetY: 4 })
                 .padding({ bottom: 16 })
@@ -212,9 +214,9 @@ export struct TimelineTab {
           Image($r('app.media.img_home_cloud'))
             .width(120).height(120).objectFit(ImageFit.Contain)
             .opacity(0.8)
-          Text('还没有记录').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+          Text('还没有记录').fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
             .margin({ top: S.MD })
-          Text('点击底部 ⊕ 写下第一条心情吧').fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+          Text('点击底部 ⊕ 写下第一条心情吧').fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
             .margin({ top: S.XS })
         }
         .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)

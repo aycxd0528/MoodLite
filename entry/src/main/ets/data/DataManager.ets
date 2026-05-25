@@ -37,6 +37,32 @@ class DataManager {
   }
 
   /**
+   * 轻量静态写入 —— 供 EntryFormAbility（独立进程）直接操作 Preferences。
+   * 不依赖单例 init() 状态，自行获取 Preferences 并完成 flush + WidgetSync。
+   */
+  static async quickSaveRecord(context: Context, record: MoodRecord): Promise<boolean> {
+    try {
+      const prefs = await dataPreferences.getPreferences(context, STORE_NAME);
+      const raw = await prefs.get(KEY_RECORDS, '[]') as string;
+      const records: MoodRecord[] = JSON.parse(raw);
+      const filtered = records.filter(r => r.id !== record.id);
+      filtered.unshift(record);
+      await prefs.put(KEY_RECORDS, JSON.stringify(filtered));
+      await prefs.flush();
+
+      // 异步通知所有已注册卡片刷新
+      WidgetSyncManager.updateWidgets(context, filtered).catch((e: Error) => {
+        console.error('[MoodLite] quickSaveRecord WidgetSync failed: ' + JSON.stringify(e));
+      });
+      console.info('[MoodLite] quickSaveRecord — saved: ' + record.id);
+      return true;
+    } catch (err) {
+      console.error('[MoodLite] quickSaveRecord failed: ' + JSON.stringify(err));
+      return false;
+    }
+  }
+
+  /**
    * 初始化（防重复 — 并发调用共享同一 Promise）
    * 应在 Index.ets 的 aboutToAppear 中调用。
    */
@@ -311,3 +337,11 @@ class DataManager {
 }
 
 export default DataManager.getInstance();
+
+/**
+ * 独立进程写入函数 —— 供 EntryFormAbility 调用。
+ * 不依赖主进程 DataManager 单例状态，自行获取 Preferences。
+ */
+export async function quickSaveRecord(context: Context, record: MoodRecord): Promise<boolean> {
+  return DataManager.quickSaveRecord(context, record);
+}

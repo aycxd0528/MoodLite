@@ -5,7 +5,8 @@
 
 import curves from '@ohos.curves';
 import DataManager from '../data/DataManager';
-import { Token, Dark, Shadow, R, S, F } from '../common/styles';
+import { Token, Shadow, R, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodEmoji, getMoodIconResource, getMoodLabel, formatDateStr } from '../model/MoodRecord';
 import { AiSuggestion } from '../common/utils/AiAgentClient';
@@ -23,6 +24,7 @@ export struct HomeTab {
   @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
   @StorageLink('activeIntent') activeIntent: string | null = null;
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State emoji: string = '😐';
   @State label: string = '';
   @State score: number = 0;
@@ -193,7 +195,7 @@ export struct HomeTab {
         Column() {
           Row({ space: 8 }) {
             Text(this.isTodayRecorded() ? '今日心情' : '今天过得怎么样？')
-              .fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+              .fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             Image($r('app.media.ic_sparkles')).width(22).height(22).objectFit(ImageFit.Contain)
           }
         }
@@ -206,9 +208,9 @@ export struct HomeTab {
             Column({ space: S.MD }) {
               Image(getMoodIconResource(this.score)).width(120).height(120).objectFit(ImageFit.Contain)
               Text(this.label).fontSize(22).fontWeight(FontWeight.Bold)
-                .fontColor(this.score >= 1 ? Token.PINK : this.score <= -1 ? Token.BLUE : Token.TEXT_GRAY)
+                .fontColor(this.score >= 1 ? resolveColors(this.darkMode, this.currentTheme).PINK : this.score <= -1 ? resolveColors(this.darkMode, this.currentTheme).BLUE : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
               Text(this.comfort)
-                .fontSize(14).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                .fontSize(14).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 .textAlign(TextAlign.Center).lineHeight(22)
             }
             .width('100%').alignItems(HorizontalAlign.Center)
@@ -221,9 +223,9 @@ export struct HomeTab {
                 Row({ space: S.SM }) {
                   Text('💡').fontSize(18)
                   Column({ space: 4 }) {
-                    Text('AI 温暖提示').fontSize(F.SMALL).fontWeight(FontWeight.Bold).fontColor(Token.PINK)
+                    Text('AI 温暖提示').fontSize(F.SMALL).fontWeight(FontWeight.Bold).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
                     Text(this.parseActiveIntent()?.suggestion || '')
-                      .fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                      .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                       .maxLines(3).textOverflow({ overflow: TextOverflow.Ellipsis })
                   }.layoutWeight(1)
                 }.width('100%').alignItems(VerticalAlign.Top)
@@ -236,12 +238,12 @@ export struct HomeTab {
             Column() {
               Image($r('app.media.img_home_cloud')).width(180).height(130).objectFit(ImageFit.Contain).margin({ bottom: 16 })
               Row({ space: 8 }) {
-                Text('欢迎回来').fontSize(22).fontWeight(FontWeight.Bold).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                Text('欢迎回来').fontSize(22).fontWeight(FontWeight.Bold).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                 Image($r('app.media.ic_smiling_hearts')).width(24).height(24).objectFit(ImageFit.Contain)
               }.justifyContent(FlexAlign.Center)
               Button('开始记录今天的心情')
-                .width('100%').height(48).backgroundColor(Token.PINK).borderRadius(24)
-                .fontSize(16).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE).shadow(Shadow.CARD)
+                .width('100%').height(48).backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(24)
+                .fontSize(16).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT).shadow(Shadow.CARD)
                 .margin({ top: 32 })
                 .onClick(() => { this.getUIContext().getRouter().pushUrl({ url: 'pages/AddEntry', params: { fromTab: 0 } }); })
             }
@@ -255,10 +257,10 @@ export struct HomeTab {
       Column() {
         Row() {
           Text('心情成就').fontSize(24).fontWeight(600)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
           Blank()
           Text(this.achievementList.filter(a => a.unlocked).length + '/7')
-            .fontSize(14).fontColor(Token.PINK).fontWeight(FontWeight.Medium)
+            .fontSize(14).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).fontWeight(FontWeight.Medium)
         }.width('100%').padding({ bottom: 16 })
 
         Scroll() {
@@ -266,42 +268,42 @@ export struct HomeTab {
             ForEach(this.achievementList, (a: AchievementItem) => {
               Column() {
                 if (a.unlocked && a.unlockedDate === formatDateStr(new Date())) {
-                  Text('今日解锁').fontSize(9).fontWeight(500).fontColor(Token.PINK)
+                  Text('今日解锁').fontSize(9).fontWeight(500).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
                     .padding({ left: 6, right: 6, top: 1, bottom: 1 })
-                    .backgroundColor(this.darkMode ? 'rgba(255,139,167,0.15)' : Token.PINK_LIGHT)
+                    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT)
                     .borderRadius(8).margin({ bottom: 4 })
                 } else {
                   Column().height(16)
                 }
                 Image(a.icon).width(76).height(76).objectFit(ImageFit.Contain)
-                  .fillColor(a.unlocked ? a.color : Token.BAR_NEUTRAL)
+                  .fillColor(a.unlocked ? a.color : resolveColors(this.darkMode, this.currentTheme).BAR_NEUTRAL)
                 Text(a.title).fontSize(14).fontWeight(500)
                   .fontColor(a.unlocked
-                    ? (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
-                    : (this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY))
+                    ? resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN
+                    : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                   .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
                   .margin({ top: 8 })
                 if (a.unlocked) {
                   Text('已解锁 · ' + a.unlockedDate).fontSize(10)
-                    .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 6 })
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 6 })
                 } else {
                   Column() {
                     Row() {
                       Column().width(Math.max(4, 90 * a.progress / a.target))
                         .height(5).backgroundColor(a.color).borderRadius(3)
                     }.width(90).height(5)
-                    .backgroundColor(this.darkMode ? Dark.BAR_BG : Token.BAR_BG).borderRadius(3)
+                    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG).borderRadius(3)
                     Text(a.progressLabel).fontSize(9)
-                      .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 4 })
+                      .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 4 })
                   }.margin({ top: 6 })
                 }
               }
               .width(130).height(165).alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center)
               .backgroundColor(a.unlocked
-                ? (this.darkMode ? Dark.CARD : Token.CARD)
-                : (this.darkMode ? Dark.BUBBLE_BG : Token.BUBBLE_BG))
+                ? resolveColors(this.darkMode, this.currentTheme).CARD
+                : resolveColors(this.darkMode, this.currentTheme).BUBBLE_BG)
               .border({ width: a.unlocked ? 1.5 : 1,
-                color: a.unlocked ? a.color : (this.darkMode ? Dark.DIVIDER : Token.DIVIDER) })
+                color: a.unlocked ? a.color : resolveColors(this.darkMode, this.currentTheme).DIVIDER })
               .borderRadius(16)
               .shadow(a.unlocked ? { radius: 8, color: a.color + '33', offsetY: 2 } as ShadowOptions : ShadowStyle.OUTER_DEFAULT_XS)
               .padding({ top: 10, bottom: 14, left: 10, right: 10 })
@@ -339,24 +341,24 @@ export struct HomeTab {
                     .fillColor(this.expandedAchievement.color)
                   Text(this.expandedAchievement.title)
                     .fontSize(22).fontWeight(FontWeight.Bold)
-                    .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                   Text(this.expandedAchievement.desc)
                     .fontSize(F.BODY)
-                    .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                     .textAlign(TextAlign.Center)
 
                   if (this.expandedAchievement.unlocked) {
                     Text('解锁于 ' + this.expandedAchievement.unlockedDate)
-                      .fontSize(F.CAPTION).fontColor(Token.PINK).margin({ top: 8 })
+                      .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).margin({ top: 8 })
                   } else {
                     Column() {
                       Row() {
                         Column().width(Math.max(4, 160 * this.expandedAchievement.progress / this.expandedAchievement.target))
                           .height(6).backgroundColor(this.expandedAchievement.color).borderRadius(3)
                       }.width(160).height(6)
-                      .backgroundColor(this.darkMode ? Dark.BAR_BG : Token.BAR_BG).borderRadius(3)
+                      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG).borderRadius(3)
                       Text(this.expandedAchievement.progressLabel).fontSize(F.CAPTION)
-                        .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 6 })
+                        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 6 })
                     }.margin({ top: 8 })
                   }
                 }
@@ -366,7 +368,7 @@ export struct HomeTab {
               .layoutWeight(1).edgeEffect(EdgeEffect.Spring)
 
               // 底部提示（固定在底部）
-              Text('点击空白关闭').fontSize(F.SMALL).fontColor(Token.PINK).opacity(0.5)
+              Text('点击空白关闭').fontSize(F.SMALL).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).opacity(0.5)
                 .margin({ bottom: 4 })
             }
             .width('100%').height('100%')
@@ -375,13 +377,13 @@ export struct HomeTab {
 
             // ✕ 关闭按钮（始终在最上层，热区 44×44）
             Text('✕').fontSize(18).fontWeight(FontWeight.Bold)
-              .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
               .padding(13)
               .onClick(() => { this.dismissExpand(); })
               .position({ top: 4, right: 10 })
         }
         .width(270).height(340)
-        .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
+        .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
         .borderRadius(R.CARD)
         .padding(0)
         .shadow({ radius: 30, color: 'rgba(0,0,0,0.15)', offsetY: 10 })

@@ -6,7 +6,8 @@ import curves from '@ohos.curves';
 import vibrator from '@ohos.vibrator';
 import window from '@ohos.window';
 import DataManager from '../data/DataManager';
-import { Token, Dark, Shadow, R, S, F } from '../common/styles';
+import { Token, Shadow, R, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, generateUUID, formatDateStr, DEFAULT_TAGS } from '../model/MoodRecord';
 import { getEditPayload } from '../common/EditBridge';
@@ -33,6 +34,7 @@ function findFace(v: number): FaceEntry {
 @Component
 struct AddEntry {
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State sv: number = 50;
   @State txt: string = '';
   @State saving: boolean = false;
@@ -88,7 +90,7 @@ struct AddEntry {
   syncWindow(): void {
     const ctx = this.getUIContext().getHostContext();
     window.getLastWindow(ctx).then((wc) => {
-      wc.setWindowBackgroundColor(this.darkMode ? '#1A1A2E' : '#F7F8FA');
+      wc.setWindowBackgroundColor(resolveColors(this.darkMode, this.currentTheme).BG);
     }).catch((err: Error) => {
       console.error('[MoodLite] syncWindow failed: ' + JSON.stringify(err));
     });
@@ -201,10 +203,10 @@ struct AddEntry {
       .fontSize(F.CAPTION)
       .padding({ left: 14, right: 14, top: 6, bottom: 6 })
       .borderRadius(R.FULL)
-      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? Token.PINK : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
+      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? resolveColors(this.darkMode, this.currentTheme).PINK : resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
       .backgroundColor(this.selectedTags.indexOf(tag) >= 0
-        ? (this.darkMode ? 'rgba(255,139,167,0.18)' : Token.PINK_LIGHT)
-        : (this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG))
+        ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT
+        : resolveColors(this.darkMode, this.currentTheme).BAR_BG)
       .margin({ right: S.SM })
       .onClick(() => {
         const idx = this.selectedTags.indexOf(tag);
@@ -230,16 +232,16 @@ struct AddEntry {
         // 头部（Stack 居中标题，两侧分别放置返回和完成按钮）
         Stack({ alignContent: Alignment.Center }) {
           Text(this.isEdit ? '编辑记录' : '新记录')
-            .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fontSize(F.BODY).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
 
           Row() {
             Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
-              .fillColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+              .fillColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
               .onClick(() => { this.getUIContext().getRouter().back(); })
             Blank()
-            Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
+            Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
               .padding({ left: 16, right: 16, top: 7, bottom: 7 })
-              .backgroundColor(this.saving ? Token.TEXT_GRAY : Token.PINK).borderRadius(R.FULL)
+              .backgroundColor(this.saving ? resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY : resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.FULL)
               .shadow(Shadow.CARD)
               .onClick(() => { this.done(); })
           }
@@ -256,9 +258,9 @@ struct AddEntry {
                 Text(findFace(this.sv).label).fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                   .fontColor(findFace(this.sv).color).margin({ bottom: S.MD })
                 Slider({ value: this.sv, min: 0, max: 100, step: 1, style: SliderStyle.OutSet })
-                  .width('100%').blockColor(Token.PINK)
-                  .trackColor(this.darkMode ? Dark.BLUE_LIGHT : Token.BLUE_LIGHT)
-                  .selectedColor(Token.PINK).showTips(false).onChange((v: number, mode: SliderChangeMode) => {
+                  .width('100%').blockColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                  .trackColor(resolveColors(this.darkMode, this.currentTheme).BLUE_LIGHT)
+                  .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK).showTips(false).onChange((v: number, mode: SliderChangeMode) => {
                     const nearest = this.MOOD_SNAPS.reduce((prev, curr) =>
                       Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev
                     );
@@ -288,7 +290,7 @@ struct AddEntry {
               Column({ space: S.SM }) {
                 Text('选择场景标签')
                   .fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
-                  .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
 
                 Column({ space: S.XS }) {
                   Row() {
@@ -310,23 +312,23 @@ struct AddEntry {
                   Row({ space: S.XS }) {
                     TextInput({ placeholder: '输入自定义标签', text: this.customTag })
                       .height(36).layoutWeight(1)
-                      .fontSize(F.CAPTION).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
-                      .placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
-                      .backgroundColor(this.darkMode ? Dark.BUBBLE_BG : Token.BAR_BG)
+                      .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+                      .placeholderColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
+                      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG)
                       .borderRadius(R.TINY)
                       .onChange((v: string) => { this.customTag = v; })
                       .onSubmit(() => { this.addCustomTag(); })
 
                     Button('确定')
                       .height(36).fontSize(F.CAPTION)
-                      .backgroundColor(Token.PINK).borderRadius(R.TINY)
-                      .fontColor(Token.TEXT_WHITE)
+                      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.TINY)
+                      .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
                       .onClick(() => { this.addCustomTag(); })
                   }
                   .width('100%')
                 } else {
                   Text('+ 自定义标签')
-                    .fontSize(F.CAPTION).fontColor(Token.PINK)
+                    .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
                     .padding({ top: 2 })
                     .onClick(() => { this.showCustomInput = true; })
                 }
@@ -337,7 +339,7 @@ struct AddEntry {
             GlassCard() {
               TextArea({ placeholder: '今天有什么想记录的吗…', text: this.txt })
                 .width('100%').height(100).backgroundColor('transparent').borderRadius(0)
-                .fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                .fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).placeholderColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 .onChange((v: string) => { this.txt = v; })
             }
 
@@ -350,9 +352,8 @@ struct AddEntry {
       .width('100%').height('100%')
       .linearGradient({
         direction: GradientDirection.Bottom,
-        colors: this.darkMode
-          ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
-          : [[Token.PINK_LIGHT, 0.0], [Token.CARD, 1.0]],
+        colors: [[resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, 0.0],
+                 [resolveColors(this.darkMode, this.currentTheme).BG, 1.0]],
       })
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
@@ -368,11 +369,11 @@ struct AddEntry {
 
             Text('已保存')
               .fontSize(24).fontWeight(FontWeight.Bold)
-              .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
 
             Text('记录已安全存储')
               .fontSize(F.CAPTION)
-              .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
           }
           .alignItems(HorizontalAlign.Center)
           Blank()

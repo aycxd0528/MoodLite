@@ -7,7 +7,8 @@
 
 import window from '@ohos.window';
 import DataManager from '../data/DataManager';
-import { Token, Dark, Shadow, R, S, F, L } from '../common/styles';
+import { Shadow, R, S, F, L } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { MoodRecord } from '../model/MoodRecord';
 import { HomeTab } from './HomeTab';
 import { TimelineTab } from './TimelineTab';
@@ -27,6 +28,7 @@ const TAB_ICONS: Record<number, [Resource, Resource]> = {
 struct MainPage {
   @State tab: number = 0;
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State records: MoodRecord[] = [];
   @State groupedRecords: MonthGroup[] = [];
 
@@ -55,7 +57,8 @@ struct MainPage {
   syncWindow(): void {
     const ctx = this.getUIContext().getHostContext();
     window.getLastWindow(ctx).then((wc) => {
-      wc.setWindowBackgroundColor(this.darkMode ? '#1A1A2E' : '#F7F8FA');
+      const C = resolveColors(this.darkMode, this.currentTheme);
+      wc.setWindowBackgroundColor(C.BG);
       wc.setWindowSystemBarProperties({
         statusBarContentColor: this.darkMode ? '#FFFFFF' : '#000000',
       });
@@ -119,9 +122,8 @@ struct MainPage {
         .width('100%').height('100%')
         .linearGradient({
           direction: GradientDirection.Bottom,
-          colors: this.darkMode
-            ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
-            : [[Token.PINK_LIGHT, 0.0], [Token.CARD, 1.0]],
+          colors: [[resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, 0.0],
+                   [resolveColors(this.darkMode, this.currentTheme).BG, 1.0]],
         })
         .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
@@ -161,7 +163,8 @@ struct MainPage {
         this.Btn(4, '我的', TAB_ICONS[4][0], TAB_ICONS[4][1])
       }
       .width('92%').height(L.TAB_BAR_H)
-      .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD).borderRadius(R.CARD)
+      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD).borderRadius(R.CARD)
+      .backdropBlur(20)
       .shadow(Shadow.CARD)
       .justifyContent(FlexAlign.SpaceEvenly).alignItems(VerticalAlign.Center)
       .margin({ bottom: S.MD, left: '4%', right: '4%' })
@@ -174,18 +177,19 @@ struct MainPage {
     Stack({ alignContent: Alignment.Center }) {
       Row()
         .width(60).height(44)
-        .backgroundColor(this.tab === i ? (this.darkMode ? 'rgba(255,139,167,0.18)' : 'rgba(255,139,167,0.12)') : 'transparent')
+        .backgroundColor(this.tab === i ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT : 'transparent')
         .borderRadius(20)
-        .animation({ duration: 250, curve: Curve.EaseInOut })
 
       Column() {
         Image(this.tab === i ? activeIcon : normalIcon)
           .width(24).height(24).objectFit(ImageFit.Contain)
-          .fillColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY)
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          .fillColor(this.tab === i
+            ? resolveColors(this.darkMode, this.currentTheme).PINK
+            : (this.darkMode ? resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY : '#FAFAFA'))
+          .scale({ x: this.tab === i ? 1.08 : 1.0, y: this.tab === i ? 1.08 : 1.0 })
+          .animation({ duration: 180, curve: Curve.EaseOut })
         Text(lbl).fontSize(F.SMALL)
-          .fontColor(this.tab === i ? Token.PINK : Token.TEXT_GRAY).margin({ top: 2 })
-          .animation({ duration: 200, curve: Curve.EaseOut })
+          .fontColor(this.tab === i ? resolveColors(this.darkMode, this.currentTheme).PINK : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
       }
       .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
     }
@@ -195,11 +199,12 @@ struct MainPage {
   @Builder CenterPlus() {
     Column() {
       Button() {
-        Image($r('app.media.ic_plus')).width(28).height(28).fillColor(Color.White)
+        Image($r('app.media.ic_plus')).width(28).height(28)
+          .fillColor(Color.White)
       }
       .width(L.CENTER_BTN).height(L.CENTER_BTN).borderRadius(R.FULL)
-      .backgroundColor(Token.PINK)
-      .shadow({ radius: 16, color: 'rgba(255,139,167,0.45)', offsetY: 6 })
+      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+      .shadow({ radius: 16, color: resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, offsetY: 6 })
       .offset({ y: -18 })
       .onClick(() => {
         this.getUIContext().getRouter().pushUrl({ url: 'pages/AddEntry', params: { fromTab: this.tab } });
@@ -212,11 +217,11 @@ struct MainPage {
     Column() {
       Column() {
         Row({ space: 6 }) {
-          Text('情绪统计').fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+          Text('情绪统计').fontSize(F.TITLE).fontWeight(FontWeight.Bold).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
           Image($r('app.media.ic_sparkles')).width(20).height(20).objectFit(ImageFit.Contain)
             .translate({ y: -4 })
         }
-        Text('用数据看见你的情绪变化').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: S.XS })
+        Text('用数据看见你的情绪变化').fontSize(12).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: S.XS })
       }
       .width('100%').alignItems(HorizontalAlign.Start)
       .padding({ top: S.HEADER_TOP, bottom: S.XS, left: S.LG, right: S.LG })

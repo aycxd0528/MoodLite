@@ -4,7 +4,8 @@
 
 import window from '@ohos.window';
 import DataManager from '../data/DataManager';
-import { Token, Dark, Shadow, R, S, F } from '../common/styles';
+import { Token, Shadow, R, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
 import { setEditPayload } from '../common/EditBridge';
@@ -12,29 +13,30 @@ import { setEditPayload } from '../common/EditBridge';
 @CustomDialog
 struct DeleteConfirmDialog {
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   controller: CustomDialogController = new CustomDialogController({ builder: '' });
   onConfirm: () => void = () => {};
 
   build() {
     Column() {
       Text('删除记录').fontSize(18).fontWeight(FontWeight.Bold)
-        .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
         .margin({ bottom: 12 })
       Text('确定要删除这条记录吗？').fontSize(14)
-        .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
+        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
         .margin({ bottom: 24 })
       Row({ space: 12 }) {
         Button('取消').fontSize(14)
-          .backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK)
-          .fontColor(this.darkMode ? Dark.TEXT_SECONDARY : Token.TEXT_SECONDARY)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_TRACK)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_SECONDARY)
           .layoutWeight(1).onClick(() => { this.controller.close(); })
-        Button('删除').fontSize(14).backgroundColor(Token.DELETE_RED).fontColor(Color.White)
+        Button('删除').fontSize(14).backgroundColor(resolveColors(this.darkMode, this.currentTheme).DELETE_RED).fontColor(Color.White)
           .layoutWeight(1).onClick(async () => { await this.onConfirm(); this.controller.close(); })
       }
       .width('100%')
     }
     .padding(24)
-    .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
+    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
   }
 }
 
@@ -42,6 +44,7 @@ struct DeleteConfirmDialog {
 @Component
 struct EntryDetail {
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State recordId: string = '';
   @State record: MoodRecord | null = null;
   @State notFound: boolean = false;
@@ -75,7 +78,7 @@ struct EntryDetail {
   syncWindow(): void {
     const ctx = this.getUIContext().getHostContext();
     window.getLastWindow(ctx).then((wc) => {
-      wc.setWindowBackgroundColor(this.darkMode ? '#1A1A2E' : '#F7F8FA');
+      wc.setWindowBackgroundColor(resolveColors(this.darkMode, this.currentTheme).BG);
     }).catch((err: Error) => {
       console.error('[MoodLite] syncWindow failed: ' + JSON.stringify(err));
     });
@@ -121,19 +124,19 @@ struct EntryDetail {
       // 头部（Stack 居中标题，两侧分别放置返回和编辑按钮）
       Stack({ alignContent: Alignment.Center }) {
         Text('详情').fontSize(F.BODY).fontWeight(FontWeight.Medium)
-          .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
 
         Row() {
           Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
-            .fillColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fillColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             .onClick(() => { this.getUIContext().getRouter().back(); })
           Blank()
           Row({ space: 6 }) {
-            Image($r('app.media.ic_edit')).width(16).height(16).fillColor(Token.TEXT_WHITE)
-            Text('编辑').fontSize(14).fontWeight(FontWeight.Medium).fontColor(Token.TEXT_WHITE)
+            Image($r('app.media.ic_edit')).width(16).height(16).fillColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+            Text('编辑').fontSize(14).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
           }
           .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-          .backgroundColor(Token.PINK).borderRadius(R.FULL)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.FULL)
           .shadow(Shadow.CARD)
           .onClick(() => { this.onEdit(); })
         }
@@ -145,7 +148,7 @@ struct EntryDetail {
       if (this.notFound) {
         Column() {
           Text('记录不存在').fontSize(F.BODY)
-            .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
         }
         .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center)
       } else if (this.record !== null) {
@@ -159,11 +162,11 @@ struct EntryDetail {
 
                 Text(getMoodLabel(this.record.score))
                   .fontSize(22).fontWeight(FontWeight.Bold)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
 
                 Text(this.formatDate(this.record.dateStr))
                   .fontSize(14)
-                  .fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                   .margin({ top: 4, bottom: 20 })
 
                 if (this.record.tags && this.record.tags.length > 0) {
@@ -172,8 +175,8 @@ struct EntryDetail {
                       Text(t)
                         .fontSize(F.CAPTION).padding({ left: 10, right: 10, top: 3, bottom: 3 })
                         .borderRadius(R.FULL)
-                        .fontColor(Token.PINK)
-                        .backgroundColor(this.darkMode ? 'rgba(255,139,167,0.15)' : Token.PINK_LIGHT)
+                        .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                        .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT)
                         .margin({ right: 6 })
                     }, (t: string) => t)
                   }
@@ -182,7 +185,7 @@ struct EntryDetail {
 
                 Text(this.record.text || '没有记录文字')
                   .fontSize(F.BODY)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                   .lineHeight(26).textAlign(TextAlign.Center)
                   .width('100%')
               }
@@ -198,7 +201,7 @@ struct EntryDetail {
               .justifyContent(FlexAlign.Center)
             }
             .width('100%').height(44)
-            .backgroundColor(this.darkMode ? Dark.CARD : Token.CARD)
+            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
             .borderRadius(12)
             .shadow({ radius: 12, color: 'rgba(0,0,0,0.08)', offsetY: 4 })
             .onClick(() => { this.onDelete(); })
@@ -211,9 +214,8 @@ struct EntryDetail {
     .width('100%').height('100%')
     .linearGradient({
       direction: GradientDirection.Bottom,
-      colors: this.darkMode
-        ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
-        : [[Token.PINK_LIGHT, 0.0], [Token.TEXT_WHITE, 1.0]],
+      colors: [[resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, 0.0],
+               [resolveColors(this.darkMode, this.currentTheme).BG, 1.0]],
     })
   }
 }

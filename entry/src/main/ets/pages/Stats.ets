@@ -4,6 +4,7 @@
 
 import { MoodRecord, CalendarDayItem, getMoodLabel } from '../model/MoodRecord';
 import { Token, Dark, R, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import {
   generateCalendarGrid,
@@ -19,6 +20,7 @@ const MONTH_NAMES: string[] = ['1月','2月','3月','4月','5月','6月','7月',
 @Component
 export struct StatsContent {
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
   @State year: number = new Date().getFullYear();
   @State month: number = new Date().getMonth() + 1;
@@ -88,13 +90,13 @@ export struct StatsContent {
           Column() {
             // 月份导航
             Row() {
-              Button() { Text('〈').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN) }
+              Button() { Text('〈').fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN) }
                 .width(32).height(32).backgroundColor('transparent').onClick(() => { this.prevMonth(); })
               Blank()
               Text(this.year + '年' + MONTH_NAMES[this.month - 1]).fontSize(18).fontWeight(FontWeight.Bold)
-                .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
               Blank()
-              Button() { Text('〉').fontSize(F.BODY).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN) }
+              Button() { Text('〉').fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN) }
                 .width(32).height(32).backgroundColor('transparent').onClick(() => { this.nextMonth(); })
             }
             .width('100%').margin({ bottom: S.SM })
@@ -102,7 +104,7 @@ export struct StatsContent {
             // 星期表头
             Row() {
               ForEach(WEEKDAY_HEADERS, (day: string) => {
-                Column() { Text(day).fontSize(F.SMALL).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY) }
+                Column() { Text(day).fontSize(F.SMALL).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY) }
                 .layoutWeight(1).alignItems(HorizontalAlign.Center)
               }, (day: string) => day)
             }
@@ -144,7 +146,7 @@ export struct StatsContent {
               Row() {
                 Column() {
                   Row() {
-                    Text('低落').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Text('低落').fontSize(F.TINY).width(28).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                     Column().width(10).height(10).backgroundColor('#B5D8F7').borderRadius(2).margin({ left: 2 })
                     Column().width(10).height(10).backgroundColor('#90C4F0').borderRadius(2).margin({ left: 1 })
                     Column().width(10).height(10).backgroundColor('#6DADE5').borderRadius(2).margin({ left: 1 })
@@ -156,7 +158,7 @@ export struct StatsContent {
 
                 Column() {
                   Row() {
-                    Text('愉悦').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Text('愉悦').fontSize(F.TINY).width(28).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                     Column().width(10).height(10).backgroundColor('#FFCCDD').borderRadius(2).margin({ left: 2 })
                     Column().width(10).height(10).backgroundColor('#FAAEC7').borderRadius(2).margin({ left: 1 })
                     Column().width(10).height(10).backgroundColor('#F590AE').borderRadius(2).margin({ left: 1 })
@@ -171,7 +173,7 @@ export struct StatsContent {
               Row() {
                 Column() {
                   Row() {
-                    Text('平静').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Text('平静').fontSize(F.TINY).width(28).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                     Column().width(10).height(10).backgroundColor('#FFFAE0').borderRadius(2).margin({ left: 2 })
                     Column().width(10).height(10).backgroundColor('#FFF5B3').borderRadius(2).margin({ left: 1 })
                     Column().width(10).height(10).backgroundColor('#FFED80').borderRadius(2).margin({ left: 1 })
@@ -183,7 +185,7 @@ export struct StatsContent {
 
                 Column() {
                   Row() {
-                    Text('混合').fontSize(F.TINY).width(28).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+                    Text('混合').fontSize(F.TINY).width(28).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                     Column().width(10).height(10).backgroundColor('#D49DE4').borderRadius(2).margin({ left: 2 })
                     Column().width(10).height(10).backgroundColor('#C265D2').borderRadius(2).margin({ left: 1 })
                     Column().width(10).height(10).backgroundColor('#AB47BC').borderRadius(2).margin({ left: 1 })
@@ -205,18 +207,18 @@ export struct StatsContent {
         GlassCard() {
           Column() {
             Text('本月情绪概览').fontSize(F.BODY).fontWeight(FontWeight.Bold)
-              .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ bottom: S.MD })
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ bottom: S.MD })
 
             Row() {
               // 愉悦
               Column() {
                 Image($r('app.media.ic_face_good')).width(32).height(32).objectFit(ImageFit.Contain)
                 Text(this.happyPercent + '%').fontSize(20).fontWeight(FontWeight.Bold)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
-                Text('愉悦').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ top: S.XS })
+                Text('愉悦').fontSize(12).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
-                  Column().width(40 * this.happyPercent / 100).height(4).backgroundColor(Token.PINK).borderRadius(2)
+                  Column().width(40 * this.happyPercent / 100).height(4).backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
 
@@ -226,8 +228,8 @@ export struct StatsContent {
               Column() {
                 Image($r('app.media.ic_face_bad')).width(32).height(32).objectFit(ImageFit.Contain)
                 Text(this.sadPercent + '%').fontSize(20).fontWeight(FontWeight.Bold)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
-                Text('低落').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ top: S.XS })
+                Text('低落').fontSize(12).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
                   Column().width(40 * this.sadPercent / 100).height(4).backgroundColor(Token.BLUE_DEEP).borderRadius(2)
@@ -240,8 +242,8 @@ export struct StatsContent {
               Column() {
                 Image($r('app.media.ic_face_neutral')).width(32).height(32).objectFit(ImageFit.Contain)
                 Text(this.neutralPercent + '%').fontSize(20).fontWeight(FontWeight.Bold)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
-                Text('平静').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ top: S.XS })
+                Text('平静').fontSize(12).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
                   Column().width(40 * this.neutralPercent / 100).height(4).backgroundColor(this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL).borderRadius(2)
@@ -254,8 +256,8 @@ export struct StatsContent {
               Column() {
                 Image($r('app.media.bullseye')).width(32).height(32).objectFit(ImageFit.Contain)
                 Text(String(this.recordDays)).fontSize(20).fontWeight(FontWeight.Bold)
-                  .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ top: S.XS })
-                Text('记录天数').fontSize(12).fontColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY).margin({ top: 2 })
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ top: S.XS })
+                Text('记录天数').fontSize(12).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
             }
             .width('100%').alignItems(VerticalAlign.Top)
@@ -268,13 +270,13 @@ export struct StatsContent {
           GlassCard() {
             Column() {
               Text('情绪场景分布').fontSize(F.BODY).fontWeight(FontWeight.Bold)
-                .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN).margin({ bottom: S.MD })
+                .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ bottom: S.MD })
 
               ForEach(this.tagDistributions, (td: TagDistribution) => {
                 Row() {
                   Text(td.tag)
                     .fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
-                    .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                     .width(48)
 
                   Column() {
@@ -283,7 +285,7 @@ export struct StatsContent {
                         .height(8)
                         .width(Math.max(4, 140 * td.count / this.tagDistributions[0].count))
                         .backgroundColor(
-                          td.avgScore >= 0.5 ? Token.PINK
+                          td.avgScore >= 0.5 ? resolveColors(this.darkMode, this.currentTheme).PINK
                           : td.avgScore <= -0.5 ? Token.BLUE_DEEP
                           : (this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL)
                         )
@@ -296,11 +298,11 @@ export struct StatsContent {
                   .margin({ left: S.SM }).layoutWeight(1)
 
                   Column() {
-                    Text(td.count + '次').fontSize(F.SMALL).fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+                    Text(td.count + '次').fontSize(F.SMALL).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                     Text((td.avgScore >= 0 ? '+' : '') + td.avgScore.toFixed(1))
                       .fontSize(F.TINY)
                       .fontColor(
-                        td.avgScore >= 0.5 ? Token.PINK
+                        td.avgScore >= 0.5 ? resolveColors(this.darkMode, this.currentTheme).PINK
                         : td.avgScore <= -0.5 ? Token.BLUE_DEEP
                         : Token.TEXT_GRAY
                       )

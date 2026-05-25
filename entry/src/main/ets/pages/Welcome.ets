@@ -3,12 +3,14 @@
  */
 
 import DataManager from '../data/DataManager';
-import { Token, Dark, R, S, F } from '../common/styles';
+import { Token, R, S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 
 @Entry
 @Component
 struct Welcome {
   @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State cardOpacity: number = 0;
   @State cardOffY: number = 40;
   @State btnOpacity: number = 0;
@@ -34,9 +36,8 @@ struct Welcome {
         .width('100%').height('100%')
         .linearGradient({
           direction: GradientDirection.Bottom,
-          colors: this.darkMode
-            ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
-            : [['rgba(255,235,240,1)', 0.0], ['#FFF0F3', 0.5], [Token.PINK_LIGHT, 1.0]],
+          colors: [[resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, 0.0],
+                   [resolveColors(this.darkMode, this.currentTheme).BG, 1.0]],
         })
 
       Column() {
@@ -44,13 +45,13 @@ struct Welcome {
         Column() {
           Text('欢迎使用')
             .fontSize(18)
-            .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
             .letterSpacing(2)
             .margin({ bottom: S.XS })
           Text('MoodLite')
             .fontSize(42)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Token.PINK)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
             .letterSpacing(1)
         }
         .alignItems(HorizontalAlign.Center)
@@ -61,12 +62,12 @@ struct Welcome {
           Text('记录每日情绪')
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
-            .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             .margin({ top: S.XL, bottom: S.XS })
 
           Text('发现内心轨迹')
             .fontSize(14)
-            .fontColor(this.darkMode ? Dark.TEXT_HINT : Token.TEXT_HINT)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
             .margin({ bottom: 36 })
 
           Column() {
@@ -74,8 +75,8 @@ struct Welcome {
               .width('80%').height(50)
               .fontSize(16)
               .fontWeight(FontWeight.Medium)
-              .fontColor(Token.TEXT_WHITE)
-              .backgroundColor(Token.PINK)
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
               .borderRadius(R.BUTTON)
               .shadow({ radius: 15, color: 'rgba(255,122,154,0.4)', offsetY: 8 })
               .onClick(() => {
