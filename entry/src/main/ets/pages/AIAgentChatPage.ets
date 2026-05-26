@@ -65,20 +65,18 @@ struct AIAgentChatPage {
 
     this.messages = [{ role: 'assistant', content: '正在分析…', isStreaming: true }];
 
-    setTimeout(() => {
-      sendMessageStream([sysMsg, userMsg], {
-        onToken: (text: string) => {
-          this.updateLastMessage(text, true);
-        },
-        onDone: () => {
-          this.finishLastMessage();
-        },
-        onError: (msg: string) => {
-          this.updateLastMessage('分析失败: ' + msg, false);
-          this.loading = false;
-        },
-      });
-    }, 500);
+    sendMessageStream([sysMsg, userMsg], {
+      onToken: (text: string) => {
+        this.updateLastMessage(text, true);
+      },
+      onDone: () => {
+        this.finishLastMessage();
+      },
+      onError: (msg: string) => {
+        this.updateLastMessage('分析失败: ' + msg, false);
+        this.loading = false;
+      },
+    });
   }
 
   sendMessage(): void {
@@ -110,19 +108,19 @@ struct AIAgentChatPage {
     });
   }
 
-  // splice 替换数组元素 → ArkUI 能检测到变更
+  // 用新数组替换 → ArkUI 检测到引用变化触发重绘
   updateLastMessage(text: string, streaming: boolean): void {
-    const last = this.messages[this.messages.length - 1];
-    const updated: UIMessage = { role: last.role, content: text, isStreaming: streaming };
-    this.messages.splice(this.messages.length - 1, 1, updated);
-    this.messages = [...this.messages];
+    const tmp = [...this.messages];
+    const last = tmp[tmp.length - 1];
+    tmp[tmp.length - 1] = { role: last.role, content: text, isStreaming: streaming };
+    this.messages = tmp;
   }
 
   finishLastMessage(): void {
-    const last = this.messages[this.messages.length - 1];
-    const updated: UIMessage = { role: last.role, content: last.content, isStreaming: false };
-    this.messages.splice(this.messages.length - 1, 1, updated);
-    this.messages = [...this.messages];
+    const tmp = [...this.messages];
+    const last = tmp[tmp.length - 1];
+    tmp[tmp.length - 1] = { role: last.role, content: last.content, isStreaming: false };
+    this.messages = tmp;
     this.loading = false;
   }
 
