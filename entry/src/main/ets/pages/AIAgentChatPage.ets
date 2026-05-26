@@ -25,7 +25,23 @@ struct AIAgentChatPage {
   @State messages: UIMessage[] = [];
   @State inputText: string = '';
   @State loading: boolean = true;
+  @StorageLink('ai_analysis_result') analysisResult: string = '';
+  @StorageLink('ai_analysis_done') @Watch('onAnalysisDone') analysisDone: number = 0;
   private scroller: Scroller = new Scroller();
+
+  onAnalysisDone(): void {
+    if (this.analysisDone !== 1) return;
+    const text = this.analysisResult;
+    if (text.startsWith('分析失败')) {
+      this.messages[0].content = text;
+    } else {
+      this.messages[0].content = text;
+    }
+    this.messages[0].isStreaming = false;
+    this.loading = false;
+    this.messages = [...this.messages];
+    AppStorage.set('ai_analysis_done', 0);
+  }
 
   private analysisSent: boolean = false;
 
@@ -37,6 +53,8 @@ struct AIAgentChatPage {
 
   aboutToDisappear(): void {
     this.loading = false;
+    AppStorage.set('ai_analysis_done', 0);
+    AppStorage.set('ai_analysis_result', '');
   }
 
   async loadRecords(): Promise<void> {
@@ -73,19 +91,14 @@ struct AIAgentChatPage {
     setTimeout(() => {
       sendMessageStream([sysMsg, userMsg], {
         onToken: (text: string) => {
-          this.messages[0].content = text;
-          this.messages = [...this.messages];
+          AppStorage.set('ai_analysis_result', text);
         },
         onDone: () => {
-          this.messages[0].isStreaming = false;
-          this.loading = false;
-          this.messages = [...this.messages];
+          AppStorage.set('ai_analysis_done', 1);
         },
         onError: (msg: string) => {
-          this.messages[0].content = '分析失败: ' + msg;
-          this.messages[0].isStreaming = false;
-          this.loading = false;
-          this.messages = [...this.messages];
+          AppStorage.set('ai_analysis_result', '分析失败: ' + msg);
+          AppStorage.set('ai_analysis_done', 1);
         },
       });
     }, 500);
