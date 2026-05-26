@@ -71,21 +71,28 @@ struct AIAgentChatPage {
 
     this.messages = [{ role: 'assistant', content: '正在分析…', isStreaming: true }];
 
+    const ctx = this.getUIContext();
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        const msgs = this.messages;
-        msgs[0] = { role: 'assistant', content: text, isStreaming: true };
-        this.messages = msgs;
+        ctx.animateTo({ duration: 0 }, () => {
+          const msgs = this.messages;
+          msgs[0] = { role: 'assistant', content: text, isStreaming: true };
+          this.messages = msgs;
+        });
       },
       onDone: () => {
-        const msgs = this.messages;
-        msgs[0] = { role: 'assistant', content: msgs[0].content, isStreaming: false };
-        this.messages = msgs;
-        this.loading = false;
+        ctx.animateTo({ duration: 0 }, () => {
+          const msgs = this.messages;
+          msgs[0] = { role: 'assistant', content: msgs[0].content, isStreaming: false };
+          this.messages = msgs;
+          this.loading = false;
+        });
       },
       onError: (msg: string) => {
-        this.messages = [{ role: 'assistant', content: '分析失败: ' + msg, isStreaming: false }];
-        this.loading = false;
+        ctx.animateTo({ duration: 0 }, () => {
+          this.messages = [{ role: 'assistant', content: '分析失败: ' + msg, isStreaming: false }];
+          this.loading = false;
+        });
       },
     });
   }
@@ -106,22 +113,27 @@ struct AIAgentChatPage {
     ];
     chatMsgs.push({ role: 'user', content: text });
 
+    const ctx2 = this.getUIContext();
     sendMessageStream(chatMsgs, {
       onToken: (t: string) => {
-        this.messages[0].content = t;
+        ctx2.animateTo({ duration: 0 }, () => {
+          this.messages[0].content = t;
+        });
       },
       onDone: () => {
-        this.messages[0].isStreaming = false;
-        this.loading = false;
-        this.messages = [...this.messages];
+        ctx2.animateTo({ duration: 0 }, () => {
+          this.messages[0].isStreaming = false;
+          this.loading = false;
+          this.messages = [...this.messages];
+        });
       },
       onError: (msg: string) => {
-        if (this.messages[0].content.length === 0) {
-          this.messages[0].content = '抱歉，出了点问题 ';
-        }
-        this.messages[0].isStreaming = false;
-        this.loading = false;
-        this.messages = [...this.messages];
+        ctx2.animateTo({ duration: 0 }, () => {
+          this.messages[0].content = '抱歉，出了点问题 ' + msg;
+          this.messages[0].isStreaming = false;
+          this.loading = false;
+          this.messages = [...this.messages];
+        });
       },
     });
   }
