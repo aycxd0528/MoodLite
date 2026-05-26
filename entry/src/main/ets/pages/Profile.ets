@@ -21,9 +21,8 @@ const PLANS: PlanOption[] = [
 ];
 
 const ITEMS: SItem[] = [
-  { icon: $r('app.media.ic_reminder'),        label: '提醒设置',     toggle: true  },
+  { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
   { icon: $r('app.media.ic_moon'),            label: '深色模式',     toggle: true  },
-  { icon: $r('app.media.ic_settings'),        label: '主题风格',     toggle: false },
   { icon: $r('app.media.ic_message'),         label: '给我们反馈',   toggle: false },
   { icon: $r('app.media.ic_info'),            label: '关于 MoodLite',toggle: false },
 ];
@@ -339,9 +338,7 @@ export struct Profile {
                   }
                   .width('100%').height(56).alignItems(VerticalAlign.Center)
                   .onClick(() => {
-                    if (it.label === '主题风格') {
-                      this.showThemeDialog();
-                    } else if (it.label === '给我们反馈') {
+                    if (it.label === '给我们反馈') {
                       const want: Want = {
                         action: 'ohos.want.action.viewData',
                         entities: ['entity.system.browsable'],
@@ -361,6 +358,35 @@ export struct Profile {
                   })
                 }
               })
+
+              // ---- 主题风格（独立 ListItem，在 ForEach 之后） ----
+              ListItem() {
+                Row() {
+                  Image($r('app.media.ic_moon'))
+                    .width(24).height(24).objectFit(ImageFit.Contain)
+                    .colorFilter(
+                      this.darkMode ? DARK_INVERT : NORMAL_MATRIX
+                    )
+                  Text('主题风格').fontSize(F.BODY)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+                    .margin({ left: S.SM })
+                  Blank()
+
+                  Text(ThemeManager.getDisplayName(this.currentTheme as ThemePreset))
+                    .fontSize(F.BODY).fontWeight(FontWeight.Medium)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).margin({ right: S.SM })
+                    .padding({ left: S.SM, right: S.SM, top: 4, bottom: 4 })
+                    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT).borderRadius(12)
+
+                  Image($r('app.media.ic_right_arrow')).width(16).height(16)
+                    .objectFit(ImageFit.Contain)
+                    .fillColor(this.darkMode ? '#E8E8EC' : '#9CA3AF')
+                    .colorFilter(
+                      this.darkMode ? DARK_INVERT : NORMAL_MATRIX
+                    )
+                }
+                .width('100%').height(56).alignItems(VerticalAlign.Center)
+                .onClick(() => { this.showThemeDialog(); })
               }
             }
             .width('100%').divider({ strokeWidth: 0.5,
@@ -369,21 +395,16 @@ export struct Profile {
           }
 
           // 退出登录
-          Column() {
+          GlassCard() {
             Row() {
               Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
             }
             .width('100%').height(48).justifyContent(FlexAlign.Center)
             .alignItems(VerticalAlign.Center)
-            .borderRadius(R.SMALL)
-            .backgroundColor('rgba(255,107,107,0.08)')
-          }
-          .padding({ left: S.LG, right: S.LG })
-          .onClick(() => {
-            this.getUIContext()?.animateTo({ duration: 100, curve: Curve.EaseIn }, () => {});
-            AuthManager.logout();
-            this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
-          })
+            .onClick(() => {
+              AuthManager.logout();
+              this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
+            })
           }
 
           Row().width('100%').height(S.LG)
