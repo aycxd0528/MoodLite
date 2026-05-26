@@ -29,7 +29,9 @@ function nextId(): string { return String(++msgId); }
 @Component
 struct MessageBubble {
   @ObjectLink msg: UIMessage;
-  @Prop darkMode: boolean;
+  @Prop aiBg: string;
+  @Prop aiText: string;
+  @Prop userBg: string;
 
   build() {
     Row() {
@@ -37,13 +39,9 @@ struct MessageBubble {
       Column() {
         Text(this.msg.content + (this.msg.isStreaming ? ' ▍' : ''))
           .fontSize(14).lineHeight(22)
-          .fontColor(this.msg.role === 'user'
-            ? Token.TEXT_WHITE
-            : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
+          .fontColor(this.msg.role === 'user' ? Token.TEXT_WHITE : this.aiText)
           .padding({ left: 14, right: 14, top: 10, bottom: 10 })
-          .backgroundColor(this.msg.role === 'user'
-            ? Token.PINK
-            : (this.darkMode ? Dark.CARD : Token.BUBBLE_BG))
+          .backgroundColor(this.msg.role === 'user' ? this.userBg : this.aiBg)
           .borderRadius(16)
           .constraintSize({ maxWidth: '80%' })
       }
@@ -216,7 +214,12 @@ struct AIAgentChatPage {
       List({ scroller: this.scroller }) {
         ForEach(this.messages, (msg: UIMessage) => {
           ListItem() {
-            MessageBubble({ msg: msg, darkMode: this.darkMode })
+            MessageBubble({
+              msg: msg,
+              aiBg: resolveColors(this.darkMode, this.currentTheme).CARD,
+              aiText: resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN,
+              userBg: resolveColors(this.darkMode, this.currentTheme).PINK,
+            })
           }
         }, (msg: UIMessage) => msg.id)
       }
