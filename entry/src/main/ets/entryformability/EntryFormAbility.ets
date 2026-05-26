@@ -26,6 +26,9 @@ interface WidgetData {
   todayScore: number;
   streak: number;
   recordDays: number;
+  happyPercent: number;
+  sadPercent: number;
+  neutralPercent: number;
   darkMode: number;
   monthDays: number[];
 }
@@ -52,9 +55,19 @@ function buildWidgetData(records: MoodRecord[]): WidgetData {
   const now = new Date();
   const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   let recordDays = 0;
+  let happy = 0, sad = 0, neutral = 0;
   for (const r of records) {
-    if (r.dateStr.startsWith(monthKey)) recordDays++;
+    if (r.dateStr.startsWith(monthKey)) {
+      recordDays++;
+      if (r.score >= 1) happy++;
+      else if (r.score <= -1) sad++;
+      else neutral++;
+    }
   }
+  const total = happy + sad + neutral || 1;
+  const happyPercent = Math.round(happy * 100 / total);
+  const sadPercent = Math.round(sad * 100 / total);
+  const neutralPercent = Math.round(neutral * 100 / total);
 
   const data: WidgetData = {
     mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
@@ -63,6 +76,9 @@ function buildWidgetData(records: MoodRecord[]): WidgetData {
     todayScore: todayRecord ? todayRecord.score : 0,
     streak: calcStreak(records).currentStreak,
     recordDays: recordDays,
+    happyPercent: happyPercent,
+    sadPercent: sadPercent,
+    neutralPercent: neutralPercent,
     darkMode: (AppStorage.get('darkMode') as boolean) ? 1 : 0,
     monthDays: WidgetSyncManager.getCompactMonthData(records),
   };
@@ -79,7 +95,8 @@ export default class EntryFormAbility extends FormExtensionAbility {
 
     const initData: WidgetData = {
       mood: '😐', moodLabel: 'MoodLite', todayMood: '--', todayScore: 0, streak: 0,
-      recordDays: 0, darkMode: 0, monthDays: new Array(35).fill(0),
+      recordDays: 0, happyPercent: 0, sadPercent: 0, neutralPercent: 0,
+      darkMode: 0, monthDays: new Array(35).fill(0),
     };
     const result = formBindingData.createFormBindingData(initData);
 

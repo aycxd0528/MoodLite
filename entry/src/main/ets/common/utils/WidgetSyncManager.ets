@@ -23,6 +23,9 @@ interface WidgetPayload {
   todayScore: number;
   streak: number;
   recordDays: number;
+  happyPercent: number;
+  sadPercent: number;
+  neutralPercent: number;
   darkMode: number;
   monthDays: number[];
 }
@@ -152,10 +155,16 @@ class WidgetSyncManager {
 
       const now = new Date();
       const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-      let recordDays = 0;
+      let recordDays = 0, happy = 0, sad = 0, neutral = 0;
       for (const r of records) {
-        if (r.dateStr.startsWith(monthKey)) recordDays++;
+        if (r.dateStr.startsWith(monthKey)) {
+          recordDays++;
+          if (r.score >= 1) happy++;
+          else if (r.score <= -1) sad++;
+          else neutral++;
+        }
       }
+      const total = happy + sad + neutral || 1;
 
       const payload: WidgetPayload = {
         mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
@@ -164,6 +173,9 @@ class WidgetSyncManager {
         todayScore: todayRecord ? todayRecord.score : 0,
         streak: calcStreak(records).currentStreak,
         recordDays: recordDays,
+        happyPercent: Math.round(happy * 100 / total),
+        sadPercent: Math.round(sad * 100 / total),
+        neutralPercent: Math.round(neutral * 100 / total),
         darkMode: (AppStorage.get('darkMode') as boolean) ? 1 : 0,
         monthDays: this.getCompactMonthData(records),
       };
