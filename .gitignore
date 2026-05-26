@@ -9,4 +9,5 @@
 /.clang-format
 /.clang-tidy
 **/.test
-/.appanalyzer
+/.appanalyzer.DS_Store
+AGENTS.md
