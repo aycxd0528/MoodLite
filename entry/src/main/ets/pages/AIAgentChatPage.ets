@@ -7,6 +7,7 @@ import { MoodRecord, formatDateStr } from '../model/MoodRecord';
 import { Token, Dark, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
+import AuthManager from '../common/AuthManager';
 
 @Observed
 export class UIMessage {
@@ -121,9 +122,18 @@ struct AIAgentChatPage {
     });
   }
 
-  sendMessage(): void {
+  async sendMessage(): Promise<void> {
     const text = this.inputText.trim();
     if (!text || this.loading) return;
+
+    const ok = await AuthManager.consumeQuota();
+    if (!ok) {
+      this.inputText = '';
+      this.messages.push(new UIMessage(nextId(), 'user', text, false));
+      this.messages.push(new UIMessage(nextId(), 'assistant', '今日对话次数已用完\n升级 Ultra 解锁无限对话', false));
+      this.messages = [...this.messages];
+      return;
+    }
 
     this.inputText = '';
     const aiId = nextId();

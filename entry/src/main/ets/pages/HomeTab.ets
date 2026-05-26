@@ -23,6 +23,7 @@ export struct HomeTab {
   @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+  @StorageLink('memberType') memberType: string = 'free';
   @State emoji: string = '😐';
   @State label: string = '';
   @State score: number = 0;
@@ -198,19 +199,21 @@ export struct HomeTab {
             .padding({ top: S.MD, bottom: S.MD, left: S.MD, right: S.MD })
           }
 
-          Button() {
-            Row({ space: 6 }) {
-              Text('AI 情绪分析').fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
+          if (this.memberType !== 'free') {
+            Button() {
+              Row({ space: 6 }) {
+                Text('AI 情绪分析').fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
+              }
             }
+            .width('100%').height(42)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+            .borderRadius(R.BUTTON)
+            .margin({ top: 4 })
+            .onClick(() => {
+              this.getUIContext().getRouter().pushUrl({ url: 'pages/AIAgentChatPage' });
+            })
           }
-          .width('100%').height(42)
-          .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
-          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-          .borderRadius(R.BUTTON)
-          .margin({ top: 4 })
-          .onClick(() => {
-            this.getUIContext().getRouter().pushUrl({ url: 'pages/AIAgentChatPage' });
-          })
         } else {
           GlassCard() {
             Column() {

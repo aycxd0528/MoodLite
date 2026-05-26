@@ -6,6 +6,7 @@
     "pages/AddEntry",
     "pages/Profile",
     "pages/EntryDetail",
-    "pages/AIAgentChatPage"
+    "pages/AIAgentChatPage",
+    "pages/LoginPage"
   ]
 }

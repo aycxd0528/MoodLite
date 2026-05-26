@@ -7,6 +7,7 @@
  */
 
 import DataManager from '../data/DataManager';
+import AuthManager from '../common/AuthManager';
 import { Token, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 
@@ -53,16 +54,16 @@ struct Index {
       }, TIMEOUT_MS);
 
       DataManager.init(ctx)
-        .then(() => {
-          console.info('[MoodLite] Index — init resolved, checking first launch...');
-          return DataManager.isFirstLaunch();
-        })
-        .then((first: boolean) => {
+        .then(() => AuthManager.init(ctx).then(() => {
+          if (!AuthManager.isLoggedIn()) return 'pages/LoginPage';
+          return DataManager.isFirstLaunch().then((first: boolean) =>
+            first ? 'pages/Welcome' : 'pages/MainPage'
+          );
+        }))
+        .then((target: string) => {
           clearTimeout(this.timeoutId);
           this.timeoutId = -1;
           this.status = 'SUCCESS';
-          console.info('[MoodLite] Index — firstLaunch=' + String(first) + ', navigating...');
-          const target = first ? 'pages/Welcome' : 'pages/MainPage';
           this.getUIContext().getRouter().replaceUrl({ url: target });
         })
         .catch((err: Object) => {

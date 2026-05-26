@@ -6,10 +6,19 @@ import { Token, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
 import ThemeManager, { ThemePreset, ThemePresetEntry, resolveColors } from '../common/ThemeManager';
+import AuthManager from '../common/AuthManager';
 import common from '@ohos.app.ability.common';
 import type Want from '@ohos.app.ability.Want';
 
 interface SItem { icon: Resource; label: string; toggle: boolean; }
+
+interface PlanOption { label: string; value: string; }
+
+const PLANS: PlanOption[] = [
+  { label: 'Free — 基础记录', value: 'free' },
+  { label: 'Pro — 每日提醒 + AI 3次/天', value: 'pro' },
+  { label: 'Ultra — 无限 AI + 全功能', value: 'ultra' },
+];
 
 const ITEMS: SItem[] = [
   { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
@@ -138,6 +147,7 @@ export struct Profile {
   @StorageLink('reminderHour') reminderHour: number = 20;
   @StorageLink('reminderMinute') reminderMinute: number = 0;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+  @StorageLink('memberType') memberType: string = 'free';
 
   private appContext(): Context {
     const uiCtx: UIContext = this.getUIContext();
@@ -194,6 +204,44 @@ export struct Profile {
     this.themeDialog.open();
   }
 
+  showUpgradeDialog(): void {
+    const d = new CustomDialogController({
+      builder: this.upgradeBuilder(),
+      autoCancel: true,
+      alignment: DialogAlignment.Bottom,
+    });
+    d.open();
+  }
+
+  @Builder upgradeBuilder() {
+    Column() {
+      Text('选择会员方案').fontSize(F.BODY).fontWeight(FontWeight.Bold)
+        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+        .margin({ bottom: S.LG })
+
+      ForEach(PLANS, (item: PlanOption) => {
+        Row() {
+          Text(item.label).fontSize(F.BODY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+            .layoutWeight(1)
+          if (this.memberType === item.value) {
+            Text('✓').fontSize(F.SUBTITLE).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+          }
+        }
+        .width('100%').height(48).padding({ left: S.XS, right: S.XS })
+        .backgroundColor(this.memberType === item.value
+          ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT
+          : 'transparent')
+        .borderRadius(R.SMALL)
+        .onClick(() => {
+          AuthManager.upgradeMember(item.value as ('pro' | 'ultra'));
+        })
+      })
+    }
+    .width('100%').padding(S.LG)
+    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
+  }
+
   fmtTime(): string {
     return String(this.reminderHour).padStart(2, '0') + ':' + String(this.reminderMinute).padStart(2, '0');
   }
@@ -210,6 +258,28 @@ export struct Profile {
 
       Scroll() {
         Column() {
+          // 会员卡片
+          GlassCard() {
+            Row() {
+              Text(resolveColors(this.darkMode, this.currentTheme).PINK).fontSize(24)
+              Column() {
+                Text('当前会员').fontSize(F.CAPTION)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
+                Text(this.memberType === 'ultra' ? 'Ultra' : this.memberType === 'pro' ? 'Pro' : 'Free')
+                  .fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+              }
+              .alignItems(HorizontalAlign.Start).margin({ left: S.SM }).layoutWeight(1)
+              Text('升级 >').fontSize(F.CAPTION)
+                .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+            }
+            .width('100%').alignItems(VerticalAlign.Center)
+            .padding({ top: S.XS, bottom: S.XS })
+            .onClick(() => { this.showUpgradeDialog(); })
+          }
+
+          Row().width('100%').height(S.SM)
+
           GlassCard() {
             List() {
               ForEach(ITEMS, (it: SItem) => {
@@ -332,6 +402,17 @@ export struct Profile {
               color: resolveColors(this.darkMode, this.currentTheme).DIVIDER,
               startMargin: 48, endMargin: 0 })
           }
+
+          // 退出登录
+          Button('退出登录')
+            .width('100%').height(44).fontSize(F.BODY)
+            .backgroundColor('transparent')
+            .fontColor(Token.DELETE_RED)
+            .margin({ top: S.MD })
+            .onClick(() => {
+              AuthManager.logout();
+              this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
+            })
 
           Row().width('100%').height(S.BOTTOM_BREATH)
         }
