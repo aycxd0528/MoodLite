@@ -11,7 +11,6 @@ import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, generateUUID, formatDateStr, DEFAULT_TAGS } from '../model/MoodRecord';
 import { getEditPayload } from '../common/EditBridge';
-import { analyzeMood } from '../common/utils/AiAgentClient';
 
 interface FaceEntry {
   min: number; max: number; icon: Resource; label: string; color: string; ms: number;
@@ -145,16 +144,6 @@ struct AddEntry {
           this.successFloat = 6;
         });
 
-        // 异步触发 AI 分析（非阻塞）
-        if (record.score <= -1 && this.txt.trim().length > 0) {
-          analyzeMood(this.txt).then((suggestion) => {
-            if (suggestion) {
-              AppStorage.setOrCreate('activeIntent', JSON.stringify(suggestion));
-            }
-          });
-        } else {
-          AppStorage.setOrCreate('activeIntent', null);
-        }
 
         // 沉浸式过渡：展示 800ms → 退出动画 300ms → 跳转
         this.successTimer1 = setTimeout(() => {

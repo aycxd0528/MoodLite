@@ -205,34 +205,36 @@ export struct HomeTab {
       Column({ space: S.MD }) {
         if (this.isTodayRecorded()) {
           GlassCard() {
-            Column({ space: S.MD }) {
-              Image(getMoodIconResource(this.score)).width(120).height(120).objectFit(ImageFit.Contain)
-              Text(this.label).fontSize(22).fontWeight(FontWeight.Bold)
-                .fontColor(this.score >= 1 ? resolveColors(this.darkMode, this.currentTheme).PINK : this.score <= -1 ? resolveColors(this.darkMode, this.currentTheme).BLUE : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
-              Text(this.comfort)
-                .fontSize(14).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
-                .textAlign(TextAlign.Center).lineHeight(22)
+            Row() {
+              Image(getMoodIconResource(this.score)).width(48).height(48).objectFit(ImageFit.Contain)
+              Column() {
+                Text(this.label).fontSize(F.BODY).fontWeight(FontWeight.Bold)
+                  .fontColor(this.score >= 1 ? resolveColors(this.darkMode, this.currentTheme).PINK : this.score <= -1 ? resolveColors(this.darkMode, this.currentTheme).BLUE : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
+                Text(this.comfort)
+                  .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
+                  .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .margin({ top: 2 })
+              }
+              .alignItems(HorizontalAlign.Start).margin({ left: S.SM }).layoutWeight(1)
             }
-            .width('100%').alignItems(HorizontalAlign.Center)
-            .padding({ top: 28, bottom: 28, left: 20, right: 20 })
+            .width('100%').alignItems(VerticalAlign.Center)
+            .padding({ top: S.MD, bottom: S.MD, left: S.MD, right: S.MD })
           }
 
-          if (this.parseActiveIntent()) {
-            Column() {
-              GlassCard() {
-                Row({ space: S.SM }) {
-                  Text('💡').fontSize(18)
-                  Column({ space: 4 }) {
-                    Text('AI 温暖提示').fontSize(F.SMALL).fontWeight(FontWeight.Bold).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-                    Text(this.parseActiveIntent()?.suggestion || '')
-                      .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
-                      .maxLines(3).textOverflow({ overflow: TextOverflow.Ellipsis })
-                  }.layoutWeight(1)
-                }.width('100%').alignItems(VerticalAlign.Top)
-              }
+          Button() {
+            Row({ space: 6 }) {
+              Text('🤖').fontSize(16)
+              Text('AI 情绪分析').fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
             }
-            .width('100%').opacity(this.capsuleOpacity).translate({ y: this.capsuleOffY })
           }
+          .width('100%').height(42)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+          .borderRadius(R.BUTTON)
+          .margin({ top: 4 })
+          .onClick(() => {
+            this.getUIContext().getRouter().pushUrl({ url: 'pages/AIAgentChatPage' });
+          })
         } else {
           GlassCard() {
             Column() {
