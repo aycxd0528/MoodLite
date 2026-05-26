@@ -325,6 +325,11 @@ export const L: LayoutTokens = {
   GRADIENT_H: '35%', TAB_BAR_H: 72, CARD_PAD: 24, CENTER_BTN: 56,
 };
 
+// ========== 图标色彩矩阵 ==========
+
+export const DARK_INVERT: number[] = [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0];
+export const NORMAL_MATRIX: number[] = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
+
 // ========== 情绪枚举（表情与标签固定，不随主题变化） ==========
 
 export const Mood: MoodTokens = {

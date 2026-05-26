@@ -130,7 +130,7 @@ struct MainPage {
       Column() {
         Tabs({ index: this.tab, barPosition: BarPosition.End }) {
           TabContent() {
-            HomeTab({ records: this.records })
+            HomeTab({ records: $records })
           }.tabBar('今日')
 
           TabContent() {

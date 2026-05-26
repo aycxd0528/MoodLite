@@ -20,7 +20,7 @@ interface AchievementUnlock {
 
 @Component
 export struct HomeTab {
-  @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
+  @Link @Watch('onRecordsChange') records: MoodRecord[];
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @StorageLink('memberType') memberType: string = 'free';
@@ -35,7 +35,7 @@ export struct HomeTab {
   @State expandOpacity: number = 0.0;
   private achievementDialogController: CustomDialogController | null = null;
   private isDialogShowing: boolean = false;
-  private dismissTimer: number | null = null;
+
   private isAnimating: boolean = false;
 
   aboutToAppear(): void {
@@ -113,12 +113,6 @@ export struct HomeTab {
   // ========== 成就卡片展开（飞入中央） ==========
 
   private triggerExpand(a: AchievementItem): void {
-    // 取消残留的 dismiss 定时器，防止竞态
-    if (this.dismissTimer !== null) {
-      clearTimeout(this.dismissTimer);
-      this.dismissTimer = null;
-    }
-
     // 如果已有展开卡片，先同步重置至关闭态，间隔一帧再展开新卡片（防止覆盖旧动画时闪烁）
     if (this.expandedAchievement !== null && this.expandedAchievement.id !== a.id) {
       this.expandScale = 0.3;
@@ -151,20 +145,17 @@ export struct HomeTab {
   private dismissExpand(): void {
     if (!this.isAnimating && this.expandedAchievement === null) return;
     this.isAnimating = false;
-    // 取消残留定时器
-    if (this.dismissTimer !== null) {
-      clearTimeout(this.dismissTimer);
-    }
-    this.getUIContext()?.animateTo({ duration: 200, curve: Curve.EaseIn }, () => {
+    this.getUIContext()?.animateTo({
+      duration: 200,
+      curve: Curve.EaseIn,
+      onFinish: () => {
+        this.selectedAchievementId = null;
+        this.expandedAchievement = null;
+      }
+    }, () => {
       this.expandScale = 0.3;
       this.expandOpacity = 0.0;
     });
-    // 清理延迟设为动画时长的1.5倍（300ms），确保动画完成后再移除节点
-    this.dismissTimer = setTimeout(() => {
-      this.selectedAchievementId = null;
-      this.expandedAchievement = null;
-      this.dismissTimer = null;
-    }, 350);
   }
 
   build() {

@@ -2,7 +2,7 @@
  * Profile — v2.0 设置/我的（深色模式全适配 + 主题选择器）
  */
 
-import { Token, R, S, F } from '../common/styles';
+import { Token, R, S, F, DARK_INVERT, NORMAL_MATRIX } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
 import ThemeManager, { ThemePreset, ThemePresetEntry, resolveColors } from '../common/ThemeManager';
@@ -199,19 +199,7 @@ export struct Profile {
     return hostCtx;
   }
 
-  private timeDialog: CustomDialogController = new CustomDialogController({
-    builder: TimePickerDialog({
-      hour: this.reminderHour,
-      minute: this.reminderMinute,
-      onConfirm: (h: number, m: number) => {
-        this.reminderHour = h;
-        this.reminderMinute = m;
-        enableDailyReminder(this.appContext(), h, m);
-      }
-    }),
-    autoCancel: true,
-    alignment: DialogAlignment.Bottom,
-  });
+  private timeDialog: CustomDialogController | null = null;
 
   showTimeDialog(): void {
     this.timeDialog = new CustomDialogController({
@@ -237,11 +225,6 @@ export struct Profile {
   });
 
   showThemeDialog(): void {
-    this.themeDialog = new CustomDialogController({
-      builder: ThemePickerDialog(),
-      autoCancel: true,
-      alignment: DialogAlignment.Bottom,
-    });
     this.themeDialog.open();
   }
 
@@ -252,11 +235,6 @@ export struct Profile {
   });
 
   showUpgradeDialog(): void {
-    this.upgradeDialog = new CustomDialogController({
-      builder: UpgradeDialog({ currentMember: this.memberType }),
-      autoCancel: true,
-      alignment: DialogAlignment.Bottom,
-    });
     this.upgradeDialog.open();
   }
 
@@ -313,19 +291,7 @@ export struct Profile {
                     Image(it.icon)
                       .width(24).height(24).objectFit(ImageFit.Contain)
                       .colorFilter(
-                        this.darkMode
-                          ? [
-                              -1,  0,  0,  0, 255,
-                               0, -1,  0,  0, 255,
-                               0,  0, -1,  0, 255,
-                               0,  0,  0,  1,   0
-                            ]
-                          : [
-                               1,  0,  0,  0,   0,
-                               0,  1,  0,  0,   0,
-                               0,  0,  1,  0,   0,
-                               0,  0,  0,  1,   0
-                            ]
+                        this.darkMode ? DARK_INVERT : NORMAL_MATRIX
                       )
                     Text(it.label).fontSize(F.BODY)
                       .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
@@ -395,9 +361,7 @@ export struct Profile {
                   Image($r('app.media.ic_moon'))
                     .width(24).height(24).objectFit(ImageFit.Contain)
                     .colorFilter(
-                      this.darkMode
-                        ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                        : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+                      this.darkMode ? DARK_INVERT : NORMAL_MATRIX
                     )
                   Text('主题风格').fontSize(F.BODY)
                     .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
@@ -414,9 +378,7 @@ export struct Profile {
                     .objectFit(ImageFit.Contain)
                     .fillColor(this.darkMode ? '#E8E8EC' : '#9CA3AF')
                     .colorFilter(
-                      this.darkMode
-                        ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                        : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+                      this.darkMode ? DARK_INVERT : NORMAL_MATRIX
                     )
                 }
                 .width('100%').height(56).alignItems(VerticalAlign.Center)
