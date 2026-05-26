@@ -4,7 +4,8 @@
 
 import DataManager from '../data/DataManager';
 import { MoodRecord, formatDateStr } from '../model/MoodRecord';
-import { Token, Dark, S, F } from '../common/styles';
+import { S, F } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
 
 @Observed
@@ -29,20 +30,22 @@ function nextId(): string { return String(++msgId); }
 struct MessageBubble {
   @ObjectLink msg: UIMessage;
   @Prop darkMode: boolean;
+  @Prop currentTheme: string;
 
   build() {
+    const C = resolveColors(this.darkMode, this.currentTheme);
     Row() {
       if (this.msg.role === 'user') Blank()
       Column() {
         Text(this.msg.content + (this.msg.isStreaming ? ' ▍' : ''))
           .fontSize(14).lineHeight(22)
           .fontColor(this.msg.role === 'user'
-            ? Token.TEXT_WHITE
-            : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
+            ? C.TEXT_WHITE
+            : C.TEXT_MAIN)
           .padding({ left: 14, right: 14, top: 10, bottom: 10 })
           .backgroundColor(this.msg.role === 'user'
-            ? Token.PINK
-            : (this.darkMode ? Dark.CARD : Token.BUBBLE_BG))
+            ? C.PINK
+            : C.CARD)
           .borderRadius(16)
           .constraintSize({ maxWidth: '80%' })
       }
@@ -201,11 +204,11 @@ struct AIAgentChatPage {
     Column() {
       Stack({ alignContent: Alignment.Center }) {
         Text('AI 情绪分析').fontSize(F.BODY).fontWeight(FontWeight.Medium)
-          .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
 
         Row() {
           Image($r('app.media.ic_back')).width(24).height(24).objectFit(ImageFit.Contain)
-            .fillColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
+            .fillColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             .onClick(() => { this.getUIContext().getRouter().back(); })
           Blank()
         }.width('100%')
@@ -215,7 +218,7 @@ struct AIAgentChatPage {
       List({ scroller: this.scroller }) {
         ForEach(this.messages, (msg: UIMessage) => {
           ListItem() {
-            MessageBubble({ msg: msg, darkMode: this.darkMode })
+            MessageBubble({ msg: msg, darkMode: this.darkMode, currentTheme: this.currentTheme })
           }
         }, (msg: UIMessage) => msg.id)
       }
@@ -224,17 +227,17 @@ struct AIAgentChatPage {
       Row({ space: S.SM }) {
         TextInput({ placeholder: this.loading ? 'AI 正在思考...' : '输入消息...', text: this.inputText })
           .layoutWeight(1).height(44).fontSize(14)
-          .backgroundColor(this.darkMode ? Dark.CARD : Token.BAR_BG)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG)
           .borderRadius(22).padding({ left: 16, right: 16 })
-          .placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
+          .placeholderColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
           .enabled(!this.loading)
           .onChange((v: string) => { this.inputText = v; })
           .onSubmit(() => { this.sendMessage(); })
 
         Button('发送')
           .height(44).fontSize(14)
-          .backgroundColor(Token.PINK).borderRadius(22)
-          .fontColor(Token.TEXT_WHITE)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(22)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
           .padding({ left: 16, right: 16 })
           .enabled(!this.loading && this.inputText.trim().length > 0)
           .onClick(() => { this.sendMessage(); })
@@ -245,9 +248,8 @@ struct AIAgentChatPage {
     .width('100%').height('100%')
     .linearGradient({
       direction: GradientDirection.Bottom,
-      colors: this.darkMode
-        ? [[Dark.PINK_LIGHT, 0.0], [Dark.BG, 1.0]]
-        : [[Token.PINK_LIGHT, 0.0], [Token.TEXT_WHITE, 1.0]],
+      colors: [[resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, 0.0],
+               [resolveColors(this.darkMode, this.currentTheme).BG, 1.0]],
     })
   }
 }
