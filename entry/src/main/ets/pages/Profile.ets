@@ -283,9 +283,19 @@ export struct Profile {
               Column() {
                 Text('当前会员').fontSize(F.CAPTION)
                   .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
-                Text(this.memberType === 'ultra' ? 'Ultra' : this.memberType === 'pro' ? 'Pro' : 'Free')
-                  .fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+                if (this.memberType === 'ultra') {
+                  Text('Ultra').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
+                    .linearGradient({
+                      direction: GradientDirection.Right,
+                      colors: [['#6B8CF6', 0.0], ['#A855F7', 1.0]],
+                    })
+                } else if (this.memberType === 'pro') {
+                  Text('Pro').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
+                    .fontColor('#D4A017')
+                } else {
+                  Text('Free').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+                }
               }
               .alignItems(HorizontalAlign.Start).margin({ left: S.SM }).layoutWeight(1)
               Text('升级 >').fontSize(F.CAPTION)
