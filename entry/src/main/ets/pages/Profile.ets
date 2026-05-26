@@ -285,7 +285,7 @@ export struct Profile {
                   .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 if (this.memberType === 'ultra') {
                   Text('Ultra').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                    .fontColor(['#4A7CF6', '#C04CF7'])
+                    .fontColor('#8B5CF6')
                 } else if (this.memberType === 'pro') {
                   Text('Pro').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                     .fontColor('#FFD700')
