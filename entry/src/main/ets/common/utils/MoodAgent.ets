@@ -7,38 +7,20 @@
 
 import http from '@ohos.net.http';
 
-const ENCRYPTED_KEY = 'PgRCUS8PRAQxA1hCfAYfBggBDi9eClJ6DUxcZVVfQ3kATFA=';
+const ENCRYPTED_HEX = '3e0442512f0f4404310358427c061f0608010e2f5e0a527a0d4c5c65555f4379004c50';
 const XOR_SALT = 'MoodLiteSaltKey2026';
 const BASE_URL = 'https://api.deepseek.com/v1/chat/completions';
 const MODEL = 'deepseek-v4-flash';
 
 let cachedKey: string = '';
 
-function base64Decode(input: string): string {
-  const table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-  const chars: string[] = [];
-  let i = 0;
-  while (i < input.length) {
-    const b0 = table.indexOf(input.charAt(i++));
-    const b1 = table.indexOf(input.charAt(i++));
-    const b2 = table.indexOf(input.charAt(i++));
-    const b3 = table.indexOf(input.charAt(i++));
-    if (b0 < 0 || b1 < 0) break;
-    chars.push(String.fromCharCode((b0 << 2) | (b1 >> 4)));
-    if (b2 < 0) break;
-    chars.push(String.fromCharCode(((b1 & 15) << 4) | (b2 >> 2)));
-    if (b3 < 0) break;
-    chars.push(String.fromCharCode(((b2 & 3) << 6) | b3));
-  }
-  return chars.join('');
-}
-
 function xorDecrypt(): string {
   if (cachedKey) return cachedKey;
-  const decoded = base64Decode(ENCRYPTED_KEY);
   const chars: string[] = [];
-  for (let i = 0; i < decoded.length; i++) {
-    chars.push(String.fromCharCode(decoded.charCodeAt(i) ^ XOR_SALT.charCodeAt(i % XOR_SALT.length)));
+  for (let i = 0; i < ENCRYPTED_HEX.length; i += 2) {
+    const byte = parseInt(ENCRYPTED_HEX.substring(i, i + 2), 16);
+    const saltIdx = (i / 2) % XOR_SALT.length;
+    chars.push(String.fromCharCode(byte ^ XOR_SALT.charCodeAt(saltIdx)));
   }
   cachedKey = chars.join('');
   return cachedKey;
