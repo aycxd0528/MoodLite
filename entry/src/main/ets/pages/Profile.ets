@@ -234,7 +234,9 @@ export struct Profile {
           : 'transparent')
         .borderRadius(R.SMALL)
         .onClick(() => {
-          AuthManager.upgradeMember(item.value);
+          const v = item.value;
+          this.memberType = v;
+          AuthManager.upgradeMember(v);
         })
       })
     }
