@@ -27,8 +27,13 @@ struct AIAgentChatPage {
   @State loading: boolean = true;
   private scroller: Scroller = new Scroller();
 
-  aboutToAppear(): void {
-    this.loadRecords();
+  private analysisSent: boolean = false;
+
+  onPageShow(): void {
+    if (!this.analysisSent) {
+      this.analysisSent = true;
+      this.loadRecords();
+    }
   }
 
   aboutToDisappear(): void {
