@@ -183,7 +183,7 @@ export struct HomeTab {
         if (this.isTodayRecorded()) {
           GlassCard() {
             Row() {
-              Image(getMoodIconResource(this.score)).width(48).height(48).objectFit(ImageFit.Contain)
+              Image(getMoodIconResource(this.score)).width(56).height(56).objectFit(ImageFit.Contain)
               Column() {
                 Text(this.label).fontSize(F.BODY).fontWeight(FontWeight.Bold)
                   .fontColor(this.score >= 1 ? resolveColors(this.darkMode, this.currentTheme).PINK : this.score <= -1 ? resolveColors(this.darkMode, this.currentTheme).BLUE : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
@@ -200,7 +200,6 @@ export struct HomeTab {
 
           Button() {
             Row({ space: 6 }) {
-              Text('🤖').fontSize(16)
               Text('AI 情绪分析').fontSize(F.CAPTION).fontWeight(FontWeight.Medium)
             }
           }

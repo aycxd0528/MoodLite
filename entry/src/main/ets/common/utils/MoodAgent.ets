@@ -9,7 +9,7 @@ import http from '@ohos.net.http';
 
 const ENCRYPTED_KEY = 'PgRCUS8PRAQxA1hCfAYfBggBDi9eClJ6DUxcZVVfQ3kATFA=';
 const XOR_SALT = 'MoodLiteSaltKey2026';
-const BASE_URL = 'https://api.deepseek.com/v1/chat/completions';
+const BASE_URL = 'https://api.deepseek.com/chat/completions';
 const MODEL = 'deepseek-v4-flash';
 
 let cachedKey: string = '';
