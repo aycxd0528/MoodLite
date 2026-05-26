@@ -57,12 +57,18 @@ struct AIAgentChatPage {
     const sysMsg: ChatMessage = { role: 'system', content: '你是一位温暖、专业的情绪分析助手。请用简洁的中文回复，每次不超过200字。' };
     const userMsg: ChatMessage = { role: 'user', content: ctx };
 
-    const streamMsg: UIMessage = { role: 'assistant', content: '', isStreaming: true };
-    this.messages = [streamMsg];
+    const placeholder: UIMessage = { role: 'assistant', content: '正在分析你今天的情绪记录…', isStreaming: true };
+    this.messages = [placeholder];
 
+    let firstToken = true;
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        this.messages[0].content += text;
+        if (firstToken) {
+          this.messages[0].content = text;
+          firstToken = false;
+        } else {
+          this.messages[0].content += text;
+        }
       },
       onDone: () => {
         this.messages[0].isStreaming = false;
