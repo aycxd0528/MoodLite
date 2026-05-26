@@ -82,25 +82,25 @@ struct Widget1Card {
         .width('100%')
         .padding({ left: 14, right: 14, top: 10, bottom: 6 })
 
-        // ---- 下排：全宽热力图 ----
-        Column({ space: 8 }) {
-          ForEach([0, 1, 2, 3, 4], (row: number) => {
-            Row({ space: 8 }) {
-              ForEach(this.monthDays.slice(row * 7, (row + 1) * 7), (v: number) => {
-                Column()
-                  .width(20).height(20)
-                  .borderRadius(4)
-                  .backgroundColor(this.getHeatColor(v))
-                  .border({
-                    width: 0.5,
-                    color: this.darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
-                  })
-              })
-            }.width('100%').justifyContent(FlexAlign.SpaceBetween)
-          }, (row: number) => row.toString())
+        // ---- 下排：全宽热力图 (Grid 自动均分) ----
+        Grid() {
+          ForEach(this.monthDays, (v: number) => {
+            GridItem() {
+              Column()
+                .width('100%').height('100%')
+                .borderRadius(4)
+                .backgroundColor(this.getHeatColor(v))
+                .border({
+                  width: 0.5,
+                  color: this.darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
+                })
+            }
+          })
         }
+        .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
+        .rowsTemplate('1fr 1fr 1fr 1fr 1fr')
+        .columnsGap(6).rowsGap(6)
         .width('100%').layoutWeight(1)
-        .justifyContent(FlexAlign.Center)
         .padding({ left: 14, right: 14, top: 4, bottom: 8 })
       }
       .width('100%').height('100%')
