@@ -406,7 +406,8 @@ export struct Profile {
               this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
             })
           }
-          .margin({ top: S.LG })
+
+          Row().width('100%').height(S.LG)
 
           Row().width('100%').height(S.BOTTOM_BREATH)
         }
