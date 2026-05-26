@@ -137,6 +137,47 @@ struct ThemePickerDialog {
   }
 }
 
+// ========== 会员升级弹窗 ==========
+
+@CustomDialog
+struct UpgradeDialog {
+  @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+  @StorageLink('memberType') memberType: string = 'free';
+  controller: CustomDialogController = new CustomDialogController({ builder: UpgradeDialog({}) });
+  currentMember: string = 'free';
+
+  build() {
+    Column() {
+      Text('选择会员方案').fontSize(F.BODY).fontWeight(FontWeight.Bold)
+        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+        .margin({ bottom: S.LG })
+
+      ForEach(PLANS, (item: PlanOption) => {
+        Row() {
+          Text(item.label).fontSize(F.BODY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+            .layoutWeight(1)
+          if (this.memberType === item.value) {
+            Text('✓').fontSize(F.SUBTITLE).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+          }
+        }
+        .width('100%').height(48).padding({ left: S.XS, right: S.XS })
+        .backgroundColor(this.memberType === item.value
+          ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT
+          : 'transparent')
+        .borderRadius(R.SMALL)
+        .onClick(() => {
+          AuthManager.upgradeMember(item.value);
+          this.controller.close();
+        })
+      })
+    }
+    .width('100%').padding(S.LG)
+    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
+  }
+}
+
 // ========== Profile 主页面 ==========
 
 @Entry
@@ -204,42 +245,19 @@ export struct Profile {
     this.themeDialog.open();
   }
 
+  private upgradeDialog: CustomDialogController = new CustomDialogController({
+    builder: UpgradeDialog({ currentMember: this.memberType }),
+    autoCancel: true,
+    alignment: DialogAlignment.Bottom,
+  });
+
   showUpgradeDialog(): void {
-    const d = new CustomDialogController({
-      builder: this.upgradeBuilder(),
+    this.upgradeDialog = new CustomDialogController({
+      builder: UpgradeDialog({ currentMember: this.memberType }),
       autoCancel: true,
       alignment: DialogAlignment.Bottom,
     });
-    d.open();
-  }
-
-  @Builder upgradeBuilder() {
-    Column() {
-      Text('选择会员方案').fontSize(F.BODY).fontWeight(FontWeight.Bold)
-        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
-        .margin({ bottom: S.LG })
-
-      ForEach(PLANS, (item: PlanOption) => {
-        Row() {
-          Text(item.label).fontSize(F.BODY)
-            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
-            .layoutWeight(1)
-          if (this.memberType === item.value) {
-            Text('✓').fontSize(F.SUBTITLE).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-          }
-        }
-        .width('100%').height(48).padding({ left: S.XS, right: S.XS })
-        .backgroundColor(this.memberType === item.value
-          ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT
-          : 'transparent')
-        .borderRadius(R.SMALL)
-        .onClick(() => {
-          AuthManager.upgradeMember(item.value);
-        })
-      })
-    }
-    .width('100%').padding(S.LG)
-    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
+    this.upgradeDialog.open();
   }
 
   fmtTime(): string {
