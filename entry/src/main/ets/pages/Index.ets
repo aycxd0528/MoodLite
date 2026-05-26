@@ -18,6 +18,9 @@ PersistentStorage.persistProp('reminderMinute', 0);
 PersistentStorage.persistProp('mood_reminder_id', -1);
 PersistentStorage.persistProp('darkMode', false);
 PersistentStorage.persistProp('currentTheme', 'blossomPink');
+PersistentStorage.persistProp('memberType', 'free');
+PersistentStorage.persistProp('isLoggedIn', false);
+PersistentStorage.persistProp('currentUser', '');
 
 type LoadStatus = 'LOADING' | 'EMPTY' | 'SUCCESS';
 
