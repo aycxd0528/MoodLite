@@ -285,10 +285,7 @@ export struct Profile {
                   .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 if (this.memberType === 'ultra') {
                   Text('Ultra').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                    .linearGradient({
-                      direction: GradientDirection.Right,
-                      colors: [['#4A7CF6', 0.0], ['#C04CF7', 1.0]],
-                    })
+                    .fontColor('#7C3AED')
                 } else if (this.memberType === 'pro') {
                   Text('Pro').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                     .fontColor('#FFD700')
