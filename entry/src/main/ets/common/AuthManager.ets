@@ -6,8 +6,10 @@ import dataPreferences from '@ohos.data.preferences';
 import { formatDateStr } from '../model/MoodRecord';
 
 const STORE = 'moodlite_auth';
-const KEY_PROFILE = 'user_profile';
+const KEY_USERS = 'users_map';
+const KEY_ACTIVE = 'active_user';
 const KEY_QUOTA = 'ai_quota_';
+const KEY_MEMBER = 'member_';
 
 export interface UserProfile {
   username: string;
@@ -16,10 +18,20 @@ export interface UserProfile {
   createdAt: string;
 }
 
+function hashPwd(pwd: string): string {
+  const salt = 'MoodLiteSALT';
+  const chars: string[] = [];
+  for (let i = 0; i < pwd.length; i++) {
+    chars.push(String.fromCharCode(pwd.charCodeAt(i) ^ salt.charCodeAt(i % salt.length)));
+  }
+  return chars.join('');
+}
+
 class AuthManager {
   private static instance: AuthManager;
   private prefs: dataPreferences.Preferences | null = null;
   private profile: UserProfile | null = null;
+  private users: Record<string, UserProfile> = {};
 
   static getInstance(): AuthManager {
     if (!AuthManager.instance) AuthManager.instance = new AuthManager();
@@ -29,38 +41,49 @@ class AuthManager {
   async init(context: Context): Promise<void> {
     if (this.prefs) return;
     this.prefs = await dataPreferences.getPreferences(context, STORE);
-    const raw = await this.prefs.get(KEY_PROFILE, '') as string;
-    if (raw) {
-      this.profile = JSON.parse(raw) as UserProfile;
+
+    const usersRaw = await this.prefs.get(KEY_USERS, '{}') as string;
+    this.users = JSON.parse(usersRaw) as Record<string, UserProfile>;
+
+    const activeUser = await this.prefs.get(KEY_ACTIVE, '') as string;
+    if (activeUser && this.users[activeUser]) {
+      this.profile = this.users[activeUser];
+      this.loadMemberType();
       this.syncToAppStorage();
     }
   }
 
   async register(username: string, password: string): Promise<boolean> {
     if (!this.prefs) return false;
+    if (this.users[username]) return false;
+
     const profile: UserProfile = {
-      username, password,
+      username,
+      password: hashPwd(password),
       memberType: 'free',
       createdAt: formatDateStr(new Date()),
     };
-    await this.prefs.put(KEY_PROFILE, JSON.stringify(profile));
-    await this.prefs.flush();
+    this.users[username] = profile;
+    await this.saveUsers();
     this.profile = profile;
+    await this.prefs.put(KEY_ACTIVE, username);
+    await this.prefs.flush();
     this.syncToAppStorage();
     return true;
   }
 
   async login(username: string, password: string): Promise<boolean> {
     if (!this.prefs) return false;
-    const raw = await this.prefs.get(KEY_PROFILE, '') as string;
-    if (!raw) return false;
-    const profile = JSON.parse(raw) as UserProfile;
-    if (profile.username === username && profile.password === password) {
-      this.profile = profile;
-      this.syncToAppStorage();
-      return true;
-    }
-    return false;
+    const user = this.users[username];
+    if (!user) return false;
+    if (user.password !== hashPwd(password)) return false;
+
+    this.profile = user;
+    this.loadMemberType();
+    await this.prefs.put(KEY_ACTIVE, username);
+    await this.prefs.flush();
+    this.syncToAppStorage();
+    return true;
   }
 
   logout(): void {
@@ -76,8 +99,9 @@ class AuthManager {
     if (!this.profile || !this.prefs) return;
     if (type !== 'free' && type !== 'pro' && type !== 'ultra') return;
     this.profile.memberType = type;
-    await this.prefs.put(KEY_PROFILE, JSON.stringify(this.profile));
-    await this.prefs.flush();
+    this.saveMemberType();
+    this.users[this.profile.username] = this.profile;
+    await this.saveUsers();
     AppStorage.set('memberType', type);
   }
 
@@ -91,8 +115,6 @@ class AuthManager {
     if (!this.profile || !this.prefs) return false;
     if (this.profile.memberType === 'ultra') return true;
     if (this.profile.memberType === 'free') return false;
-
-    // Pro: max 3 per day
     const today = formatDateStr(new Date());
     const key = KEY_QUOTA + today;
     const used = await this.prefs.get(key, 0) as number;
@@ -103,6 +125,22 @@ class AuthManager {
   }
 
   isLoggedIn(): boolean { return this.profile !== null; }
+
+  private async saveUsers(): Promise<void> {
+    if (!this.prefs) return;
+    await this.prefs.put(KEY_USERS, JSON.stringify(this.users));
+  }
+
+  private async saveMemberType(): Promise<void> {
+    if (!this.profile || !this.prefs) return;
+    await this.prefs.put(KEY_MEMBER + this.profile.username, this.profile.memberType);
+  }
+
+  private async loadMemberType(): Promise<void> {
+    if (!this.profile || !this.prefs) return;
+    const saved = await this.prefs.get(KEY_MEMBER + this.profile.username, 'free') as string;
+    if (saved) this.profile.memberType = saved;
+  }
 
   private syncToAppStorage(): void {
     if (!this.profile) return;
