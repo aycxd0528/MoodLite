@@ -9,7 +9,6 @@ import { Token, Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodEmoji, getMoodIconResource, getMoodLabel, formatDateStr } from '../model/MoodRecord';
-import { AiSuggestion } from '../common/utils/AiAgentClient';
 import { ACHIEVEMENTS, AchievementItem } from '../model/Achievement';
 import { computeAchievementProgress } from '../viewmodel/AchievementChecker';
 import { AchievementDialog } from '../common/components/AchievementDialog';
@@ -22,15 +21,12 @@ interface AchievementUnlock {
 @Component
 export struct HomeTab {
   @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
-  @StorageLink('activeIntent') activeIntent: string | null = null;
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State emoji: string = '😐';
   @State label: string = '';
   @State score: number = 0;
   @State comfort: string = '';
-  @State capsuleOpacity: number = 0;
-  @State capsuleOffY: number = 20;
   @State achievementList: AchievementItem[] = [];
   @State selectedAchievementId: string | null = null;
   @State expandedAchievement: AchievementItem | null = null;
@@ -43,14 +39,12 @@ export struct HomeTab {
 
   aboutToAppear(): void {
     this.updateMoodState();
-    this.animateCapsule();
     this.achievementList = this.buildAchievementListNow();
     this.checkPendingAchievements();
   }
 
   onRecordsChange(): void {
     this.updateMoodState();
-    this.animateCapsule();
     this.achievementList = this.buildAchievementListNow();
     this.checkPendingAchievements();
   }
@@ -74,24 +68,7 @@ export struct HomeTab {
     return this.records[0].dateStr === formatDateStr(new Date());
   }
 
-  private parseActiveIntent(): AiSuggestion | null {
-    if (!this.activeIntent) return null;
-    try {
-      const obj = JSON.parse(this.activeIntent) as AiSuggestion;
-      return obj.dateStr === formatDateStr(new Date()) ? obj : null;
-    } catch (_e) { return null; }
-  }
 
-  private animateCapsule(): void {
-    const intent = this.parseActiveIntent();
-    if (intent) {
-      this.getUIContext()?.animateTo({ curve: curves.springMotion(0.4, 0.6) }, () => {
-        this.capsuleOpacity = 1; this.capsuleOffY = 0;
-      });
-    } else {
-      this.capsuleOpacity = 0; this.capsuleOffY = 20;
-    }
-  }
 
   // ========== 成就弹窗触发 ==========
 
