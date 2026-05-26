@@ -185,7 +185,7 @@ struct AIAgentChatPage {
       } else {
         clearInterval(timer);
       }
-    }, 2);
+    }, 25);
   }
 
   findMessage(id: string): UIMessage | undefined {
