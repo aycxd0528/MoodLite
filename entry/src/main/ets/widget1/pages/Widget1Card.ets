@@ -83,12 +83,12 @@ struct Widget1Card {
         .padding({ left: 14, right: 14, top: 10, bottom: 6 })
 
         // ---- 下排：全宽热力图 ----
-        Column({ space: 4 }) {
+        Column({ space: 6 }) {
           ForEach([0, 1, 2, 3, 4], (row: number) => {
-            Row({ space: 4 }) {
+            Row({ space: 6 }) {
               ForEach(this.monthDays.slice(row * 7, (row + 1) * 7), (v: number) => {
                 Column()
-                  .width(16).height(16)
+                  .width(18).height(18)
                   .borderRadius(4)
                   .backgroundColor(this.getHeatColor(v))
                   .border({
@@ -96,11 +96,11 @@ struct Widget1Card {
                     color: this.darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
                   })
               })
-            }.width('100%').justifyContent(FlexAlign.Center)
+            }.width('100%').justifyContent(FlexAlign.SpaceEvenly)
           }, (row: number) => row.toString())
         }
         .width('100%').layoutWeight(1)
-        .justifyContent(FlexAlign.Center)
+        .justifyContent(FlexAlign.SpaceEvenly)
         .padding({ left: 14, right: 14 })
       }
       .width('100%').height('100%')
