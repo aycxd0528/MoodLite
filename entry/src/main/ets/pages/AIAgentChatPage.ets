@@ -63,6 +63,8 @@ struct AIAgentChatPage {
     const placeholder: UIMessage = { role: 'assistant', content: '正在分析…', isStreaming: true };
     this.messages = [placeholder];
 
+    // 延迟发送，确保组件渲染完成后再发起请求
+    setTimeout(() => {
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
         this.messages[0].content = text;
@@ -79,6 +81,7 @@ struct AIAgentChatPage {
         this.messages = [...this.messages];
       },
     });
+    }, 100);
   }
 
   sendMessage(): void {
