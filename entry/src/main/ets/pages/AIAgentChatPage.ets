@@ -8,6 +8,7 @@
 import DataManager from '../data/DataManager';
 import { MoodRecord, getMoodEmoji, formatDateStr } from '../model/MoodRecord';
 import { Token, Dark, S, F, R } from '../common/styles';
+import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
 
@@ -28,6 +29,7 @@ struct AIAgentChatPage {
   private scroller: Scroller = new Scroller();
 
   private analysisSent: boolean = false;
+  private todayCtx: string = '';
 
   onPageShow(): void {
     if (!this.analysisSent) {
@@ -56,42 +58,45 @@ struct AIAgentChatPage {
       return;
     }
 
-    const ctx = buildTodayContext(todayRecords.map((r: MoodRecord): TodayRecord => ({
+    this.todayCtx = buildTodayContext(todayRecords.map((r: MoodRecord): TodayRecord => ({
       time: this.fmtTime(r.timestamp),
       score: r.score,
       text: r.text,
       tags: r.tags,
     })));
 
+    this.messages = [{
+      role: 'assistant',
+      content: '你好！我已经读取了你今天的所有心情记录。\n\n点击下方按钮，我来帮你分析今天的情绪状态 👇',
+      isStreaming: false,
+    }];
+    this.loading = false;
+  }
+
+  runAnalysis(): void {
+    if (this.loading || !this.todayCtx) return;
+
     const sysMsg: ChatMessage = {
       role: 'system',
       content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。',
     };
-    const userMsg: ChatMessage = { role: 'user', content: ctx };
+    const userMsg: ChatMessage = { role: 'user', content: this.todayCtx };
 
-    this.messages = [{ role: 'assistant', content: '正在分析…', isStreaming: true }];
+    this.messages = [{ role: 'assistant', content: '正在分析…', isStreaming: true }, ...this.messages];
+    this.loading = true;
 
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        this.getUIContext()?.animateTo({ duration: 0 }, () => {
-          const msgs = this.messages;
-          msgs[0] = { role: 'assistant', content: text, isStreaming: true };
-          this.messages = msgs;
-        });
+        this.messages[0].content = text;
       },
       onDone: () => {
-        this.getUIContext()?.animateTo({ duration: 0 }, () => {
-          const msgs = this.messages;
-          msgs[0] = { role: 'assistant', content: msgs[0].content, isStreaming: false };
-          this.messages = msgs;
-          this.loading = false;
-        });
+        this.messages[0].isStreaming = false;
+        this.loading = false;
       },
       onError: (msg: string) => {
-        this.getUIContext()?.animateTo({ duration: 0 }, () => {
-          this.messages = [{ role: 'assistant', content: '分析失败: ' + msg, isStreaming: false }];
-          this.loading = false;
-        });
+        this.messages[0].content = '分析失败: ' + msg;
+        this.messages[0].isStreaming = false;
+        this.loading = false;
       },
     });
   }
@@ -184,6 +189,18 @@ struct AIAgentChatPage {
       }
       .layoutWeight(1).scrollBar(BarState.Off)
       .onScrollIndex(_first => { this.scroller.scrollEdge(Edge.Bottom); })
+
+      // 分析按钮
+      if (this.todayCtx.length > 0 && !this.loading) {
+        Button('分析今日情绪')
+          .width('100%').height(40)
+          .fontSize(14).fontWeight(FontWeight.Medium)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+          .borderRadius(20)
+          .margin({ left: S.LG, right: S.LG, bottom: S.XS })
+          .onClick(() => { this.runAnalysis(); })
+      }
 
       // 输入区
       Row({ space: S.SM }) {
