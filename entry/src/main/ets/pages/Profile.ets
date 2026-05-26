@@ -397,9 +397,9 @@ export struct Profile {
           // 退出登录
           GlassCard() {
             Row() {
-              Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+              Text('退出登录').fontSize(F.CAPTION).fontColor(Token.DELETE_RED)
             }
-            .width('100%').height(48).justifyContent(FlexAlign.Center)
+            .width('100%').height(40).justifyContent(FlexAlign.Center)
             .alignItems(VerticalAlign.Center)
             .onClick(() => {
               AuthManager.logout();
