@@ -79,16 +79,8 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
         const message = choices[0]['message'] as Record<string, Object>;
         const content = (message['content'] as string) || '';
         if (content) {
-          let i = 0;
-          const timer = setInterval(() => {
-            if (i < content.length) {
-              callback.onToken(content.charAt(i));
-              i++;
-            } else {
-              clearInterval(timer);
-              callback.onDone();
-            }
-          }, 3);
+          callback.onToken(content);
+          callback.onDone();
           return;
         }
       }

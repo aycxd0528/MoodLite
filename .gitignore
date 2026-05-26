@@ -11,3 +11,5 @@
 **/.test
 /.appanalyzer.DS_Store
 AGENTS.md
+.DS_Store
+**/.DS_Store

@@ -54,21 +54,18 @@ struct AIAgentChatPage {
       tags: r.tags,
     })));
 
-    const sysMsg: ChatMessage = { role: 'system', content: '你是一位温暖、专业的情绪分析助手。请用简洁的中文回复，每次不超过200字。' };
+    const sysMsg: ChatMessage = {
+      role: 'system',
+      content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。',
+    };
     const userMsg: ChatMessage = { role: 'user', content: ctx };
 
-    const placeholder: UIMessage = { role: 'assistant', content: '正在分析你今天的情绪记录…', isStreaming: true };
+    const placeholder: UIMessage = { role: 'assistant', content: '正在分析…', isStreaming: true };
     this.messages = [placeholder];
 
-    let firstToken = true;
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        if (firstToken) {
-          this.messages[0].content = text;
-          firstToken = false;
-        } else {
-          this.messages[0].content += text;
-        }
+        this.messages[0].content = text;
       },
       onDone: () => {
         this.messages[0].isStreaming = false;
@@ -98,13 +95,13 @@ struct AIAgentChatPage {
     this.loading = true;
 
     const chatMsgs: ChatMessage[] = [
-      { role: 'system', content: '你是一位温暖的情绪分析助手，请用简洁中文回复。' },
+      { role: 'system', content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。' },
     ];
     chatMsgs.push({ role: 'user', content: text });
 
     sendMessageStream(chatMsgs, {
       onToken: (t: string) => {
-        this.messages[0].content += t;
+        this.messages[0].content = t;
       },
       onDone: () => {
         this.messages[0].isStreaming = false;
