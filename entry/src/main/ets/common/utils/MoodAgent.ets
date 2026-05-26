@@ -71,9 +71,15 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
     usingProtocol: http.HttpProtocol.HTTP1_1,
   }).then((response: http.HttpResponse) => {
     httpRequest.destroy();
-    const resultStr = (response.result as Object).toString();
+    const raw = response.result;
+    let obj: Record<string, Object>;
+    if (typeof raw === 'string') {
+      obj = JSON.parse(raw) as Record<string, Object>;
+    } else {
+      obj = raw as Record<string, Object>;
+    }
+
     if (response.responseCode === 200) {
-      const obj: Record<string, Object> = JSON.parse(resultStr) as Record<string, Object>;
       const choices = obj['choices'] as Array<Record<string, Object>>;
       if (choices && choices.length > 0) {
         const message = choices[0]['message'] as Record<string, Object>;
@@ -85,7 +91,7 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
         }
       }
     }
-    callback.onError('AI 返回异常, HTTP ' + response.responseCode + ': ' + resultStr);
+    callback.onError('HTTP ' + response.responseCode);
   }).catch((err: Object) => {
     httpRequest.destroy();
     callback.onError('网络请求失败, 请检查网络连接后重试');

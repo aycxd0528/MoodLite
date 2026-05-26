@@ -73,9 +73,7 @@ struct AIAgentChatPage {
         this.messages = [...this.messages];
       },
       onError: (msg: string) => {
-        if (this.messages[0].content.length === 0) {
-          this.messages[0].content = '抱歉，分析遇到了一些问题 😢\n' + msg;
-        }
+        this.messages[0].content = '抱歉，出了点问题 😢 ' + msg;
         this.messages[0].isStreaming = false;
         this.loading = false;
         this.messages = [...this.messages];
