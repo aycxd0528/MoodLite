@@ -395,16 +395,17 @@ export struct Profile {
           }
 
           // 退出登录
-          Button() {
-            Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+          GlassCard() {
+            Row() {
+              Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+            }
+            .width('100%').height(48).justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
+              AuthManager.logout();
+              this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
+            })
           }
-          .height(44).fontSize(F.BODY)
-          .backgroundColor('rgba(255,107,107,0.08)')
-          .borderRadius(R.SMALL)
-          .onClick(() => {
-            AuthManager.logout();
-            this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
-          })
 
           Row().width('100%').height(S.LG)
 
