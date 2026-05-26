@@ -21,8 +21,9 @@ const PLANS: PlanOption[] = [
 ];
 
 const ITEMS: SItem[] = [
-  { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
+  { icon: $r('app.media.ic_reminder'),        label: '提醒设置',     toggle: true  },
   { icon: $r('app.media.ic_moon'),            label: '深色模式',     toggle: true  },
+  { icon: $r('app.media.ic_settings'),        label: '主题风格',     toggle: false },
   { icon: $r('app.media.ic_message'),         label: '给我们反馈',   toggle: false },
   { icon: $r('app.media.ic_info'),            label: '关于 MoodLite',toggle: false },
 ];
@@ -338,7 +339,9 @@ export struct Profile {
                   }
                   .width('100%').height(56).alignItems(VerticalAlign.Center)
                   .onClick(() => {
-                    if (it.label === '给我们反馈') {
+                    if (it.label === '主题风格') {
+                      this.showThemeDialog();
+                    } else if (it.label === '给我们反馈') {
                       const want: Want = {
                         action: 'ohos.want.action.viewData',
                         entities: ['entity.system.browsable'],
