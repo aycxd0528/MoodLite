@@ -9,7 +9,7 @@ import http from '@ohos.net.http';
 
 const ENCRYPTED_KEY = 'PgRCUS8PRAQxA1hCfAYfBggBDi9eClJ6DUxcZVVfQ3kATFA=';
 const XOR_SALT = 'MoodLiteSaltKey2026';
-const BASE_URL = 'https://api.deepseek.com/chat/completions';
+const BASE_URL = 'https://api.deepseek.com/v1/chat/completions';
 const MODEL = 'deepseek-v4-flash';
 
 let cachedKey: string = '';
@@ -66,6 +66,7 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
     extraData: body,
     connectTimeout: 15000,
     readTimeout: 60000,
+    usingProtocol: http.HttpProtocol.HTTP1_1,
   }).then((response: http.HttpResponse) => {
     httpRequest.destroy();
     if (response.responseCode === 200) {
@@ -92,9 +93,10 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
       }
     }
     callback.onError('AI 返回异常, code=' + response.responseCode);
-  }).catch((err: Error) => {
+  }).catch((err: Object) => {
     httpRequest.destroy();
-    callback.onError('请求失败: ' + JSON.stringify(err));
+    callback.onError('网络请求失败, 请检查网络连接后重试');
+    console.error('[MoodAgent] request error: ' + JSON.stringify(err));
   });
 }
 
