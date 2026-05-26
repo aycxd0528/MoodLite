@@ -69,7 +69,13 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
     connectTimeout: 15000,
     readTimeout: 60000,
     usingProtocol: http.HttpProtocol.HTTP1_1,
-  }).then((response: http.HttpResponse) => {
+  }, (err: Error, response: http.HttpResponse) => {
+    if (err) {
+      httpRequest.destroy();
+      callback.onError('请求失败');
+      console.error('[MoodAgent] error: ' + JSON.stringify(err));
+      return;
+    }
     httpRequest.destroy();
     const raw = response.result;
     let obj: Record<string, Object>;
@@ -92,10 +98,6 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
       }
     }
     callback.onError('HTTP ' + response.responseCode);
-  }).catch((err: Object) => {
-    httpRequest.destroy();
-    callback.onError('网络请求失败, 请检查网络连接后重试');
-    console.error('[MoodAgent] request error: ' + JSON.stringify(err));
   });
 }
 
