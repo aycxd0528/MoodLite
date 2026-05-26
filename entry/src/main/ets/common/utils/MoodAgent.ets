@@ -88,7 +88,7 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
               clearInterval(timer);
               callback.onDone();
             }
-          }, 20);
+          }, 3);
           return;
         }
       }
