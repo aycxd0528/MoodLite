@@ -287,11 +287,11 @@ export struct Profile {
                   Text('Ultra').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                     .linearGradient({
                       direction: GradientDirection.Right,
-                      colors: [['#6B8CF6', 0.0], ['#A855F7', 1.0]],
+                      colors: [['#4A7CF6', 0.0], ['#C04CF7', 1.0]],
                     })
                 } else if (this.memberType === 'pro') {
                   Text('Pro').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                    .fontColor('#D4A017')
+                    .fontColor('#FFD700')
                 } else {
                   Text('Free').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                     .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
