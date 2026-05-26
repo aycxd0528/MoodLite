@@ -282,7 +282,6 @@ export struct Profile {
               .onClick(() => { this.showUpgradeDialog(); })
             }
             .width('100%').alignItems(VerticalAlign.Center)
-            .padding({ top: S.SM, bottom: S.SM, left: S.MD, right: S.MD })
           }
 
           Row().width('100%').height(S.MD)
@@ -393,6 +392,8 @@ export struct Profile {
               color: resolveColors(this.darkMode, this.currentTheme).DIVIDER,
               startMargin: 48, endMargin: 0 })
           }
+
+          Row().width('100%').height(S.MD)
 
           // 退出登录
           Row() {
