@@ -4,7 +4,7 @@
 
 import DataManager from '../data/DataManager';
 import { MoodRecord, formatDateStr } from '../model/MoodRecord';
-import { S, F } from '../common/styles';
+import { Token, Dark, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
 
@@ -30,7 +30,6 @@ function nextId(): string { return String(++msgId); }
 struct MessageBubble {
   @ObjectLink msg: UIMessage;
   @Prop darkMode: boolean;
-  @Prop currentTheme: string;
 
   build() {
     Row() {
@@ -39,12 +38,12 @@ struct MessageBubble {
         Text(this.msg.content + (this.msg.isStreaming ? ' ▍' : ''))
           .fontSize(14).lineHeight(22)
           .fontColor(this.msg.role === 'user'
-            ? resolveColors(this.darkMode, this.currentTheme).TEXT_WHITE
-            : resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+            ? Token.TEXT_WHITE
+            : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
           .padding({ left: 14, right: 14, top: 10, bottom: 10 })
           .backgroundColor(this.msg.role === 'user'
-            ? resolveColors(this.darkMode, this.currentTheme).PINK
-            : resolveColors(this.darkMode, this.currentTheme).CARD)
+            ? Token.PINK
+            : (this.darkMode ? Dark.CARD : Token.BUBBLE_BG))
           .borderRadius(16)
           .constraintSize({ maxWidth: '80%' })
       }
@@ -217,7 +216,7 @@ struct AIAgentChatPage {
       List({ scroller: this.scroller }) {
         ForEach(this.messages, (msg: UIMessage) => {
           ListItem() {
-            MessageBubble({ msg: msg, darkMode: this.darkMode, currentTheme: this.currentTheme })
+            MessageBubble({ msg: msg, darkMode: this.darkMode })
           }
         }, (msg: UIMessage) => msg.id)
       }
