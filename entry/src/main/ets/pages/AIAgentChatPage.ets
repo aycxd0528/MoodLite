@@ -7,15 +7,50 @@ import { MoodRecord, formatDateStr } from '../model/MoodRecord';
 import { Token, Dark, S, F } from '../common/styles';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
 
-interface UIMessage {
+@Observed
+export class UIMessage {
   id: string;
   role: string;
   content: string;
   isStreaming: boolean;
+
+  constructor(id: string, role: string, content: string, isStreaming: boolean) {
+    this.id = id;
+    this.role = role;
+    this.content = content;
+    this.isStreaming = isStreaming;
+  }
 }
 
 let msgId = 0;
 function nextId(): string { return String(++msgId); }
+
+@Component
+struct MessageBubble {
+  @ObjectLink msg: UIMessage;
+  @Prop darkMode: boolean;
+
+  build() {
+    Row() {
+      if (this.msg.role === 'user') Blank()
+      Column() {
+        Text(this.msg.content + (this.msg.isStreaming ? ' ▍' : ''))
+          .fontSize(14).lineHeight(22)
+          .fontColor(this.msg.role === 'user'
+            ? Token.TEXT_WHITE
+            : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
+          .padding({ left: 14, right: 14, top: 10, bottom: 10 })
+          .backgroundColor(this.msg.role === 'user'
+            ? Token.PINK
+            : (this.darkMode ? Dark.CARD : Token.BUBBLE_BG))
+          .borderRadius(16)
+          .constraintSize({ maxWidth: '80%' })
+      }
+      .alignItems(this.msg.role === 'user' ? HorizontalAlign.End : HorizontalAlign.Start)
+      if (this.msg.role !== 'user') Blank()
+    }.width('100%').padding({ left: 12, right: 12, top: 4, bottom: 4 })
+  }
+}
 
 @Entry
 @Component
@@ -25,7 +60,6 @@ struct AIAgentChatPage {
   @State messages: UIMessage[] = [];
   @State inputText: string = '';
   @State loading: boolean = true;
-
   private scroller: Scroller = new Scroller();
   private analysisSent: boolean = false;
 
@@ -46,11 +80,9 @@ struct AIAgentChatPage {
     const todayRecords = allRecords.filter(r => r.dateStr === today);
 
     if (todayRecords.length === 0) {
-      this.messages = [{
-        id: nextId(), role: 'assistant',
-        content: '今天还没有记录，去记录一条心情再来找我吧。',
-        isStreaming: false,
-      }];
+      this.messages = [
+        new UIMessage(nextId(), 'assistant', '今天还没有记录，去记录一条心情再来找我吧。', false)
+      ];
       this.loading = false;
       return;
     }
@@ -63,10 +95,9 @@ struct AIAgentChatPage {
     })));
 
     const aiId = nextId();
-    this.messages = [{
-      id: aiId, role: 'assistant',
-      content: '正在分析…', isStreaming: true,
-    }];
+    this.messages = [
+      new UIMessage(aiId, 'assistant', '正在分析…', true)
+    ];
 
     const sysMsg: ChatMessage = {
       role: 'system',
@@ -76,15 +107,15 @@ struct AIAgentChatPage {
 
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        this.replaceMessage(aiId, text, true);
+        this.updateMessage(aiId, text, true);
       },
       onDone: () => {
         const msg = this.findMessage(aiId);
-        this.replaceMessage(aiId, msg.content, false);
+        this.updateMessage(aiId, msg?.content || '', false);
         this.loading = false;
       },
       onError: (msg: string) => {
-        this.replaceMessage(aiId, '分析失败: ' + msg, false);
+        this.updateMessage(aiId, '分析失败: ' + msg, false);
         this.loading = false;
       },
     });
@@ -96,47 +127,50 @@ struct AIAgentChatPage {
 
     this.inputText = '';
     const aiId = nextId();
-    this.messages = [...this.messages,
-      { id: nextId(), role: 'user', content: text, isStreaming: false },
-      { id: aiId, role: 'assistant', content: '', isStreaming: true },
-    ];
-    this.loading = true;
+    this.messages.push(new UIMessage(nextId(), 'user', text, false));
+    this.messages.push(new UIMessage(aiId, 'assistant', '', true));
 
-    // 构建完整对话历史，保持多轮上下文
+    this.loading = true;
+    this.scroller.scrollEdge(Edge.Bottom);
+
     const chatMsgs: ChatMessage[] = [
-      { role: 'system', content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。' },
+      { role: 'system', content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。' }
     ];
     for (let i = 0; i < this.messages.length - 1; i++) {
+      const r = this.messages[i].role;
       chatMsgs.push({
-        role: this.messages[i].role as ('system' | 'user' | 'assistant'),
-        content: this.messages[i].content,
+        role: (r === 'user' || r === 'assistant' || r === 'system') ? r : 'user',
+        content: this.messages[i].content
       });
     }
 
     sendMessageStream(chatMsgs, {
       onToken: (t: string) => {
-        this.replaceMessage(aiId, t, true);
+        this.updateMessage(aiId, t, true);
       },
       onDone: () => {
         const msg = this.findMessage(aiId);
-        this.replaceMessage(aiId, msg.content, false);
+        this.updateMessage(aiId, msg?.content || '', false);
         this.loading = false;
       },
       onError: (msg: string) => {
-        this.replaceMessage(aiId, '抱歉，出了点问题 ' + msg, false);
+        this.updateMessage(aiId, '抱歉，出了点问题 ' + msg, false);
         this.loading = false;
       },
     });
   }
 
-  replaceMessage(id: string, content: string, streaming: boolean): void {
-    this.messages = this.messages.map(m =>
-      m.id === id ? ({ id: m.id, role: m.role, content: content, isStreaming: streaming } as UIMessage) : m
-    );
+  updateMessage(id: string, content: string, streaming: boolean): void {
+    const msg = this.messages.find(m => m.id === id);
+    if (msg) {
+      msg.content = content;
+      msg.isStreaming = streaming;
+      this.scroller.scrollEdge(Edge.Bottom);
+    }
   }
 
-  findMessage(id: string): UIMessage {
-    return this.messages.find(m => m.id === id) || { id: '', role: '', content: '', isStreaming: false };
+  findMessage(id: string): UIMessage | undefined {
+    return this.messages.find(m => m.id === id);
   }
 
   fmtTime(ts: number): string {
@@ -162,29 +196,11 @@ struct AIAgentChatPage {
       List({ scroller: this.scroller }) {
         ForEach(this.messages, (msg: UIMessage) => {
           ListItem() {
-            Row() {
-              if (msg.role === 'user') Blank()
-              Column() {
-                Text(msg.content + (msg.isStreaming ? ' ▍' : ''))
-                  .fontSize(14).lineHeight(22)
-                  .fontColor(msg.role === 'user'
-                    ? Token.TEXT_WHITE
-                    : (this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN))
-                  .padding({ left: 14, right: 14, top: 10, bottom: 10 })
-                  .backgroundColor(msg.role === 'user'
-                    ? Token.PINK
-                    : (this.darkMode ? Dark.CARD : Token.BUBBLE_BG))
-                  .borderRadius(16)
-                  .constraintSize({ maxWidth: '80%' })
-              }
-              .alignItems(msg.role === 'user' ? HorizontalAlign.End : HorizontalAlign.Start)
-              if (msg.role !== 'user') Blank()
-            }.width('100%').padding({ left: 12, right: 12, top: 4, bottom: 4 })
+            MessageBubble({ msg: msg, darkMode: this.darkMode })
           }
         }, (msg: UIMessage) => msg.id)
       }
       .layoutWeight(1).scrollBar(BarState.Off)
-      .onScrollIndex(_first => { this.scroller.scrollEdge(Edge.Bottom); })
 
       Row({ space: S.SM }) {
         TextInput({ placeholder: this.loading ? 'AI 正在思考...' : '输入消息...', text: this.inputText })
