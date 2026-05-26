@@ -7,8 +7,7 @@
 
 import DataManager from '../data/DataManager';
 import { MoodRecord, getMoodEmoji, formatDateStr } from '../model/MoodRecord';
-import { Token, Dark, S, F, R } from '../common/styles';
-import { resolveColors } from '../common/ThemeManager';
+import { Token, Dark, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
 
