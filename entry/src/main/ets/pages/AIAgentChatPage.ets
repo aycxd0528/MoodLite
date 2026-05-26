@@ -1,14 +1,10 @@
 /**
  * AIAgentChatPage — AI 情绪分析对话页
- *
- * 进入时自动发送当天所有记录作为上下文，
- * DeepSeek 流式输出分析结果，支持多轮追问。
  */
 
 import DataManager from '../data/DataManager';
 import { MoodRecord, getMoodEmoji, formatDateStr } from '../model/MoodRecord';
 import { Token, Dark, S, F } from '../common/styles';
-import { GlassCard } from '../common/components/GlassCard';
 import { ChatMessage, TodayRecord, sendMessageStream, buildTodayContext } from '../common/utils/MoodAgent';
 
 interface UIMessage {
@@ -25,24 +21,7 @@ struct AIAgentChatPage {
   @State messages: UIMessage[] = [];
   @State inputText: string = '';
   @State loading: boolean = true;
-  @StorageLink('ai_analysis_result') analysisResult: string = '';
-  @StorageLink('ai_analysis_done') @Watch('onAnalysisDone') analysisDone: number = 0;
   private scroller: Scroller = new Scroller();
-
-  onAnalysisDone(): void {
-    if (this.analysisDone !== 1) return;
-    const text = this.analysisResult;
-    if (text.startsWith('分析失败')) {
-      this.messages[0].content = text;
-    } else {
-      this.messages[0].content = text;
-    }
-    this.messages[0].isStreaming = false;
-    this.loading = false;
-    this.messages = [...this.messages];
-    AppStorage.set('ai_analysis_done', 0);
-  }
-
   private analysisSent: boolean = false;
 
   onPageShow(): void {
@@ -53,8 +32,6 @@ struct AIAgentChatPage {
 
   aboutToDisappear(): void {
     this.loading = false;
-    AppStorage.set('ai_analysis_done', 0);
-    AppStorage.set('ai_analysis_result', '');
   }
 
   async loadRecords(): Promise<void> {
@@ -91,14 +68,14 @@ struct AIAgentChatPage {
     setTimeout(() => {
       sendMessageStream([sysMsg, userMsg], {
         onToken: (text: string) => {
-          AppStorage.set('ai_analysis_result', text);
+          this.updateLastMessage(text, true);
         },
         onDone: () => {
-          AppStorage.set('ai_analysis_done', 1);
+          this.finishLastMessage();
         },
         onError: (msg: string) => {
-          AppStorage.set('ai_analysis_result', '分析失败: ' + msg);
-          AppStorage.set('ai_analysis_done', 1);
+          this.updateLastMessage('分析失败: ' + msg, false);
+          this.loading = false;
         },
       });
     }, 500);
@@ -109,39 +86,44 @@ struct AIAgentChatPage {
     if (!text || this.loading) return;
 
     this.inputText = '';
-    const userMsg: UIMessage = { role: 'user', content: text, isStreaming: false };
-    const streamMsg: UIMessage = { role: 'assistant', content: '', isStreaming: true };
-    this.messages.unshift(userMsg);
-    this.messages.unshift(streamMsg);
+    this.messages.push({ role: 'user', content: text, isStreaming: false });
+    this.messages.push({ role: 'assistant', content: '', isStreaming: true });
+    this.messages = [...this.messages];
     this.loading = true;
 
     const chatMsgs: ChatMessage[] = [
       { role: 'system', content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。' },
+      { role: 'user', content: text },
     ];
-    chatMsgs.push({ role: 'user', content: text });
 
     sendMessageStream(chatMsgs, {
       onToken: (t: string) => {
-        this.getUIContext()?.animateTo({ duration: 0 }, () => {
-          this.messages[0].content = t;
-        });
+        this.updateLastMessage(t, true);
       },
       onDone: () => {
-        this.getUIContext()?.animateTo({ duration: 0 }, () => {
-          this.messages[0].isStreaming = false;
-          this.loading = false;
-          this.messages = [...this.messages];
-        });
+        this.finishLastMessage();
       },
       onError: (msg: string) => {
-        this.getUIContext()?.animateTo({ duration: 0 }, () => {
-          this.messages[0].content = '抱歉，出了点问题 ' + msg;
-          this.messages[0].isStreaming = false;
-          this.loading = false;
-          this.messages = [...this.messages];
-        });
+        this.updateLastMessage('抱歉，出了点问题 ' + msg, false);
+        this.loading = false;
       },
     });
+  }
+
+  // splice 替换数组元素 → ArkUI 能检测到变更
+  updateLastMessage(text: string, streaming: boolean): void {
+    const last = this.messages[this.messages.length - 1];
+    const updated: UIMessage = { role: last.role, content: text, isStreaming: streaming };
+    this.messages.splice(this.messages.length - 1, 1, updated);
+    this.messages = [...this.messages];
+  }
+
+  finishLastMessage(): void {
+    const last = this.messages[this.messages.length - 1];
+    const updated: UIMessage = { role: last.role, content: last.content, isStreaming: false };
+    this.messages.splice(this.messages.length - 1, 1, updated);
+    this.messages = [...this.messages];
+    this.loading = false;
   }
 
   fmtTime(ts: number): string {
@@ -151,7 +133,6 @@ struct AIAgentChatPage {
 
   build() {
     Column() {
-      // 标题栏
       Stack({ alignContent: Alignment.Center }) {
         Text('AI 情绪分析').fontSize(F.BODY).fontWeight(FontWeight.Medium)
           .fontColor(this.darkMode ? Dark.TEXT_MAIN : Token.TEXT_MAIN)
@@ -165,7 +146,6 @@ struct AIAgentChatPage {
       }
       .width('100%').padding({ top: S.HEADER_TOP, bottom: S.SM, left: S.LG, right: S.LG })
 
-      // 消息列表
       List({ scroller: this.scroller }) {
         ForEach(this.messages, (msg: UIMessage, index: number) => {
           ListItem() {
@@ -193,14 +173,11 @@ struct AIAgentChatPage {
       .layoutWeight(1).scrollBar(BarState.Off)
       .onScrollIndex(_first => { this.scroller.scrollEdge(Edge.Bottom); })
 
-      // 输入区
       Row({ space: S.SM }) {
         TextInput({ placeholder: this.loading ? 'AI 正在思考...' : '输入消息...', text: this.inputText })
-          .layoutWeight(1).height(44)
-          .fontSize(14)
+          .layoutWeight(1).height(44).fontSize(14)
           .backgroundColor(this.darkMode ? Dark.CARD : Token.BAR_BG)
-          .borderRadius(22)
-          .padding({ left: 16, right: 16 })
+          .borderRadius(22).padding({ left: 16, right: 16 })
           .placeholderColor(this.darkMode ? Dark.TEXT_GRAY : Token.TEXT_GRAY)
           .enabled(!this.loading)
           .onChange((v: string) => { this.inputText = v; })
