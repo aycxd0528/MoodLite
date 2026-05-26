@@ -362,7 +362,7 @@ export struct Profile {
               // ---- 主题风格（独立 ListItem，在 ForEach 之后） ----
               ListItem() {
                 Row() {
-                  Image($r('app.media.ic_moon'))
+                  Image($r('app.media.ic_system'))
                     .width(24).height(24).objectFit(ImageFit.Contain)
                     .colorFilter(
                       this.darkMode ? DARK_INVERT : NORMAL_MATRIX
@@ -395,17 +395,16 @@ export struct Profile {
           }
 
           // 退出登录
-          GlassCard() {
-            Row() {
-              Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
-            }
-            .width('100%').height(48).justifyContent(FlexAlign.Center)
-            .alignItems(VerticalAlign.Center)
-            .onClick(() => {
-              AuthManager.logout();
-              this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
-            })
+          Button() {
+            Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
           }
+          .height(44).fontSize(F.BODY)
+          .backgroundColor('rgba(255,107,107,0.08)')
+          .borderRadius(R.SMALL)
+          .onClick(() => {
+            AuthManager.logout();
+            this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
+          })
 
           Row().width('100%').height(S.LG)
 
