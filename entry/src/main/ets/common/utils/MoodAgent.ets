@@ -46,7 +46,7 @@ function buildBody(messages: ChatMessage[]): string {
   const body: RequestBody = {
     model: MODEL,
     messages: messages,
-    stream: true,
+    stream: false,
     max_tokens: 1024,
   };
   return JSON.stringify(body);
@@ -56,6 +56,9 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
   const httpRequest = http.createHttp();
   const body = buildBody(messages);
   const apiKey = xorDecrypt();
+
+  console.info('[MoodAgent] sending to: ' + BASE_URL);
+  console.info('[MoodAgent] body: ' + body);
 
   httpRequest.request(BASE_URL, {
     method: http.RequestMethod.POST,
@@ -69,15 +72,16 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
     usingProtocol: http.HttpProtocol.HTTP1_1,
   }).then((response: http.HttpResponse) => {
     httpRequest.destroy();
+    const resultStr = (response.result as Object).toString();
+    console.info('[MoodAgent] response code=' + response.responseCode + ' body=' + resultStr);
+
     if (response.responseCode === 200) {
-      const resultStr = response.result as string;
       const obj: Record<string, Object> = JSON.parse(resultStr) as Record<string, Object>;
       const choices = obj['choices'] as Array<Record<string, Object>>;
       if (choices && choices.length > 0) {
         const message = choices[0]['message'] as Record<string, Object>;
         const content = (message['content'] as string) || '';
         if (content) {
-          // Simulate streaming by sending chars with delay
           let i = 0;
           const timer = setInterval(() => {
             if (i < content.length) {
@@ -92,7 +96,7 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
         }
       }
     }
-    callback.onError('AI 返回异常, code=' + response.responseCode);
+    callback.onError('AI 返回异常, HTTP ' + response.responseCode + ': ' + resultStr);
   }).catch((err: Object) => {
     httpRequest.destroy();
     callback.onError('网络请求失败, 请检查网络连接后重试');
