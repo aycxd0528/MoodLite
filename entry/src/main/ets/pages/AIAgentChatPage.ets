@@ -25,20 +25,9 @@ struct AIAgentChatPage {
   @State messages: UIMessage[] = [];
   @State inputText: string = '';
   @State loading: boolean = true;
-  @StorageLink('ai_analysis_result') analysisResult: string = '';
-  @StorageLink('ai_analysis_done') @Watch('onAnalysisDone') analysisDone: number = 0;
+
   private scroller: Scroller = new Scroller();
   private analysisSent: boolean = false;
-
-  onAnalysisDone(): void {
-    if (this.analysisDone !== 1) return;
-    this.messages = [{
-      id: nextId(), role: 'assistant',
-      content: this.analysisResult, isStreaming: false,
-    }];
-    this.loading = false;
-    AppStorage.set('ai_analysis_done', 0);
-  }
 
   onPageShow(): void {
     if (this.analysisSent) return;
@@ -48,8 +37,6 @@ struct AIAgentChatPage {
 
   aboutToDisappear(): void {
     this.loading = false;
-    AppStorage.set('ai_analysis_done', 0);
-    AppStorage.set('ai_analysis_result', '');
   }
 
   async loadRecords(): Promise<void> {
@@ -75,8 +62,9 @@ struct AIAgentChatPage {
       tags: r.tags,
     })));
 
+    const aiId = nextId();
     this.messages = [{
-      id: nextId(), role: 'assistant',
+      id: aiId, role: 'assistant',
       content: '正在分析…', isStreaming: true,
     }];
 
@@ -88,14 +76,16 @@ struct AIAgentChatPage {
 
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        AppStorage.set('ai_analysis_result', text);
+        this.replaceMessage(aiId, text, true);
       },
       onDone: () => {
-        AppStorage.set('ai_analysis_done', 1);
+        const msg = this.findMessage(aiId);
+        this.replaceMessage(aiId, msg.content, false);
+        this.loading = false;
       },
       onError: (msg: string) => {
-        AppStorage.set('ai_analysis_result', '分析失败: ' + msg);
-        AppStorage.set('ai_analysis_done', 1);
+        this.replaceMessage(aiId, '分析失败: ' + msg, false);
+        this.loading = false;
       },
     });
   }
@@ -112,17 +102,24 @@ struct AIAgentChatPage {
     ];
     this.loading = true;
 
+    // 构建完整对话历史，保持多轮上下文
     const chatMsgs: ChatMessage[] = [
       { role: 'system', content: '简洁回复，每次不超过三句话。风格温暖但不啰嗦。' },
-      { role: 'user', content: text },
     ];
+    for (let i = 0; i < this.messages.length - 1; i++) {
+      chatMsgs.push({
+        role: this.messages[i].role,
+        content: this.messages[i].content,
+      });
+    }
 
     sendMessageStream(chatMsgs, {
       onToken: (t: string) => {
         this.replaceMessage(aiId, t, true);
       },
       onDone: () => {
-        this.replaceMessage(aiId, this.findMessage(aiId).content, false);
+        const msg = this.findMessage(aiId);
+        this.replaceMessage(aiId, msg.content, false);
         this.loading = false;
       },
       onError: (msg: string) => {
