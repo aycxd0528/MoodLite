@@ -84,9 +84,9 @@ struct AIAgentChatPage {
     if (!text || this.loading) return;
 
     this.inputText = '';
-    this.messages.push({ role: 'user', content: text, isStreaming: false });
-    this.messages.push({ role: 'assistant', content: '', isStreaming: true });
-    this.messages = [...this.messages];
+    const userBubble: UIMessage = { role: 'user', content: text, isStreaming: false };
+    const aiBubble: UIMessage = { role: 'assistant', content: '', isStreaming: true };
+    this.messages = [...this.messages, userBubble, aiBubble];
     this.loading = true;
 
     const chatMsgs: ChatMessage[] = [
