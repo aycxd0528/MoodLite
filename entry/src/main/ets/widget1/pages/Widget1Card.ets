@@ -1,37 +1,52 @@
+/**
+ * Widget1Card — 2×4 桌面情绪小组件 (v3.0 今日摘要 + 全宽热力图)
+ *
+ * 上排：今日情绪图标 + 标签 + 连续天数 + 本月记录天数
+ * 下排：7×5 全宽热力图网格，毛玻璃背景，暗色模式自适应。
+ */
+
 @Entry
 @Component
 struct Widget1Card {
   @LocalStorageProp('monthDays') monthDays: number[] = new Array(35).fill(0);
+  @LocalStorageProp('todayScore') todayScore: number = 0;
+  @LocalStorageProp('moodLabel') moodLabel: string = 'MoodLite';
+  @LocalStorageProp('streak') streak: number = 0;
+  @LocalStorageProp('recordDays') recordDays: number = 0;
+  @LocalStorageProp('darkMode') darkMode: number = 0;
+
+  getFaceIcon(score: number): Resource {
+    if (score <= -2) return $r('app.media.ic_face_terrible');
+    if (score === -1) return $r('app.media.ic_face_bad');
+    if (score === 0)  return $r('app.media.ic_face_neutral');
+    if (score === 1)  return $r('app.media.ic_face_good');
+    return $r('app.media.ic_face_awesome');
+  }
 
   getHeatColor(val: number): string {
-    if (val === 0) return '#F5F6F8';                          // 无记录
-    const moodCode = Math.floor(val / 10);                    // 1=低落 2=平静 3=愉悦 4=混合
-    const inten = val % 10;                                   // 0-4 五级强度
+    const dk = this.darkMode !== 0;
+    if (val === 0) return dk ? '#2A2A2A' : '#F0F0F0';
+    const moodCode = Math.floor(val / 10);
+    const inten = val % 10;
 
-    if (moodCode === 1) { // 低落 → 蓝色 由浅到深
-      if (inten === 4) return '#8BA9B8';
-      if (inten === 3) return '#AEC6CF';
-      if (inten === 2) return '#C0D5E3';
-      if (inten === 1) return '#D6E6F2';
-      return '#E6EEF4';
+    if (moodCode === 1) {
+      if (inten === 4) return dk ? '#5A7A90' : '#8BA9B8';
+      if (inten === 3) return dk ? '#6A8EA6' : '#AEC6CF';
+      return dk ? '#3A5060' : '#D6E6F2';
     }
-    if (moodCode === 2) return '#E8E8E8';                     // 平静
+    if (moodCode === 2) return dk ? '#3D3D3D' : '#E8E8E8';
 
-    if (moodCode === 3) { // 愉悦 → 粉色 由浅到深
-      if (inten === 4) return '#FF8BA7';
-      if (inten === 3) return '#FFB3C5';
-      if (inten === 2) return '#FFCBD8';
-      if (inten === 1) return '#FFDCE5';
-      return '#FFEEF3';
+    if (moodCode === 3) {
+      if (inten === 4) return dk ? '#B36A7A' : '#FF8BA7';
+      if (inten === 3) return dk ? '#8A5060' : '#FFB3C5';
+      return dk ? '#5A3040' : '#FFDCE5';
     }
-    if (moodCode === 4) { // 混合 → 紫色 由浅到深
-      if (inten === 4) return '#A78BBA';
-      if (inten === 3) return '#C4A0D8';
-      if (inten === 2) return '#D2B8E5';
-      if (inten === 1) return '#E0CCF0';
-      return '#F2E8F7';
+    if (moodCode === 4) {
+      if (inten === 4) return dk ? '#7A5A8A' : '#A78BBA';
+      if (inten === 3) return dk ? '#5A3A6A' : '#C4A0D8';
+      return dk ? '#3A204A' : '#E0CCF0';
     }
-    return '#F5F6F8';
+    return dk ? '#2A2A2A' : '#F0F0F0';
   }
 
   build() {
@@ -40,54 +55,62 @@ struct Widget1Card {
       abilityName: 'EntryAbility',
       params: { targetPage: 'pages/MainPage', tab: 3 }
     }) {
-      Stack() {
-        Column()
-          .width('100%').height('100%')
-          .linearGradient({
-            direction: GradientDirection.Bottom,
-            colors: [['#FFF5F7', 0.0], ['#FFFFFF', 1.0]]
-          })
+      Column() {
+        // ---- 上排：今日摘要 ----
+        Row() {
+          Image(this.getFaceIcon(this.todayScore))
+            .width(36).height(36)
+            .objectFit(ImageFit.Contain)
 
-        Column() {
-          // 顶部标题行
-          Row() {
-            Text('本月情绪轨迹').fontSize(13).fontWeight(FontWeight.Medium).fontColor('#444444')
-            Blank()
-            Image($r('app.media.ic_sparkles')).width(12).height(12).opacity(0.5)
-          }
-          .width('100%').padding({ left: 12, right: 12, top: 10 })
+          Text(this.moodLabel)
+            .fontSize(14).fontWeight(FontWeight.Bold)
+            .fontColor(this.darkMode ? '#E8E8EC' : '#333333')
+            .margin({ left: 8 })
 
-          // 左右分栏主体
-          Row() {
-            // 左侧：云朵插图区
-            Column() {
-              Image($r('app.media.img_home_cloud'))
-                .width(56).height(56)
-                .objectFit(ImageFit.Contain)
+          Blank()
+
+          Column() {
+            if (this.streak > 0) {
+              Text('连续 ' + this.streak + ' 天')
+                .fontSize(11).fontColor(this.darkMode ? '#AAAAAA' : '#888888')
             }
-            .layoutWeight(4)
-            .height('100%')
-            .justifyContent(FlexAlign.Center)
-
-            // 右侧：7x5 热力图网格
-            Column({ space: 5 }) {
-              ForEach([0, 1, 2, 3, 4], (row: number) => {
-                Row({ space: 5 }) {
-                  ForEach(this.monthDays.slice(row * 7, (row + 1) * 7), (v: number) => {
-                    Column().width(12).height(12).borderRadius(3).backgroundColor(this.getHeatColor(v))
-                  })
-                }.width('100%').justifyContent(FlexAlign.Center)
-              }, (row: number) => row.toString())
-            }
-            .layoutWeight(6)
-            .height('100%')
-            .padding({ left: 8, right: 10 })
-            .justifyContent(FlexAlign.Center)
+            Text('本月 ' + this.recordDays + ' 条')
+              .fontSize(11).fontColor(this.darkMode ? '#AAAAAA' : '#888888')
           }
-          .width('100%').layoutWeight(1)
+          .alignItems(HorizontalAlign.End)
         }
-        .width('100%').height('100%')
+        .width('100%')
+        .padding({ left: 14, right: 14, top: 10, bottom: 6 })
+
+        // ---- 下排：全宽热力图 ----
+        Column({ space: 4 }) {
+          ForEach([0, 1, 2, 3, 4], (row: number) => {
+            Row({ space: 4 }) {
+              ForEach(this.monthDays.slice(row * 7, (row + 1) * 7), (v: number) => {
+                Column()
+                  .width(16).height(16)
+                  .borderRadius(4)
+                  .backgroundColor(this.getHeatColor(v))
+                  .border({
+                    width: 0.5,
+                    color: this.darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
+                  })
+              })
+            }.width('100%').justifyContent(FlexAlign.Center)
+          }, (row: number) => row.toString())
+        }
+        .width('100%').layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .padding({ left: 14, right: 14 })
       }
+      .width('100%').height('100%')
+      .backgroundColor(this.darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.12)')
+      .backdropBlur(16)
+      .border({
+        width: 0.5,
+        color: this.darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.20)',
+      })
+      .borderRadius(24)
     }
     .width('100%').height('100%')
   }

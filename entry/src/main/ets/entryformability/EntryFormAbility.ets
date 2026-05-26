@@ -25,6 +25,8 @@ interface WidgetData {
   todayMood: string;
   todayScore: number;
   streak: number;
+  recordDays: number;
+  darkMode: number;
   monthDays: number[];
 }
 
@@ -47,12 +49,21 @@ function buildWidgetData(records: MoodRecord[]): WidgetData {
   const today = formatDateStr(new Date());
   const todayRecord = records.find((r: MoodRecord) => r.dateStr === today);
 
+  const now = new Date();
+  const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  let recordDays = 0;
+  for (const r of records) {
+    if (r.dateStr.startsWith(monthKey)) recordDays++;
+  }
+
   const data: WidgetData = {
     mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
     moodLabel: todayRecord ? getMoodLabel(todayRecord.score) : 'MoodLite',
     todayMood: todayRecord ? getMoodLabel(todayRecord.score) : '--',
     todayScore: todayRecord ? todayRecord.score : 0,
     streak: calcStreak(records).currentStreak,
+    recordDays: recordDays,
+    darkMode: (AppStorage.get('darkMode') as boolean) ? 1 : 0,
     monthDays: WidgetSyncManager.getCompactMonthData(records),
   };
   return data;
@@ -68,7 +79,7 @@ export default class EntryFormAbility extends FormExtensionAbility {
 
     const initData: WidgetData = {
       mood: '😐', moodLabel: 'MoodLite', todayMood: '--', todayScore: 0, streak: 0,
-      monthDays: new Array(35).fill(0),
+      recordDays: 0, darkMode: 0, monthDays: new Array(35).fill(0),
     };
     const result = formBindingData.createFormBindingData(initData);
 

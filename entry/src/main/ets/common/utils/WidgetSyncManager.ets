@@ -22,6 +22,8 @@ interface WidgetPayload {
   todayMood: string;
   todayScore: number;
   streak: number;
+  recordDays: number;
+  darkMode: number;
   monthDays: number[];
 }
 
@@ -148,12 +150,21 @@ class WidgetSyncManager {
       const today = formatDateStr(new Date());
       const todayRecord = records.find((r: MoodRecord) => r.dateStr === today);
 
+      const now = new Date();
+      const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      let recordDays = 0;
+      for (const r of records) {
+        if (r.dateStr.startsWith(monthKey)) recordDays++;
+      }
+
       const payload: WidgetPayload = {
         mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
         moodLabel: todayRecord ? getMoodLabel(todayRecord.score) : 'MoodLite',
         todayMood: todayRecord ? getMoodLabel(todayRecord.score) : '--',
         todayScore: todayRecord ? todayRecord.score : 0,
         streak: calcStreak(records).currentStreak,
+        recordDays: recordDays,
+        darkMode: (AppStorage.get('darkMode') as boolean) ? 1 : 0,
         monthDays: this.getCompactMonthData(records),
       };
       console.info('[WidgetSync] payload monthDays[0..4]=' + payload.monthDays.slice(0, 5).toString());
