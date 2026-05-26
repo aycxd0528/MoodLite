@@ -14,11 +14,31 @@ const MODEL = 'deepseek-v4-flash';
 
 let cachedKey: string = '';
 
+function base64Decode(input: string): string {
+  const table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  const chars: string[] = [];
+  let i = 0;
+  while (i < input.length) {
+    const b0 = table.indexOf(input.charAt(i++));
+    const b1 = table.indexOf(input.charAt(i++));
+    const b2 = table.indexOf(input.charAt(i++));
+    const b3 = table.indexOf(input.charAt(i++));
+    if (b0 < 0 || b1 < 0) break;
+    chars.push(String.fromCharCode((b0 << 2) | (b1 >> 4)));
+    if (b2 < 0) break;
+    chars.push(String.fromCharCode(((b1 & 15) << 4) | (b2 >> 2)));
+    if (b3 < 0) break;
+    chars.push(String.fromCharCode(((b2 & 3) << 6) | b3));
+  }
+  return chars.join('');
+}
+
 function xorDecrypt(): string {
   if (cachedKey) return cachedKey;
+  const decoded = base64Decode(ENCRYPTED_KEY);
   const chars: string[] = [];
-  for (let i = 0; i < ENCRYPTED_KEY.length; i++) {
-    chars.push(String.fromCharCode(ENCRYPTED_KEY.charCodeAt(i) ^ XOR_SALT.charCodeAt(i % XOR_SALT.length)));
+  for (let i = 0; i < decoded.length; i++) {
+    chars.push(String.fromCharCode(decoded.charCodeAt(i) ^ XOR_SALT.charCodeAt(i % XOR_SALT.length)));
   }
   cachedKey = chars.join('');
   return cachedKey;
@@ -57,9 +77,6 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
   const body = buildBody(messages);
   const apiKey = xorDecrypt();
 
-  console.info('[MoodAgent] sending to: ' + BASE_URL);
-  console.info('[MoodAgent] body: ' + body);
-
   httpRequest.request(BASE_URL, {
     method: http.RequestMethod.POST,
     header: {
@@ -72,10 +89,8 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
     usingProtocol: http.HttpProtocol.HTTP1_1,
   }).then((response: http.HttpResponse) => {
     httpRequest.destroy();
-    const resultStr = (response.result as Object).toString();
-    console.info('[MoodAgent] response code=' + response.responseCode + ' body=' + resultStr);
-
     if (response.responseCode === 200) {
+      const resultStr = (response.result as Object).toString();
       const obj: Record<string, Object> = JSON.parse(resultStr) as Record<string, Object>;
       const choices = obj['choices'] as Array<Record<string, Object>>;
       if (choices && choices.length > 0) {
