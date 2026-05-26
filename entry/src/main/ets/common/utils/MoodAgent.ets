@@ -89,8 +89,8 @@ export function sendMessageStream(messages: ChatMessage[], callback: StreamCallb
     usingProtocol: http.HttpProtocol.HTTP1_1,
   }).then((response: http.HttpResponse) => {
     httpRequest.destroy();
+    const resultStr = (response.result as Object).toString();
     if (response.responseCode === 200) {
-      const resultStr = (response.result as Object).toString();
       const obj: Record<string, Object> = JSON.parse(resultStr) as Record<string, Object>;
       const choices = obj['choices'] as Array<Record<string, Object>>;
       if (choices && choices.length > 0) {
