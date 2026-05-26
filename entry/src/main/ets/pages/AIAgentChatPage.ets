@@ -28,10 +28,14 @@ struct AIAgentChatPage {
   private scroller: Scroller = new Scroller();
 
   aboutToAppear(): void {
-    this.initChat();
+    this.loadRecords();
   }
 
-  async initChat(): Promise<void> {
+  aboutToDisappear(): void {
+    this.loading = false;
+  }
+
+  async loadRecords(): Promise<void> {
     await DataManager.ensureInitialized();
     const allRecords = await DataManager.getAllRecords();
     const today = formatDateStr(new Date());
@@ -40,7 +44,7 @@ struct AIAgentChatPage {
     if (todayRecords.length === 0) {
       this.messages = [{
         role: 'assistant',
-        content: '今天还没有情绪记录哦 📝\n\n记录下此刻的心情，我会帮你分析情绪变化。',
+        content: '今天还没有记录，去记录一条心情再来找我吧。',
         isStreaming: false,
       }];
       this.loading = false;
@@ -60,28 +64,25 @@ struct AIAgentChatPage {
     };
     const userMsg: ChatMessage = { role: 'user', content: ctx };
 
-    const placeholder: UIMessage = { role: 'assistant', content: '正在分析…', isStreaming: true };
-    this.messages = [placeholder];
+    this.messages = [{ role: 'assistant', content: '正在分析…', isStreaming: true }];
 
-    // 延迟发送，确保组件渲染完成后再发起请求
-    setTimeout(() => {
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        this.messages[0].content = text;
+        const msgs = this.messages;
+        msgs[0] = { role: 'assistant', content: text, isStreaming: true };
+        this.messages = msgs;
       },
       onDone: () => {
-        this.messages[0].isStreaming = false;
+        const msgs = this.messages;
+        msgs[0] = { role: 'assistant', content: msgs[0].content, isStreaming: false };
+        this.messages = msgs;
         this.loading = false;
-        this.messages = [...this.messages];
       },
       onError: (msg: string) => {
-        this.messages[0].content = '抱歉，出了点问题 😢 ' + msg;
-        this.messages[0].isStreaming = false;
+        this.messages = [{ role: 'assistant', content: '分析失败: ' + msg, isStreaming: false }];
         this.loading = false;
-        this.messages = [...this.messages];
       },
     });
-    }, 100);
   }
 
   sendMessage(): void {
@@ -111,7 +112,7 @@ struct AIAgentChatPage {
       },
       onError: (msg: string) => {
         if (this.messages[0].content.length === 0) {
-          this.messages[0].content = '抱歉，出了点问题 😢';
+          this.messages[0].content = '抱歉，出了点问题 ';
         }
         this.messages[0].isStreaming = false;
         this.loading = false;
