@@ -108,7 +108,7 @@ struct AIAgentChatPage {
     ];
     for (let i = 0; i < this.messages.length - 1; i++) {
       chatMsgs.push({
-        role: this.messages[i].role,
+        role: this.messages[i].role as ('system' | 'user' | 'assistant'),
         content: this.messages[i].content,
       });
     }
