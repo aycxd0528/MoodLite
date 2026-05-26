@@ -397,9 +397,9 @@ export struct Profile {
 
           // 退出登录
           Row() {
-            Text('退出登录').fontSize(F.CAPTION).fontColor(Token.DELETE_RED)
+            Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
           }
-          .width('100%').height(36).justifyContent(FlexAlign.Center)
+          .width('100%').height(44).justifyContent(FlexAlign.Center)
           .alignItems(VerticalAlign.Center)
           .borderRadius(R.SMALL)
           .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
