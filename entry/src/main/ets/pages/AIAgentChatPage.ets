@@ -33,19 +33,18 @@ struct MessageBubble {
   @Prop currentTheme: string;
 
   build() {
-    const C = resolveColors(this.darkMode, this.currentTheme);
     Row() {
       if (this.msg.role === 'user') Blank()
       Column() {
         Text(this.msg.content + (this.msg.isStreaming ? ' ▍' : ''))
           .fontSize(14).lineHeight(22)
           .fontColor(this.msg.role === 'user'
-            ? C.TEXT_WHITE
-            : C.TEXT_MAIN)
+            ? resolveColors(this.darkMode, this.currentTheme).TEXT_WHITE
+            : resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
           .padding({ left: 14, right: 14, top: 10, bottom: 10 })
           .backgroundColor(this.msg.role === 'user'
-            ? C.PINK
-            : C.CARD)
+            ? resolveColors(this.darkMode, this.currentTheme).PINK
+            : resolveColors(this.darkMode, this.currentTheme).CARD)
           .borderRadius(16)
           .constraintSize({ maxWidth: '80%' })
       }
