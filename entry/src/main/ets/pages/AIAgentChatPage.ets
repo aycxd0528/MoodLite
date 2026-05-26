@@ -107,15 +107,16 @@ struct AIAgentChatPage {
 
     sendMessageStream([sysMsg, userMsg], {
       onToken: (text: string) => {
-        this.updateMessage(aiId, text, true);
+        this.typewrite(aiId, text);
       },
       onDone: () => {
         const msg = this.findMessage(aiId);
-        this.updateMessage(aiId, msg?.content || '', false);
+        if (msg) { msg.isStreaming = false; }
         this.loading = false;
       },
       onError: (msg: string) => {
-        this.updateMessage(aiId, '分析失败: ' + msg, false);
+        const em = this.findMessage(aiId);
+        if (em) { em.content = '分析失败: ' + msg; em.isStreaming = false; }
         this.loading = false;
       },
     });
@@ -146,15 +147,16 @@ struct AIAgentChatPage {
 
     sendMessageStream(chatMsgs, {
       onToken: (t: string) => {
-        this.updateMessage(aiId, t, true);
+        this.typewrite(aiId, t);
       },
       onDone: () => {
         const msg = this.findMessage(aiId);
-        this.updateMessage(aiId, msg?.content || '', false);
+        if (msg) { msg.isStreaming = false; }
         this.loading = false;
       },
       onError: (msg: string) => {
-        this.updateMessage(aiId, '抱歉，出了点问题 ' + msg, false);
+        const em = this.findMessage(aiId);
+        if (em) { em.content = '抱歉，出了点问题 ' + msg; em.isStreaming = false; }
         this.loading = false;
       },
     });
@@ -167,6 +169,23 @@ struct AIAgentChatPage {
       msg.isStreaming = streaming;
       this.scroller.scrollEdge(Edge.Bottom);
     }
+  }
+
+  // 打字机：逐字追加，2ms/字，首字符清空占位
+  typewrite(id: string, fullText: string): void {
+    const msg = this.messages.find(m => m.id === id);
+    if (!msg) return;
+    msg.content = '';
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < fullText.length) {
+        msg.content += fullText.charAt(i);
+        i++;
+        this.scroller.scrollEdge(Edge.Bottom);
+      } else {
+        clearInterval(timer);
+      }
+    }, 2);
   }
 
   findMessage(id: string): UIMessage | undefined {
