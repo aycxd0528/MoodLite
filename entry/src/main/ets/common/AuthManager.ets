@@ -72,8 +72,9 @@ class AuthManager {
 
   getProfile(): UserProfile | null { return this.profile; }
 
-  async upgradeMember(type: 'pro' | 'ultra'): Promise<void> {
+  async upgradeMember(type: string): Promise<void> {
     if (!this.profile || !this.prefs) return;
+    if (type !== 'free' && type !== 'pro' && type !== 'ultra') return;
     this.profile.memberType = type;
     await this.prefs.put(KEY_PROFILE, JSON.stringify(this.profile));
     await this.prefs.flush();

@@ -234,7 +234,7 @@ export struct Profile {
           : 'transparent')
         .borderRadius(R.SMALL)
         .onClick(() => {
-          AuthManager.upgradeMember(item.value as ('pro' | 'ultra'));
+          AuthManager.upgradeMember(item.value);
         })
       })
     }
