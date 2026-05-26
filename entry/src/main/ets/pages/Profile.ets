@@ -257,31 +257,35 @@ export struct Profile {
           // 会员卡片
           GlassCard() {
             Row() {
-              Text(resolveColors(this.darkMode, this.currentTheme).PINK).fontSize(24)
+              Image($r('app.media.ic_sparkles')).width(28).height(28)
+                .objectFit(ImageFit.Contain)
               Column() {
-                Text('当前会员').fontSize(F.CAPTION)
-                  .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 if (this.memberType === 'ultra') {
-                  Text('Ultra').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                    .fontColor('#8B5CF6')
+                  Text('Ultra').fontSize(F.BODY).fontWeight(FontWeight.Bold).fontColor('#8B5CF6')
                 } else if (this.memberType === 'pro') {
-                  Text('Pro').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                    .fontColor('#FFD700')
+                  Text('Pro').fontSize(F.BODY).fontWeight(FontWeight.Bold).fontColor('#FFD700')
                 } else {
-                  Text('Free').fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
+                  Text('Free').fontSize(F.BODY).fontWeight(FontWeight.Bold)
                     .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
                 }
+                Text(this.memberType === 'free' ? '升级解锁更多功能' : '已解锁高级功能')
+                  .fontSize(F.TINY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
+                  .margin({ top: 2 })
               }
               .alignItems(HorizontalAlign.Start).margin({ left: S.SM }).layoutWeight(1)
-              Text('升级 >').fontSize(F.CAPTION)
-                .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              Row({ space: 4 }) {
+                Text('升级').fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                Image($r('app.media.ic_right_arrow')).width(14).height(14)
+                  .fillColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              }
+              .padding({ left: S.SM, right: S.XS, top: S.XS, bottom: S.XS })
+              .onClick(() => { this.showUpgradeDialog(); })
             }
             .width('100%').alignItems(VerticalAlign.Center)
-            .padding({ top: S.XS, bottom: S.XS })
-            .onClick(() => { this.showUpgradeDialog(); })
+            .padding({ top: S.SM, bottom: S.SM, left: S.MD, right: S.MD })
           }
 
-          Row().width('100%').height(S.SM)
+          Row().width('100%').height(S.MD)
 
           GlassCard() {
             List() {
@@ -391,15 +395,18 @@ export struct Profile {
           }
 
           // 退出登录
-          Button('退出登录')
-            .width('100%').height(44).fontSize(F.BODY)
-            .backgroundColor('transparent')
-            .fontColor(Token.DELETE_RED)
-            .margin({ top: S.MD })
+          GlassCard() {
+            Row() {
+              Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+            }
+            .width('100%').height(48).justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
             .onClick(() => {
               AuthManager.logout();
               this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
             })
+          }
+          .margin({ top: S.LG })
 
           Row().width('100%').height(S.BOTTOM_BREATH)
         }
