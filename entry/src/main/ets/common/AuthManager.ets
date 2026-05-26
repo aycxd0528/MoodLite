@@ -139,7 +139,9 @@ class AuthManager {
   private async loadMemberType(): Promise<void> {
     if (!this.profile || !this.prefs) return;
     const saved = await this.prefs.get(KEY_MEMBER + this.profile.username, 'free') as string;
-    if (saved) this.profile.memberType = saved;
+    if (saved === 'pro' || saved === 'ultra' || saved === 'free') {
+      this.profile.memberType = saved;
+    }
   }
 
   private syncToAppStorage(): void {

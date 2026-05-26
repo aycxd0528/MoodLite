@@ -73,47 +73,49 @@ struct LoginPage {
       .alignItems(HorizontalAlign.Center)
       .margin({ top: 80, bottom: 48 })
 
-      GlassCard() {
-        Column({ space: S.MD }) {
-          TextInput({ placeholder: '用户名', text: this.username })
-            .width('100%').height(48).fontSize(F.BODY)
-            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG)
-            .borderRadius(R.SMALL)
-            .onChange((v: string) => { this.username = v; })
+      Column() {
+        GlassCard() {
+          Column({ space: S.MD }) {
+            TextInput({ placeholder: '用户名', text: this.username })
+              .width('100%').height(48).fontSize(F.BODY)
+              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG)
+              .borderRadius(R.SMALL)
+              .onChange((v: string) => { this.username = v; })
 
-          TextInput({ placeholder: '密码', text: this.password })
-            .width('100%').height(48).fontSize(F.BODY)
-            .type(InputType.Password)
-            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG)
-            .borderRadius(R.SMALL)
-            .onChange((v: string) => { this.password = v; })
-            .onSubmit(() => { this.submit(); })
+            TextInput({ placeholder: '密码', text: this.password })
+              .width('100%').height(48).fontSize(F.BODY)
+              .type(InputType.Password)
+              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_BG)
+              .borderRadius(R.SMALL)
+              .onChange((v: string) => { this.password = v; })
+              .onSubmit(() => { this.submit(); })
 
-          if (this.error) {
-            Text(this.error).fontSize(12)
-              .fontColor('#FF6B6B').margin({ top: 4 })
+            if (this.error) {
+              Text(this.error).fontSize(12)
+                .fontColor('#FF6B6B').margin({ top: 4 })
+            }
+
+            Button(this.isSubmitting ? '处理中…' : (this.isRegister ? '注 册' : '登 录'))
+              .width('100%').height(48).fontSize(F.BODY).fontWeight(FontWeight.Medium)
+              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              .borderRadius(R.BUTTON)
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+              .enabled(!this.isSubmitting)
+              .margin({ top: S.XS })
+              .onClick(() => { this.submit(); })
+
+            Text(this.isRegister ? '已有账号？去登录' : '没有账号？去注册')
+              .fontSize(F.CAPTION)
+              .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              .margin({ top: S.XS })
+              .opacity(this.tabOpacity)
+              .onClick(() => { this.toggleMode(); })
           }
-
-          Button(this.isSubmitting ? '处理中…' : (this.isRegister ? '注 册' : '登 录'))
-            .width('100%').height(48).fontSize(F.BODY).fontWeight(FontWeight.Medium)
-            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-            .borderRadius(R.BUTTON)
-            .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
-            .enabled(!this.isSubmitting)
-            .margin({ top: S.XS })
-            .onClick(() => { this.submit(); })
-
-          Text(this.isRegister ? '已有账号？去登录' : '没有账号？去注册')
-            .fontSize(F.CAPTION)
-            .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-            .margin({ top: S.XS })
-            .opacity(this.tabOpacity)
-            .onClick(() => { this.toggleMode(); })
+          .width('100%').alignItems(HorizontalAlign.Center)
+          .padding({ top: S.LG, bottom: S.LG, left: S.LG, right: S.LG })
         }
-        .width('100%').alignItems(HorizontalAlign.Center)
-        .padding({ top: S.LG, bottom: S.LG, left: S.LG, right: S.LG })
       }
-      .width('80%')
+      .width('85%')
     }
     .width('100%').height('100%')
     .justifyContent(FlexAlign.Center)
