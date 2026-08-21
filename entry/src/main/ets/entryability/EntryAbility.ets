@@ -4,10 +4,12 @@ import type AbilityConstant from '@ohos.app.ability.AbilityConstant';
 import window from '@ohos.window';
 import router from '@ohos.router';
 import type { BusinessError } from '@ohos.base';
+import AuthManager from '../common/AuthManager';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     console.info('[MoodLite] EntryAbility onCreate');
+    AuthManager.init(this.context);
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {

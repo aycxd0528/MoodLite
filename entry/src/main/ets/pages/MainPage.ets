@@ -130,7 +130,7 @@ struct MainPage {
       Column() {
         Tabs({ index: this.tab, barPosition: BarPosition.End }) {
           TabContent() {
-            HomeTab({ records: this.records })
+            HomeTab({ records: $records })
           }.tabBar('今日')
 
           TabContent() {
@@ -202,7 +202,7 @@ struct MainPage {
         Image($r('app.media.ic_plus')).width(28).height(28)
           .fillColor(Color.White)
       }
-      .width(L.CENTER_BTN).height(L.CENTER_BTN).borderRadius(R.FULL)
+      .width(48).height(48).borderRadius(24)
       .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
       .shadow({ radius: 16, color: resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, offsetY: 6 })
       .offset({ y: -18 })

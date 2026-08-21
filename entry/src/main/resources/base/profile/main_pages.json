@@ -5,6 +5,8 @@
     "pages/MainPage",
     "pages/AddEntry",
     "pages/Profile",
-    "pages/EntryDetail"
+    "pages/EntryDetail",
+    "pages/AIAgentChatPage",
+    "pages/LoginPage"
   ]
 }

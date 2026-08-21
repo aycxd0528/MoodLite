@@ -2,14 +2,23 @@
  * Profile — v2.0 设置/我的（深色模式全适配 + 主题选择器）
  */
 
-import { Token, R, S, F } from '../common/styles';
+import { Token, R, S, F, DARK_INVERT, NORMAL_MATRIX } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
 import ThemeManager, { ThemePreset, ThemePresetEntry, resolveColors } from '../common/ThemeManager';
+import AuthManager from '../common/AuthManager';
 import common from '@ohos.app.ability.common';
 import type Want from '@ohos.app.ability.Want';
 
 interface SItem { icon: Resource; label: string; toggle: boolean; }
+
+interface PlanOption { label: string; value: string; }
+
+const PLANS: PlanOption[] = [
+  { label: 'Free — 基础记录', value: 'free' },
+  { label: 'Pro — 每日提醒 + AI 3次/天', value: 'pro' },
+  { label: 'Ultra — 无限 AI + 全功能', value: 'ultra' },
+];
 
 const ITEMS: SItem[] = [
   { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
@@ -128,6 +137,47 @@ struct ThemePickerDialog {
   }
 }
 
+// ========== 会员升级弹窗 ==========
+
+@CustomDialog
+struct UpgradeDialog {
+  @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+  @StorageLink('memberType') memberType: string = 'free';
+  controller: CustomDialogController = new CustomDialogController({ builder: UpgradeDialog({}) });
+  currentMember: string = 'free';
+
+  build() {
+    Column() {
+      Text('选择会员方案').fontSize(F.BODY).fontWeight(FontWeight.Bold)
+        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+        .margin({ bottom: S.LG })
+
+      ForEach(PLANS, (item: PlanOption) => {
+        Row() {
+          Text(item.label).fontSize(F.BODY)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+            .layoutWeight(1)
+          if (this.memberType === item.value) {
+            Text('✓').fontSize(F.SUBTITLE).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+          }
+        }
+        .width('100%').height(48).padding({ left: S.XS, right: S.XS })
+        .backgroundColor(this.memberType === item.value
+          ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT
+          : 'transparent')
+        .borderRadius(R.SMALL)
+        .onClick(() => {
+          AuthManager.upgradeMember(item.value);
+          this.controller.close();
+        })
+      })
+    }
+    .width('100%').padding(S.LG)
+    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
+  }
+}
+
 // ========== Profile 主页面 ==========
 
 @Entry
@@ -138,6 +188,7 @@ export struct Profile {
   @StorageLink('reminderHour') reminderHour: number = 20;
   @StorageLink('reminderMinute') reminderMinute: number = 0;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+  @StorageLink('memberType') memberType: string = 'free';
 
   private appContext(): Context {
     const uiCtx: UIContext = this.getUIContext();
@@ -148,19 +199,7 @@ export struct Profile {
     return hostCtx;
   }
 
-  private timeDialog: CustomDialogController = new CustomDialogController({
-    builder: TimePickerDialog({
-      hour: this.reminderHour,
-      minute: this.reminderMinute,
-      onConfirm: (h: number, m: number) => {
-        this.reminderHour = h;
-        this.reminderMinute = m;
-        enableDailyReminder(this.appContext(), h, m);
-      }
-    }),
-    autoCancel: true,
-    alignment: DialogAlignment.Bottom,
-  });
+  private timeDialog: CustomDialogController | null = null;
 
   showTimeDialog(): void {
     this.timeDialog = new CustomDialogController({
@@ -186,12 +225,17 @@ export struct Profile {
   });
 
   showThemeDialog(): void {
-    this.themeDialog = new CustomDialogController({
-      builder: ThemePickerDialog(),
-      autoCancel: true,
-      alignment: DialogAlignment.Bottom,
-    });
     this.themeDialog.open();
+  }
+
+  private upgradeDialog: CustomDialogController = new CustomDialogController({
+    builder: UpgradeDialog({ currentMember: this.memberType }),
+    autoCancel: true,
+    alignment: DialogAlignment.Bottom,
+  });
+
+  showUpgradeDialog(): void {
+    this.upgradeDialog.open();
   }
 
   fmtTime(): string {
@@ -210,6 +254,38 @@ export struct Profile {
 
       Scroll() {
         Column() {
+          // 会员卡片
+          GlassCard() {
+            Row() {
+              Image($r('app.media.ic_sparkles')).width(28).height(28)
+                .objectFit(ImageFit.Contain)
+              Column() {
+                if (this.memberType === 'ultra') {
+                  Text('Ultra').fontSize(F.BODY).fontWeight(FontWeight.Bold).fontColor('#8B5CF6')
+                } else if (this.memberType === 'pro') {
+                  Text('Pro').fontSize(F.BODY).fontWeight(FontWeight.Bold).fontColor('#FFD700')
+                } else {
+                  Text('Free').fontSize(F.BODY).fontWeight(FontWeight.Bold)
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+                }
+                Text(this.memberType === 'free' ? '升级解锁更多功能' : '已解锁高级功能')
+                  .fontSize(F.TINY).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_HINT)
+                  .margin({ top: 2 })
+              }
+              .alignItems(HorizontalAlign.Start).margin({ left: S.SM }).layoutWeight(1)
+              Row({ space: 4 }) {
+                Text('升级').fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                Image($r('app.media.ic_right_arrow')).width(14).height(14)
+                  .fillColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              }
+              .padding({ left: S.SM, right: S.XS, top: S.XS, bottom: S.XS })
+              .onClick(() => { this.showUpgradeDialog(); })
+            }
+            .width('100%').alignItems(VerticalAlign.Center)
+          }
+
+          Row().width('100%').height(S.MD)
+
           GlassCard() {
             List() {
               ForEach(ITEMS, (it: SItem) => {
@@ -218,19 +294,7 @@ export struct Profile {
                     Image(it.icon)
                       .width(24).height(24).objectFit(ImageFit.Contain)
                       .colorFilter(
-                        this.darkMode
-                          ? [
-                              -1,  0,  0,  0, 255,
-                               0, -1,  0,  0, 255,
-                               0,  0, -1,  0, 255,
-                               0,  0,  0,  1,   0
-                            ]
-                          : [
-                               1,  0,  0,  0,   0,
-                               0,  1,  0,  0,   0,
-                               0,  0,  1,  0,   0,
-                               0,  0,  0,  1,   0
-                            ]
+                        this.darkMode ? DARK_INVERT : NORMAL_MATRIX
                       )
                     Text(it.label).fontSize(F.BODY)
                       .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
@@ -297,12 +361,10 @@ export struct Profile {
               // ---- 主题风格（独立 ListItem，在 ForEach 之后） ----
               ListItem() {
                 Row() {
-                  Image($r('app.media.ic_moon'))
+                  Image($r('app.media.ic_system'))
                     .width(24).height(24).objectFit(ImageFit.Contain)
                     .colorFilter(
-                      this.darkMode
-                        ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                        : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+                      this.darkMode ? DARK_INVERT : NORMAL_MATRIX
                     )
                   Text('主题风格').fontSize(F.BODY)
                     .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
@@ -319,9 +381,7 @@ export struct Profile {
                     .objectFit(ImageFit.Contain)
                     .fillColor(this.darkMode ? '#E8E8EC' : '#9CA3AF')
                     .colorFilter(
-                      this.darkMode
-                        ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                        : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
+                      this.darkMode ? DARK_INVERT : NORMAL_MATRIX
                     )
                 }
                 .width('100%').height(56).alignItems(VerticalAlign.Center)
@@ -332,6 +392,23 @@ export struct Profile {
               color: resolveColors(this.darkMode, this.currentTheme).DIVIDER,
               startMargin: 48, endMargin: 0 })
           }
+
+          Row().width('100%').height(S.MD)
+
+          // 退出登录
+          Row() {
+            Text('退出登录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+          }
+          .width('100%').height(44).justifyContent(FlexAlign.Center)
+          .alignItems(VerticalAlign.Center)
+          .borderRadius(R.SMALL)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
+          .onClick(() => {
+            AuthManager.logout();
+            this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
+          })
+
+          Row().width('100%').height(S.LG)
 
           Row().width('100%').height(S.BOTTOM_BREATH)
         }
