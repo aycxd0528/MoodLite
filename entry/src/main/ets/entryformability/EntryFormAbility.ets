@@ -3,18 +3,16 @@
  *
  * 职责：
  * - 创建/更新/销毁桌面小组件卡片
- * - 通过 formBindingData 向卡片注入实时数据（同时服务 2x2 和 2x4）
- * - 拦截 postCardAction message 事件，实现无感快捷记录（不拉起主应用）
+ * - 通过 formBindingData 向 2×2 卡片注入本地摘要数据
  */
 
 import FormExtensionAbility from '@ohos.app.form.FormExtensionAbility';
 import formBindingData from '@ohos.app.form.formBindingData';
 import formProvider from '@ohos.app.form.formProvider';
 import dataPreferences from '@ohos.data.preferences';
-import { MoodRecord, getMoodEmoji, getMoodLabel, formatDateStr, generateUUID } from '../model/MoodRecord';
+import { MoodRecord, getMoodEmoji, getMoodLabel, formatDateStr } from '../model/MoodRecord';
 import { calcStreak } from '../viewmodel/StatsViewModel';
 import WidgetSyncManager from '../common/utils/WidgetSyncManager';
-import { quickSaveRecord } from '../data/DataManager';
 
 const STORE_NAME = 'moodlite_db';
 const KEY_RECORDS = 'records';
@@ -31,11 +29,6 @@ interface WidgetData {
   neutralPercent: number;
   darkMode: number;
   monthDays: number[];
-}
-
-interface QuickLogMessage {
-  action: string;
-  score: number;
 }
 
 async function readRecords(context: Context): Promise<MoodRecord[]> {
@@ -110,48 +103,6 @@ export default class EntryFormAbility extends FormExtensionAbility {
       const data = buildWidgetData(records);
       formProvider.updateForm(formId, formBindingData.createFormBindingData(data));
     });
-  }
-
-  /**
-   * 拦截卡片 message 事件 — 无感快捷记录。
-   * Widget 通过 postCardAction({ action: 'message', params: { action: 'quick_log', score: N } }) 触发。
-   * 直接写入 Preferences 并刷新卡片，不拉起主应用。
-   */
-  onFormEvent(formId: string, message: string): void {
-    console.info('[MoodLite] onFormEvent formId=' + formId + ' message=' + message);
-    try {
-      const parsed: QuickLogMessage = JSON.parse(message) as QuickLogMessage;
-      if (parsed.action !== 'quick_log') {
-        return;
-      }
-
-      const score: number = typeof parsed.score === 'number' ? parsed.score : 0;
-      const record: MoodRecord = {
-        id: generateUUID(),
-        timestamp: Date.now(),
-        dateStr: formatDateStr(new Date()),
-        score: score,
-        text: '',
-        images: [],
-        location: '',
-        tags: [],
-      };
-
-      quickSaveRecord(this.context, record).then((ok: boolean) => {
-        if (!ok) {
-          console.error('[MoodLite] onFormEvent quickSaveRecord 写入失败');
-          return;
-        }
-        // 立即刷新当前卡片显示
-        readRecords(this.context).then((records: MoodRecord[]) => {
-          const data = buildWidgetData(records);
-          formProvider.updateForm(formId, formBindingData.createFormBindingData(data));
-        });
-        console.info('[MoodLite] onFormEvent quick_log 完成，score=' + score);
-      });
-    } catch (err) {
-      console.error('[MoodLite] onFormEvent 解析失败: ' + JSON.stringify(err));
-    }
   }
 
   onRemoveForm(formId: string): void {

@@ -137,7 +137,7 @@ class WidgetSyncManager {
 
   // ========== 推送更新 ==========
 
-  /** 将完整数据推送到所有已注册的桌面卡片（同时服务 2x2 和 2x4） */
+  /** 将本地摘要推送到所有已注册的 2×2 桌面卡片 */
   async updateWidgets(context: Context, records: MoodRecord[]): Promise<void> {
     try {
       const prefs = await dataPreferences.getPreferences(context, STORE_NAME);

@@ -20,28 +20,6 @@
         "2*2"
       ],
       "formConfigAbility": "ability://EntryFormAbility"
-    },
-    {
-      "name": "widget1",
-      "displayName": "$string:widget1_display_name",
-      "description": "$string:widget1_desc",
-      "src": "./ets/widget1/pages/Widget1Card.ets",
-      "uiSyntax": "arkts",
-      "window": {
-        "designWidth": 720,
-        "autoDesignWidth": true
-      },
-      "colorMode": "auto",
-      "isDynamic": true,
-      "isDefault": false,
-      "updateEnabled": true,
-      "scheduledUpdateTime": "10:30",
-      "updateDuration": 1,
-      "defaultDimension": "2*4",
-      "supportDimensions": [
-        "2*4"
-      ],
-      "formConfigAbility": "ability://EntryFormAbility"
     }
   ]
 }
