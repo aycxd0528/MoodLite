@@ -4,7 +4,12 @@
 
 import { Token, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
-import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
+import { cancelDailyReminder, publishDailyReminder } from '../common/ReminderManager';
+import {
+  ReminderSettings,
+  disabledReminderSettings,
+  enabledReminderSettings,
+} from '../common/ReminderState';
 import ThemeManager, { ThemePreset, ThemePresetEntry, resolveColors } from '../common/ThemeManager';
 
 interface SItem { icon: Resource; label: string; toggle: boolean; }
@@ -135,7 +140,9 @@ export struct Profile {
   @StorageLink('isReminderOn') isReminderOn: boolean = false;
   @StorageLink('reminderHour') reminderHour: number = 20;
   @StorageLink('reminderMinute') reminderMinute: number = 0;
+  @StorageLink('mood_reminder_id') reminderId: number = -1;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+  @State reminderBusy: boolean = false;
 
   private appContext(): Context {
     const uiCtx: UIContext = this.getUIContext();
@@ -151,9 +158,7 @@ export struct Profile {
       hour: this.reminderHour,
       minute: this.reminderMinute,
       onConfirm: (h: number, m: number) => {
-        this.reminderHour = h;
-        this.reminderMinute = m;
-        enableDailyReminder(this.appContext(), h, m);
+        this.updateReminder(h, m);
       }
     }),
     autoCancel: true,
@@ -166,9 +171,7 @@ export struct Profile {
         hour: this.reminderHour,
         minute: this.reminderMinute,
         onConfirm: (h: number, m: number) => {
-          this.reminderHour = h;
-          this.reminderMinute = m;
-          enableDailyReminder(this.appContext(), h, m);
+          this.updateReminder(h, m);
         }
       }),
       autoCancel: true,
@@ -194,6 +197,69 @@ export struct Profile {
 
   fmtTime(): string {
     return String(this.reminderHour).padStart(2, '0') + ':' + String(this.reminderMinute).padStart(2, '0');
+  }
+
+  private applyReminderSettings(settings: ReminderSettings): void {
+    this.isReminderOn = settings.isOn;
+    this.reminderId = settings.id;
+    this.reminderHour = settings.hour;
+    this.reminderMinute = settings.minute;
+  }
+
+  private showReminderToast(message: string): void {
+    try {
+      this.getUIContext().getPromptAction().showToast({ message: message, duration: 2000 });
+    } catch (err) {
+      console.debug('[MoodLite] reminder toast failed: ' + JSON.stringify(err));
+    }
+  }
+
+  private async updateReminder(hour: number, minute: number): Promise<void> {
+    if (this.reminderBusy) return;
+    const previousId: number = this.isReminderOn ? this.reminderId : -1;
+    this.reminderBusy = true;
+    try {
+      const newId: number = await publishDailyReminder(this.appContext(), hour, minute);
+      if (newId <= 0) {
+        this.showReminderToast('提醒创建失败，请重试');
+        return;
+      }
+      if (previousId > 0) {
+        const oldCanceled: boolean = await cancelDailyReminder(previousId);
+        if (!oldCanceled) {
+          await cancelDailyReminder(newId);
+          this.showReminderToast('原提醒未能取消，时间未更改');
+          return;
+        }
+      }
+      this.applyReminderSettings(enabledReminderSettings(newId, hour, minute));
+      this.showReminderToast(previousId > 0 ? '提醒时间已更新' : '提醒已开启');
+    } catch (err) {
+      console.error('[MoodLite] updateReminder failed: ' + JSON.stringify(err));
+      this.showReminderToast('提醒设置失败，请重试');
+    } finally {
+      this.reminderBusy = false;
+    }
+  }
+
+  private async disableReminder(): Promise<void> {
+    if (this.reminderBusy) return;
+    const currentId: number = this.reminderId;
+    this.reminderBusy = true;
+    try {
+      const canceled: boolean = await cancelDailyReminder(currentId);
+      if (!canceled) {
+        this.showReminderToast('提醒关闭失败，请重试');
+        return;
+      }
+      this.applyReminderSettings(disabledReminderSettings());
+      this.showReminderToast('提醒已关闭');
+    } catch (err) {
+      console.error('[MoodLite] disableReminder failed: ' + JSON.stringify(err));
+      this.showReminderToast('提醒关闭失败，请重试');
+    } finally {
+      this.reminderBusy = false;
+    }
   }
 
   build() {
@@ -243,15 +309,21 @@ export struct Profile {
                             .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).margin({ right: S.SM })
                             .padding({ left: S.SM, right: S.SM, top: 4, bottom: 4 })
                             .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT).borderRadius(12)
-                            .onClick(() => { this.showTimeDialog(); })
+                            .enabled(!this.reminderBusy)
+                            .onClick(() => { if (!this.reminderBusy) this.showTimeDialog(); })
                         }
 
                         Toggle({ type: ToggleType.Switch, isOn: this.isReminderOn })
                           .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                          .enabled(!this.reminderBusy)
                           .onChange((v: boolean) => {
-                            this.isReminderOn = v;
-                            if (v) this.showTimeDialog();
-                            else cancelReminder();
+                            if (this.reminderBusy) return;
+                            if (v) {
+                              this.isReminderOn = false;
+                              this.showTimeDialog();
+                            } else {
+                              this.disableReminder();
+                            }
                           })
                       } else if (it.label === '深色模式') {
                         Toggle({ type: ToggleType.Switch, isOn: this.darkMode })

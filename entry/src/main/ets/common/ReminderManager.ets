@@ -7,16 +7,9 @@
 
 import reminderAgentManager from '@ohos.reminderAgentManager';
 
-/** 开启每日提醒 */
-export function enableDailyReminder(ctx: Context, hour: number, minute: number): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
-    const oldId: number = AppStorage.get('mood_reminder_id') as number;
-    if (oldId > 0) {
-      reminderAgentManager.cancelReminder(oldId, (_err: Error) => {
-      });
-      AppStorage.set('mood_reminder_id', -1);
-    }
-
+/** 发布每日提醒。仅返回系统结果，不读写界面或持久状态。 */
+export function publishDailyReminder(_ctx: Context, hour: number, minute: number): Promise<number> {
+  return new Promise<number>((resolve) => {
     const alarm: reminderAgentManager.ReminderRequestAlarm = {
       reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_ALARM,
       hour: hour,
@@ -33,35 +26,40 @@ export function enableDailyReminder(ctx: Context, hour: number, minute: number):
       timeInterval: 5,
     };
 
-    reminderAgentManager.publishReminder(alarm, (err: Error, reminderId: number) => {
-      if (err) {
-        console.error('[MoodLite] publishReminder 失败: ' + JSON.stringify(err));
-        AppStorage.set('isReminderOn', false);
-        resolve(false);
-        return;
-      }
-      console.info('[MoodLite] 提醒已发布，id=' + reminderId);
-      AppStorage.set('mood_reminder_id', reminderId);
-      AppStorage.set('isReminderOn', true);
-      AppStorage.set('reminderHour', hour);
-      AppStorage.set('reminderMinute', minute);
-      resolve(true);
-    });
+    try {
+      reminderAgentManager.publishReminder(alarm, (err: Error, reminderId: number) => {
+        if (err || reminderId <= 0) {
+          console.error('[MoodLite] publishReminder 失败: ' + JSON.stringify(err));
+          resolve(-1);
+          return;
+        }
+        console.info('[MoodLite] 提醒已发布，id=' + reminderId);
+        resolve(reminderId);
+      });
+    } catch (err) {
+      console.error('[MoodLite] publishReminder 异常: ' + JSON.stringify(err));
+      resolve(-1);
+    }
   });
 }
 
-/** 取消已发布的每日提醒 */
-export function cancelReminder(): void {
-  const reminderId: number = AppStorage.get('mood_reminder_id') as number;
-  if (reminderId > 0) {
-    reminderAgentManager.cancelReminder(reminderId, (err: Error) => {
-      if (err) {
-        console.error('[MoodLite] cancelReminder 失败: ' + JSON.stringify(err));
-        return;
-      }
-      console.info('[MoodLite] 提醒已取消，id=' + reminderId);
-    });
-    AppStorage.set('mood_reminder_id', -1);
-  }
-  AppStorage.set('isReminderOn', false);
+/** 取消指定提醒。无有效 ID 等同于已取消。 */
+export function cancelDailyReminder(reminderId: number): Promise<boolean> {
+  if (reminderId <= 0) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    try {
+      reminderAgentManager.cancelReminder(reminderId, (err: Error) => {
+        if (err) {
+          console.error('[MoodLite] cancelReminder 失败: ' + JSON.stringify(err));
+          resolve(false);
+          return;
+        }
+        console.info('[MoodLite] 提醒已取消，id=' + reminderId);
+        resolve(true);
+      });
+    } catch (err) {
+      console.error('[MoodLite] cancelReminder 异常: ' + JSON.stringify(err));
+      resolve(false);
+    }
+  });
 }

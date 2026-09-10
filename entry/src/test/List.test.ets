@@ -3,6 +3,7 @@ import moodRecordPolicyTest from './MoodRecordPolicy.test';
 import statsViewModelTest from './StatsViewModel.test';
 import widgetViewModelTest from './WidgetViewModel.test';
 import launchIntentTest from './LaunchIntent.test';
+import reminderStateTest from './ReminderState.test';
 
 export default function testsuite() {
   localUnitTest();
@@ -10,4 +11,5 @@ export default function testsuite() {
   statsViewModelTest();
   widgetViewModelTest();
   launchIntentTest();
+  reminderStateTest();
 }
