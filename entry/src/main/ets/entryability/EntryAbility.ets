@@ -4,14 +4,23 @@ import type AbilityConstant from '@ohos.app.ability.AbilityConstant';
 import window from '@ohos.window';
 import router from '@ohos.router';
 import type { BusinessError } from '@ohos.base';
+import DataManager from '../data/DataManager';
+import {
+  LaunchIntent,
+  LaunchParameters,
+  PENDING_TAB_KEY,
+  PENDING_TARGET_KEY,
+  parseLaunchIntent,
+} from '../common/LaunchIntent';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     console.info('[MoodLite] EntryAbility onCreate');
+    this.storeLaunchIntent(want, true);
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    this.handleWidgetRoute(want);
+    this.handleLaunchIntent(want);
   }
 
   onDestroy(): void {
@@ -33,20 +42,13 @@ export default class EntryAbility extends UIAbility {
       console.error('[MoodLite] Window setup failed: ' + JSON.stringify(err));
     }
 
-    let targetPage = 'pages/Index';
-    const params = this.launchWant.parameters as Record<string, Object>;
-    if (params && params['targetPage']) {
-      targetPage = params['targetPage'] as string;
-      this.applyWidgetParams(params);
-      console.info('[MoodLite] Widget card routed to: ' + targetPage);
-    }
-
-    windowStage.loadContent(targetPage, (err: BusinessError) => {
+    // 所有冷启动先经过 Index，确保本地数据初始化完成后再处理卡片路由。
+    windowStage.loadContent('pages/Index', (err: BusinessError) => {
       if (err.code) {
         console.error('[MoodLite] Failed to load content: ' + JSON.stringify(err));
         return;
       }
-      console.info('[MoodLite] ' + targetPage + ' loaded');
+      console.info('[MoodLite] pages/Index loaded');
     });
   }
 
@@ -62,24 +64,60 @@ export default class EntryAbility extends UIAbility {
     console.info('[MoodLite] EntryAbility onBackground');
   }
 
-  private applyWidgetParams(params: Record<string, Object>): void {
-    if (params['tab'] !== undefined) {
-      AppStorage.setOrCreate('moodlite_tab', params['tab'] as number);
+  private clearPendingIntent(): void {
+    AppStorage.delete(PENDING_TARGET_KEY);
+    AppStorage.delete(PENDING_TAB_KEY);
+  }
+
+  private storeIntent(intent: LaunchIntent): void {
+    AppStorage.setOrCreate(PENDING_TARGET_KEY, intent.targetPage);
+    if (intent.tab === null) {
+      AppStorage.delete(PENDING_TAB_KEY);
+    } else {
+      AppStorage.setOrCreate(PENDING_TAB_KEY, intent.tab);
     }
   }
 
-  private handleWidgetRoute(want: Want): void {
+  private storeLaunchIntent(want: Want, clearInvalid: boolean): void {
+    const intent: LaunchIntent = parseLaunchIntent(want.parameters as LaunchParameters | undefined);
+    if (intent.targetPage.length === 0) {
+      if (clearInvalid) this.clearPendingIntent();
+      return;
+    }
+    this.storeIntent(intent);
+  }
+
+  private navigate(intent: LaunchIntent): void {
+    if (intent.targetPage === 'pages/MainPage') {
+      if (intent.tab !== null) {
+        AppStorage.setOrCreate('moodlite_tab', intent.tab);
+      }
+      router.replaceUrl({ url: 'pages/MainPage' });
+      return;
+    }
+    router.replaceUrl({
+      url: 'pages/AddEntry',
+      params: { fromTab: intent.tab === null ? 0 : intent.tab },
+    });
+  }
+
+  private handleLaunchIntent(want: Want): void {
     try {
-      const params = want.parameters as Record<string, Object>;
-      if (!params || !params['targetPage']) {
+      const intent: LaunchIntent = parseLaunchIntent(want.parameters as LaunchParameters | undefined);
+      if (intent.targetPage.length === 0) {
+        console.warn('[MoodLite] Ignoring invalid launch target');
         return;
       }
-      this.applyWidgetParams(params);
-      const target = params['targetPage'] as string;
-      console.info('[MoodLite] onNewWant route to: ' + target);
-      router.replaceUrl({ url: target });
+      if (!DataManager.isReady()) {
+        this.storeIntent(intent);
+        console.info('[MoodLite] Launch intent queued until local data is ready');
+        return;
+      }
+      this.clearPendingIntent();
+      console.info('[MoodLite] onNewWant route to: ' + intent.targetPage);
+      this.navigate(intent);
     } catch (err) {
-      console.error('[MoodLite] handleWidgetRoute failed: ' + JSON.stringify(err));
+      console.error('[MoodLite] handleLaunchIntent failed: ' + JSON.stringify(err));
     }
   }
 }

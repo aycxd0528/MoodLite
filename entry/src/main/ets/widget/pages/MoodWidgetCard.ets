@@ -26,7 +26,7 @@ struct MoodWidgetCard {
       // 装饰光晕
       Circle()
         .width('70%').height('70%')
-        .fill(this.darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 139, 167, 0.06)')
+        .backgroundColor(this.darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 139, 167, 0.06)')
         .blendMode(BlendMode.SRC_OVER)
         .position({ x: '-15%', y: '-15%' })
 

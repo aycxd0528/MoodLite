@@ -9,6 +9,13 @@
 import DataManager from '../data/DataManager';
 import { Token, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
+import {
+  LaunchIntent,
+  LaunchParameters,
+  PENDING_TAB_KEY,
+  PENDING_TARGET_KEY,
+  parseLaunchIntent,
+} from '../common/LaunchIntent';
 
 // 全局持久化状态初始化（应在应用入口最早执行）
 PersistentStorage.persistProp('isReminderOn', false);
@@ -28,9 +35,18 @@ struct Index {
   @State status: LoadStatus = 'LOADING';
   @State statusMsg: string = '正在初始化...';
   private timeoutId: number = -1;
+  private attemptId: number = 0;
 
   aboutToAppear(): void {
     console.info('[MoodLite] Index.aboutToAppear — begin');
+    this.initialize();
+  }
+
+  private initialize(): void {
+    this.clearTimer();
+    const attempt: number = ++this.attemptId;
+    this.status = 'LOADING';
+    this.statusMsg = '正在初始化...';
     try {
       const uiCtx: UIContext = this.getUIContext();
       const hostCtx: Context | undefined = uiCtx.getHostContext();
@@ -45,10 +61,11 @@ struct Index {
       // 3 秒超时熔断 —— 防止异步链静默挂起
       const TIMEOUT_MS = 3000;
       this.timeoutId = setTimeout(() => {
-        if (this.status === 'LOADING') {
+        if (attempt === this.attemptId && this.status === 'LOADING') {
           console.warn('[MoodLite] Index init TIMEOUT — forcing EMPTY fallback');
+          this.timeoutId = -1;
           this.status = 'EMPTY';
-          this.statusMsg = '加载超时，请退出重试';
+          this.statusMsg = '加载超时，请重试';
         }
       }, TIMEOUT_MS);
 
@@ -58,32 +75,68 @@ struct Index {
           return DataManager.isFirstLaunch();
         })
         .then((first: boolean) => {
-          clearTimeout(this.timeoutId);
-          this.timeoutId = -1;
+          if (attempt !== this.attemptId || this.status !== 'LOADING') return;
+          this.clearTimer();
           this.status = 'SUCCESS';
           console.info('[MoodLite] Index — firstLaunch=' + String(first) + ', navigating...');
-          const target = first ? 'pages/Welcome' : 'pages/MainPage';
-          this.getUIContext().getRouter().replaceUrl({ url: target });
+          this.navigateAfterInit(first);
         })
         .catch((err: Object) => {
-          clearTimeout(this.timeoutId);
-          this.timeoutId = -1;
+          if (attempt !== this.attemptId || this.status !== 'LOADING') return;
+          this.clearTimer();
           console.error('[MoodLite] Index init FAILED: ' + JSON.stringify(err));
           this.status = 'EMPTY';
-          this.statusMsg = '初始化失败，请退出重试';
+          this.statusMsg = '初始化失败，请重试';
         });
     } catch (syncErr) {
+      if (attempt !== this.attemptId) return;
+      this.clearTimer();
       console.error('[MoodLite] Index aboutToAppear SYNC error: ' + JSON.stringify(syncErr));
       this.status = 'EMPTY';
-      this.statusMsg = '启动异常，请退出重试';
+      this.statusMsg = '启动异常，请重试';
     }
   }
 
   aboutToDisappear(): void {
+    this.attemptId++;
+    this.clearTimer();
+  }
+
+  private clearTimer(): void {
     if (this.timeoutId !== -1) {
       clearTimeout(this.timeoutId);
       this.timeoutId = -1;
     }
+  }
+
+  private consumeLaunchIntent(): LaunchIntent {
+    const target: string | undefined = AppStorage.get(PENDING_TARGET_KEY) as string | undefined;
+    const tab: number | undefined = AppStorage.get(PENDING_TAB_KEY) as number | undefined;
+    AppStorage.delete(PENDING_TARGET_KEY);
+    AppStorage.delete(PENDING_TAB_KEY);
+    const params: LaunchParameters = {};
+    if (typeof target === 'string') params.targetPage = target;
+    if (typeof tab === 'number') params.tab = tab;
+    return parseLaunchIntent(params);
+  }
+
+  private navigateAfterInit(first: boolean): void {
+    const intent: LaunchIntent = this.consumeLaunchIntent();
+    if (first) {
+      this.getUIContext().getRouter().replaceUrl({ url: 'pages/Welcome' });
+      return;
+    }
+    if (intent.targetPage === 'pages/AddEntry') {
+      this.getUIContext().getRouter().replaceUrl({
+        url: 'pages/AddEntry',
+        params: { fromTab: intent.tab === null ? 0 : intent.tab },
+      });
+      return;
+    }
+    if (intent.tab !== null) {
+      AppStorage.setOrCreate('moodlite_tab', intent.tab);
+    }
+    this.getUIContext().getRouter().replaceUrl({ url: 'pages/MainPage' });
   }
 
   build() {
@@ -126,12 +179,12 @@ struct Index {
             .fontSize(F.BODY)
             .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
             .margin({ bottom: S.XS })
-          Text('开始记录第一条心情吧')
+          Text('本地数据尚未准备完成')
             .fontSize(F.CAPTION)
             .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
             .margin({ top: S.XS, bottom: S.LG })
 
-          Button('开始记录')
+          Button('重试')
             .width(180).height(48)
             .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
             .borderRadius(24)
@@ -140,8 +193,8 @@ struct Index {
             .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
             .shadow({ radius: 12, color: 'rgba(255,139,167,0.35)', offsetY: 6 })
             .onClick(() => {
-              console.info('[MoodLite] Index EMPTY — manual navigation to MainPage');
-              this.getUIContext().getRouter().replaceUrl({ url: 'pages/MainPage' });
+              console.info('[MoodLite] Index EMPTY — retry initialization');
+              this.initialize();
             })
         }
       }
