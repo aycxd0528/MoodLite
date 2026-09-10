@@ -12,6 +12,7 @@ import {
   heatmapColor,
   calcTagDistribution,
   TagDistribution,
+  recordsForMonth,
   WEEKDAY_HEADERS,
 } from '../viewmodel/StatsViewModel';
 
@@ -30,32 +31,16 @@ export struct StatsContent {
   @State neutralPercent: number = 0;
   @State recordDays: number = 0;
   @State tagDistributions: TagDistribution[] = [];
-  private monthCache: Map<string, MoodRecord[]> = new Map();
-  private lastRecordKey: string = '';
 
-  aboutToAppear(): void { this.rebuildCache(); this.refresh(); }
+  aboutToAppear(): void { this.refresh(); }
 
-  onRecordsChange(): void { this.rebuildCache(); this.refresh(); }
-
-  rebuildCache(): void {
-    const newKey = this.records.length + '_' + (this.records.length > 0 ? this.records[0].id : 'empty');
-    if (newKey === this.lastRecordKey) return;
-    this.lastRecordKey = newKey;
-    this.monthCache.clear();
-    for (const r of this.records) {
-      const mk = r.dateStr.substring(0, 7);
-      let arr = this.monthCache.get(mk);
-      if (!arr) { arr = []; this.monthCache.set(mk, arr); }
-      arr.push(r);
-    }
-  }
+  onRecordsChange(): void { this.refresh(); }
 
   refresh(): void {
-    const key = this.year + '-' + String(this.month).padStart(2, '0');
-    const monthRecords = this.monthCache.get(key) || [];
+    const monthRecords: MoodRecord[] = recordsForMonth(this.records, this.year, this.month);
 
     this.calendarCells = generateCalendarGrid(this.year, this.month, monthRecords);
-    this.tagDistributions = calcTagDistribution(this.records);
+    this.tagDistributions = calcTagDistribution(monthRecords);
 
     const monthlyStats = calcMonthlyStats(this.year, this.month, monthRecords);
     const totalRecords = monthlyStats.happyRecords + monthlyStats.neutralRecords + monthlyStats.sadRecords;

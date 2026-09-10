@@ -98,6 +98,19 @@ function parseYearMonth(dateStr: string): number[] {
 
 // ========== 共享辅助函数 ==========
 
+/** 只返回指定自然月的记录。 */
+export function recordsForMonth(records: MoodRecord[], year: number, month: number): MoodRecord[] {
+  const prefix: string = year + '-' + String(month).padStart(2, '0') + '-';
+  return records.filter((record: MoodRecord) => record.dateStr.startsWith(prefix));
+}
+
+/** 记录天数按不重复日期计算。 */
+export function countUniqueRecordDays(records: MoodRecord[]): number {
+  const dates = new Set<string>();
+  for (const record of records) dates.add(record.dateStr);
+  return dates.size;
+}
+
 /** 根据正/负记录数计算情绪代码 (1=低落 2=平静 3=愉悦 4=混合) */
 export function computeMoodCode(posCount: number, negCount: number): number {
   if (posCount > 0 && negCount > 0) {
@@ -211,11 +224,6 @@ export function calcMonthlyStats(
   month: number,
   monthRecords: MoodRecord[]
 ): MonthlyStats {
-  const daySet = new Set<string>();
-  for (const r of monthRecords) {
-    daySet.add(r.dateStr);
-  }
-
   // 按「条」计数，不是按「天」
   let happyCount = 0;
   let neutralCount = 0;
@@ -233,7 +241,7 @@ export function calcMonthlyStats(
     else neutralCount++;
   }
 
-  const totalDays = daySet.size;
+  const totalDays = countUniqueRecordDays(monthRecords);
   const totalRecords = monthRecords.length;
 
   return {

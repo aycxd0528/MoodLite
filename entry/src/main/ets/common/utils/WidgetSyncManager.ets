@@ -10,25 +10,11 @@
 import dataPreferences from '@ohos.data.preferences';
 import formProvider from '@ohos.app.form.formProvider';
 import formBindingData from '@ohos.app.form.formBindingData';
-import { MoodRecord, getMoodEmoji, getMoodLabel, formatDateStr } from '../../model/MoodRecord';
-import { calcStreak } from '../../viewmodel/StatsViewModel';
+import { MoodRecord } from '../../model/MoodRecord';
+import { buildWidgetSummary, WidgetSummary } from '../../viewmodel/WidgetViewModel';
 
 const STORE_NAME = 'moodlite_widget';
 const KEY_FORM_IDS = 'form_ids';
-
-interface WidgetPayload {
-  mood: string;
-  moodLabel: string;
-  todayMood: string;
-  todayScore: number;
-  streak: number;
-  recordDays: number;
-  happyPercent: number;
-  sadPercent: number;
-  neutralPercent: number;
-  darkMode: number;
-  monthDays: number[];
-}
 
 class WidgetSyncManager {
   private static instance: WidgetSyncManager;
@@ -77,64 +63,6 @@ class WidgetSyncManager {
     }
   }
 
-  // ========== 数据转换 ==========
-
-  /**
-   * 生成本月 7×5 紧凑日历数组
-   * 编码 = moodCode × 10 + intensity (0-4 五级强度)
-   * moodCode: 0=无 1=低落 2=平静 3=愉悦 4=混合
-   */
-  getCompactMonthData(records: MoodRecord[]): number[] {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const result: number[] = new Array(35).fill(0);
-
-    // 每天收集：正/负/中条数、最大绝对分
-    const posCnt: number[] = new Array(31).fill(0);
-    const negCnt: number[] = new Array(31).fill(0);
-    const neuCnt: number[] = new Array(31).fill(0);
-    const maxAbs: number[] = new Array(31).fill(0);
-
-    for (const r of records) {
-      const parts = r.dateStr.split('-');
-      if (parts.length !== 3) continue;
-      const rYear = parseInt(parts[0]);
-      const rMonth = parseInt(parts[1]);
-      const rDay = parseInt(parts[2]);
-      if (rYear !== year || rMonth !== month) continue;
-      const idx = rDay - 1;
-      if (idx < 0 || idx >= 31) continue;
-      if (r.score >= 1) posCnt[idx]++;
-      else if (r.score <= -1) negCnt[idx]++;
-      else neuCnt[idx]++;
-      const absVal = Math.abs(r.score);
-      if (absVal > maxAbs[idx]) maxAbs[idx] = absVal;
-    }
-
-    for (let i = 0; i < 31; i++) {
-      if (posCnt[i] === 0 && negCnt[i] === 0 && neuCnt[i] === 0) continue;
-
-      const dayCnt = posCnt[i] + negCnt[i] + neuCnt[i];
-      const intensity = Math.min(4, maxAbs[i] * 2 + (dayCnt > 1 ? 1 : 0));
-
-      let moodCode = 2;
-      if (posCnt[i] > 0 && negCnt[i] > 0) {
-        // 正负都有：比数量，谁多就谁主导
-        if (posCnt[i] > negCnt[i]) moodCode = 3;       // 开心多 → 粉色
-        else if (negCnt[i] > posCnt[i]) moodCode = 1;   // 不开心多 → 蓝色
-        else moodCode = 4;                               // 一样多 → 紫色
-      } else if (posCnt[i] > 0) {
-        moodCode = 3;
-      } else if (negCnt[i] > 0) {
-        moodCode = 1;
-      }
-
-      result[i] = moodCode * 10 + intensity;
-    }
-    return result;
-  }
-
   // ========== 推送更新 ==========
 
   /** 将本地摘要推送到所有已注册的 2×2 桌面卡片 */
@@ -150,35 +78,8 @@ class WidgetSyncManager {
         return;
       }
 
-      const today = formatDateStr(new Date());
-      const todayRecord = records.find((r: MoodRecord) => r.dateStr === today);
-
-      const now = new Date();
-      const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-      let recordDays = 0, happy = 0, sad = 0, neutral = 0;
-      for (const r of records) {
-        if (r.dateStr.startsWith(monthKey)) {
-          recordDays++;
-          if (r.score >= 1) happy++;
-          else if (r.score <= -1) sad++;
-          else neutral++;
-        }
-      }
-      const total = happy + sad + neutral || 1;
-
-      const payload: WidgetPayload = {
-        mood: todayRecord ? getMoodEmoji(todayRecord.score) : '😐',
-        moodLabel: todayRecord ? getMoodLabel(todayRecord.score) : 'MoodLite',
-        todayMood: todayRecord ? getMoodLabel(todayRecord.score) : '--',
-        todayScore: todayRecord ? todayRecord.score : 0,
-        streak: calcStreak(records).currentStreak,
-        recordDays: recordDays,
-        happyPercent: Math.round(happy * 100 / total),
-        sadPercent: Math.round(sad * 100 / total),
-        neutralPercent: Math.round(neutral * 100 / total),
-        darkMode: (AppStorage.get('darkMode') as boolean) ? 1 : 0,
-        monthDays: this.getCompactMonthData(records),
-      };
+      const darkMode: boolean = (AppStorage.get('darkMode') as boolean) === true;
+      const payload: WidgetSummary = buildWidgetSummary(records, new Date(), darkMode);
       console.info('[WidgetSync] payload monthDays[0..4]=' + payload.monthDays.slice(0, 5).toString());
 
       const formData = formBindingData.createFormBindingData(payload);
