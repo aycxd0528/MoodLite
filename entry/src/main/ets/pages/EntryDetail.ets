@@ -15,7 +15,8 @@ struct DeleteConfirmDialog {
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   controller: CustomDialogController = new CustomDialogController({ builder: '' });
-  onConfirm: () => void = () => {};
+  onConfirm: () => Promise<boolean> = async () => false;
+  @State confirming: boolean = false;
 
   build() {
     Column() {
@@ -30,8 +31,19 @@ struct DeleteConfirmDialog {
           .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_TRACK)
           .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_SECONDARY)
           .layoutWeight(1).onClick(() => { this.controller.close(); })
-        Button('删除').fontSize(14).backgroundColor(resolveColors(this.darkMode, this.currentTheme).DELETE_RED).fontColor(Color.White)
-          .layoutWeight(1).onClick(async () => { await this.onConfirm(); this.controller.close(); })
+        Button(this.confirming ? '删除中…' : '删除')
+          .fontSize(14)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).DELETE_RED)
+          .fontColor(Color.White)
+          .layoutWeight(1)
+          .enabled(!this.confirming)
+          .onClick(async () => {
+            if (this.confirming) return;
+            this.confirming = true;
+            const deleted: boolean = await this.onConfirm();
+            this.confirming = false;
+            if (deleted) this.controller.close();
+          })
       }
       .width('100%')
     }
@@ -48,13 +60,14 @@ struct EntryDetail {
   @State recordId: string = '';
   @State record: MoodRecord | null = null;
   @State notFound: boolean = false;
+  @State deleting: boolean = false;
   deleteDialog: CustomDialogController | null = null;
 
   aboutToAppear(): void {
     this.syncWindow();
     this.deleteDialog = new CustomDialogController({
       builder: DeleteConfirmDialog({
-        onConfirm: () => { this.doDelete(); }
+        onConfirm: (): Promise<boolean> => this.doDelete()
       }),
       autoCancel: true,
       alignment: DialogAlignment.Center,
@@ -87,10 +100,7 @@ struct EntryDetail {
   onEdit(): void {
     if (!this.record) return;
     setEditPayload({
-      id: this.record.id,
-      text: this.record.text,
-      score: this.record.score,
-      tags: this.record.tags,
+      record: this.record,
     });
     AppStorage.setOrCreate('moodlite_tab', 1);
     AppStorage.setOrCreate('moodlite_nav_to_add', true);
@@ -98,13 +108,33 @@ struct EntryDetail {
   }
 
   onDelete(): void {
+    if (this.deleting) return;
     this.deleteDialog?.open();
   }
 
-  async doDelete(): Promise<void> {
-    await DataManager.deleteRecord(this.recordId);
-    AppStorage.setOrCreate('moodlite_tab', 1);
-    this.getUIContext().getRouter().back();
+  async doDelete(): Promise<boolean> {
+    if (this.deleting) return false;
+    this.deleting = true;
+    try {
+      const deleted: boolean = await DataManager.deleteRecord(this.recordId);
+      if (!deleted) {
+        this.getUIContext().getPromptAction().showToast({ message: '删除失败，请重试', duration: 2000 });
+        return false;
+      }
+      AppStorage.setOrCreate('moodlite_tab', 1);
+      this.getUIContext().getRouter().back();
+      return true;
+    } catch (err) {
+      console.error('[MoodLite] delete failed: ' + JSON.stringify(err));
+      try {
+        this.getUIContext().getPromptAction().showToast({ message: '删除失败，请重试', duration: 2000 });
+      } catch (_toastErr) {
+        console.error('[MoodLite] delete error toast failed: ' + JSON.stringify(_toastErr));
+      }
+      return false;
+    } finally {
+      this.deleting = false;
+    }
   }
 
   formatDate(dateStr: string): string {
@@ -204,6 +234,7 @@ struct EntryDetail {
             .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
             .borderRadius(12)
             .shadow({ radius: 12, color: 'rgba(0,0,0,0.08)', offsetY: 4 })
+            .enabled(!this.deleting)
             .onClick(() => { this.onDelete(); })
           }
           .padding({ left: S.LG, right: S.LG, top: S.XS })

@@ -10,6 +10,7 @@ import { Token, Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, generateUUID, formatDateStr, DEFAULT_TAGS } from '../model/MoodRecord';
+import { buildEditedMoodRecord } from '../model/MoodRecordPolicy';
 import { getEditPayload } from '../common/EditBridge';
 
 interface FaceEntry {
@@ -40,7 +41,6 @@ struct AddEntry {
   private readonly MOOD_SNAPS: number[] = [10, 30, 50, 70, 90];
   @State emojiScale: number = 1.0;
   @State emojiOpacity: number = 1.0;
-  @State editId: string = '';
   @State isEdit: boolean = false;
   @State selectedTags: string[] = [];
   @State customTag: string = '';
@@ -52,6 +52,7 @@ struct AddEntry {
   @State successFloat: number = 0;
   private successTimer1: number = -1;
   private successTimer2: number = -1;
+  private originalRecord: MoodRecord | null = null;
 
   aboutToDisappear(): void {
     if (this.successTimer1 !== -1) { clearTimeout(this.successTimer1); this.successTimer1 = -1; }
@@ -67,10 +68,10 @@ struct AddEntry {
     const payload = getEditPayload();
     if (payload) {
       this.isEdit = true;
-      this.editId = payload.id;
-      this.txt = payload.text || '';
-      this.selectedTags = payload.tags || [];
-      const s = payload.score;
+      this.originalRecord = payload.record;
+      this.txt = payload.record.text || '';
+      this.selectedTags = [...payload.record.tags];
+      const s = payload.record.score;
       if (s <= -2) this.sv = 10;
       else if (s === -1) this.sv = 30;
       else if (s === 0) this.sv = 50;
@@ -115,18 +116,21 @@ struct AddEntry {
     this.saving = true;
     try {
       const f = findFace(this.sv);
-      const useId = (this.isEdit && this.editId && this.editId.length > 0)
-        ? this.editId : generateUUID();
-      const record: MoodRecord = {
-        id: useId,
-        timestamp: Date.now(),
-        dateStr: formatDateStr(new Date()),
-        score: f.ms,
-        text: this.txt,
-        images: [],
-        location: '',
-        tags: this.selectedTags,
-      };
+      let record: MoodRecord;
+      if (this.isEdit && this.originalRecord !== null) {
+        record = buildEditedMoodRecord(this.originalRecord, f.ms, this.txt, this.selectedTags);
+      } else {
+        record = {
+          id: generateUUID(),
+          timestamp: Date.now(),
+          dateStr: formatDateStr(new Date()),
+          score: f.ms,
+          text: this.txt,
+          images: [],
+          location: '',
+          tags: [...this.selectedTags],
+        };
+      }
       const ok = await DataManager.saveRecord(record);
       this.saving = false;
       if (ok) {

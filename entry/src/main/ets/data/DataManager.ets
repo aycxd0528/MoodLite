@@ -9,6 +9,7 @@
 
 import dataPreferences from '@ohos.data.preferences';
 import { MoodRecord } from '../model/MoodRecord';
+import { normalizeMoodRecord, parseMoodRecords } from '../model/MoodRecordPolicy';
 import WidgetSyncManager from '../common/utils/WidgetSyncManager';
 
 const STORE_NAME = 'moodlite_db';
@@ -59,7 +60,7 @@ class DataManager {
       this.preferences = await dataPreferences.getPreferences(this.context!, STORE_NAME);
       // 预热内存缓存
       const recordsRaw = await this.preferences.get(KEY_RECORDS, '[]') as string;
-      this.cache = JSON.parse(recordsRaw) as MoodRecord[];
+      this.cache = parseMoodRecords(recordsRaw);
 
       this.ready = true;
       console.info('[MoodLite] DataManager init complete — ' + this.cache.length + ' records cached');
@@ -120,10 +121,11 @@ class DataManager {
   async saveRecord(record: MoodRecord): Promise<boolean> {
     return this.enqueue(async () => {
       if (!this.preferences) return false;
-      const raw = await this.preferences.get(KEY_RECORDS, '[]') as string;
-      const records: MoodRecord[] = JSON.parse(raw);
-      const filtered = records.filter(r => r.id !== record.id);
-      filtered.unshift(record);
+      const normalized: MoodRecord | null = normalizeMoodRecord(record);
+      if (normalized === null) return false;
+      const filtered: MoodRecord[] = this.cache.filter((item: MoodRecord) => item.id !== normalized.id);
+      filtered.push(normalized);
+      filtered.sort((a: MoodRecord, b: MoodRecord): number => b.timestamp - a.timestamp);
 
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
@@ -145,9 +147,7 @@ class DataManager {
   async deleteRecord(id: string): Promise<boolean> {
     return this.enqueue(async () => {
       if (!this.preferences) return false;
-      const raw = await this.preferences.get(KEY_RECORDS, '[]') as string;
-      const records: MoodRecord[] = JSON.parse(raw);
-      const filtered = records.filter(r => r.id !== id);
+      const filtered: MoodRecord[] = this.cache.filter((record: MoodRecord) => record.id !== id);
       await this.preferences.put(KEY_RECORDS, JSON.stringify(filtered));
       await this.preferences.flush();
 

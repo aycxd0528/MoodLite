@@ -3,18 +3,32 @@
  * 用于 MainPage ↔ AddEntry 的双向通信
  */
 
+import { MoodRecord } from '../model/MoodRecord';
+
 export interface EditPayload {
-  id: string;
-  text: string;
-  score: number;
-  tags: string[];
+  record: MoodRecord;
 }
 
 let _payload: EditPayload | null = null;
 let _needsRefresh: boolean = false;
 
-/** 设置编辑数据 */
-export function setEditPayload(p: EditPayload): void { _payload = p; }
+function copyRecord(record: MoodRecord): MoodRecord {
+  return {
+    id: record.id,
+    timestamp: record.timestamp,
+    dateStr: record.dateStr,
+    score: record.score,
+    text: record.text,
+    images: [...record.images],
+    location: record.location,
+    tags: [...record.tags],
+  };
+}
+
+/** 设置编辑数据，并隔离页面间的数组引用。 */
+export function setEditPayload(p: EditPayload): void {
+  _payload = { record: copyRecord(p.record) };
+}
 
 /** 读取并清除编辑数据 */
 export function getEditPayload(): EditPayload | null {
