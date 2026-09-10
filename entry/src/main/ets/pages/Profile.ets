@@ -6,15 +6,13 @@ import { Token, R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
 import { enableDailyReminder, cancelReminder } from '../common/ReminderManager';
 import ThemeManager, { ThemePreset, ThemePresetEntry, resolveColors } from '../common/ThemeManager';
-import common from '@ohos.app.ability.common';
-import type Want from '@ohos.app.ability.Want';
 
 interface SItem { icon: Resource; label: string; toggle: boolean; }
 
 const ITEMS: SItem[] = [
   { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
   { icon: $r('app.media.ic_moon'),            label: '深色模式',     toggle: true  },
-  { icon: $r('app.media.ic_message'),         label: '给我们反馈',   toggle: false },
+  { icon: $r('app.media.ic_shield'),          label: '数据与隐私',   toggle: false },
   { icon: $r('app.media.ic_info'),            label: '关于 MoodLite',toggle: false },
 ];
 
@@ -273,22 +271,10 @@ export struct Profile {
                   }
                   .width('100%').height(56).alignItems(VerticalAlign.Center)
                   .onClick(() => {
-                    if (it.label === '给我们反馈') {
-                      const want: Want = {
-                        action: 'ohos.want.action.viewData',
-                        entities: ['entity.system.browsable'],
-                        uri: 'https://qcnvafay57br.feishu.cn/share/base/form/shrcnYp5ebjhkpaHKc6FA0Lw1me'
-                      };
-                      const ctx = this.appContext() as common.UIAbilityContext;
-                      ctx.startAbility(want);
+                    if (it.label === '数据与隐私') {
+                      this.getUIContext().getRouter().pushUrl({ url: 'pages/DataPrivacyPage' });
                     } else if (it.label === '关于 MoodLite') {
-                      const want: Want = {
-                        action: 'ohos.want.action.viewData',
-                        entities: ['entity.system.browsable'],
-                        uri: 'https://qcnvafay57br.feishu.cn/wiki/JVzvwaxhmiRMv4kyv8Rcyjz9nBe'
-                      };
-                      const ctx = this.appContext() as common.UIAbilityContext;
-                      ctx.startAbility(want);
+                      this.getUIContext().getRouter().pushUrl({ url: 'pages/AboutPage' });
                     }
                   })
                 }

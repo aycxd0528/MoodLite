@@ -1,6 +1,6 @@
 /**
  * HomeTab — 今日首页
- * 展示今日心情摘要 / 欢迎引导 / AI 建议胶囊 / 成就徽章
+ * 展示今日心情摘要 / 欢迎引导 / 本地关怀文案 / 成就徽章
  */
 
 import curves from '@ohos.curves';
@@ -9,7 +9,6 @@ import { Token, Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodEmoji, getMoodIconResource, getMoodLabel, formatDateStr } from '../model/MoodRecord';
-import { AiSuggestion } from '../common/utils/AiAgentClient';
 import { ACHIEVEMENTS, AchievementItem } from '../model/Achievement';
 import { computeAchievementProgress } from '../viewmodel/AchievementChecker';
 import { AchievementDialog } from '../common/components/AchievementDialog';
@@ -22,15 +21,12 @@ interface AchievementUnlock {
 @Component
 export struct HomeTab {
   @Prop @Watch('onRecordsChange') records: MoodRecord[] = [];
-  @StorageLink('activeIntent') activeIntent: string | null = null;
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State emoji: string = '😐';
   @State label: string = '';
   @State score: number = 0;
   @State comfort: string = '';
-  @State capsuleOpacity: number = 0;
-  @State capsuleOffY: number = 20;
   @State achievementList: AchievementItem[] = [];
   @State selectedAchievementId: string | null = null;
   @State expandedAchievement: AchievementItem | null = null;
@@ -43,14 +39,12 @@ export struct HomeTab {
 
   aboutToAppear(): void {
     this.updateMoodState();
-    this.animateCapsule();
     this.achievementList = this.buildAchievementListNow();
     this.checkPendingAchievements();
   }
 
   onRecordsChange(): void {
     this.updateMoodState();
-    this.animateCapsule();
     this.achievementList = this.buildAchievementListNow();
     this.checkPendingAchievements();
   }
@@ -72,25 +66,6 @@ export struct HomeTab {
   private isTodayRecorded(): boolean {
     if (this.records.length === 0) return false;
     return this.records[0].dateStr === formatDateStr(new Date());
-  }
-
-  private parseActiveIntent(): AiSuggestion | null {
-    if (!this.activeIntent) return null;
-    try {
-      const obj = JSON.parse(this.activeIntent) as AiSuggestion;
-      return obj.dateStr === formatDateStr(new Date()) ? obj : null;
-    } catch (_e) { return null; }
-  }
-
-  private animateCapsule(): void {
-    const intent = this.parseActiveIntent();
-    if (intent) {
-      this.getUIContext()?.animateTo({ curve: curves.springMotion(0.4, 0.6) }, () => {
-        this.capsuleOpacity = 1; this.capsuleOffY = 0;
-      });
-    } else {
-      this.capsuleOpacity = 0; this.capsuleOffY = 20;
-    }
   }
 
   // ========== 成就弹窗触发 ==========
@@ -217,22 +192,6 @@ export struct HomeTab {
             .padding({ top: 28, bottom: 28, left: 20, right: 20 })
           }
 
-          if (this.parseActiveIntent()) {
-            Column() {
-              GlassCard() {
-                Row({ space: S.SM }) {
-                  Text('💡').fontSize(18)
-                  Column({ space: 4 }) {
-                    Text('AI 温暖提示').fontSize(F.SMALL).fontWeight(FontWeight.Bold).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-                    Text(this.parseActiveIntent()?.suggestion || '')
-                      .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
-                      .maxLines(3).textOverflow({ overflow: TextOverflow.Ellipsis })
-                  }.layoutWeight(1)
-                }.width('100%').alignItems(VerticalAlign.Top)
-              }
-            }
-            .width('100%').opacity(this.capsuleOpacity).translate({ y: this.capsuleOffY })
-          }
         } else {
           GlassCard() {
             Column() {
