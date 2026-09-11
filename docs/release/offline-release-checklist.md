@@ -11,6 +11,7 @@
 - SDK：HarmonyOS `6.0.1(21)`，`targetSdkVersion` 与 `compatibleSdkVersion` 均为 API 21
 - 当前设备连接：无；`hdc list targets` 返回 `[Empty]`
 - 当前构建产物：`entry/build/default/outputs/default/entry-default-unsigned.hap`，9,916,970 bytes
+- 设备测试产物：`entry/build/default/outputs/ohosTest/entry-ohosTest-unsigned.hap`，10,766,138 bytes
 - 签名说明：仓库不再保存本机签名材料；当前产物为未签名 HAP，需在受控发布环境注入生产签名后再做安装和上架验收。
 
 ## 自动化验收结果
@@ -21,6 +22,7 @@
 - [x] ArkTS 单元测试：`BUILD SUCCESSFUL`，20 个构建任务完成；仅注册 5 个真实测试套件。
 - [x] API 21 Debug HAP：`BUILD SUCCESSFUL`，33 个构建任务完成。
 - [x] API 21 Release HAP：`BUILD SUCCESSFUL`，33 个构建任务完成。
+- [x] API 21 `ohosTest` HAP：`BUILD SUCCESSFUL`，35 个构建任务全部执行；设备侧路由安全用例已编译打包，尚未在真机运行。
 - [x] 模板断言审计：`assertContain`、`let a = 'abc'` 无命中。
 - [x] 可执行源码远程残留审计：网络 API、远程 URL、AI 配置、登录/会员符号无命中。SVG 的 W3C XML 命名空间不是网络依赖，审计已限定为 `.ets/.ts/.js/.mjs/.json/.json5`。
 - [x] 权限清单：仅 `ohos.permission.PUBLISH_AGENT_REMINDER` 与 `ohos.permission.VIBRATE`。
@@ -46,7 +48,7 @@ Release 构建仍会提示“未配置 signingConfig”和“未启用混淆”�
 | §9 统计口径 | [`StatsViewModel.ets`](../../entry/src/main/ets/viewmodel/StatsViewModel.ets)、[`WidgetViewModel.ets`](../../entry/src/main/ets/viewmodel/WidgetViewModel.ets) | 已通过单测 |
 | §10 提醒状态 | [`ReminderState.test.ets`](../../entry/src/test/ReminderState.test.ets)、[`ReminderManager.ets`](../../entry/src/main/ets/common/ReminderManager.ets)、[`Profile.ets`](../../entry/src/main/ets/pages/Profile.ets) | 状态构造通过；系统发布/取消待真机 |
 | §11 错误处理 | `Index` 重试/竞态保护、DataManager 落盘后更新、保存/删除/提醒失败分支 | 源码与构建通过；系统失败路径待真机 |
-| §12 测试策略 | 自动化矩阵见上；设备测试见下 | 自动部分完成，人工部分待办 |
+| §12 测试策略 | 自动化矩阵见上；`ohosTest` 测试 HAP 已成功构建；设备执行见下 | 自动与设备测试编译完成，真机执行待办 |
 | §14 实施顺序与同步 | Git 提交 `02a1596` 至 `4be558a`，以及指定飞书项目文档的批次记录与最终验收章节 | 以 GitHub 远端哈希和飞书章节回读为准 |
 | §15 非目标 | 离线、轻量与发布卫生门禁无禁用能力残留 | 已通过 |
 
