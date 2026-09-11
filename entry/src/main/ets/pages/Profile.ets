@@ -133,7 +133,6 @@ struct ThemePickerDialog {
 
 // ========== Profile 主页面 ==========
 
-@Entry
 @Component
 export struct Profile {
   @StorageLink('darkMode') darkMode: boolean = false;

@@ -4,7 +4,6 @@
 
 import curves from '@ohos.curves';
 import vibrator from '@ohos.vibrator';
-import window from '@ohos.window';
 import DataManager from '../data/DataManager';
 import { Token, Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
@@ -28,6 +27,18 @@ const FT: FaceEntry[] = [
 function findFace(v: number): FaceEntry {
   for (const e of FT) { if (v >= e.min && v <= e.max) return e; }
   return FT[2];
+}
+
+function triggerHaptic(duration: number): void {
+  const effect: vibrator.VibrateTime = { type: 'time', duration: duration };
+  const attribute: vibrator.VibrateAttribute = { usage: 'touch' };
+  try {
+    vibrator.startVibration(effect, attribute).catch((err: Error) => {
+      console.debug('[MoodLite] vibrate skipped: ' + JSON.stringify(err));
+    });
+  } catch (err) {
+    console.debug('[MoodLite] vibrate skipped: ' + JSON.stringify(err));
+  }
 }
 
 @Entry
@@ -60,7 +71,6 @@ struct AddEntry {
   }
 
   aboutToAppear(): void {
-    this.syncWindow();
     const p = this.getUIContext().getRouter().getParams() as Record<string, Object>;
     if (p && typeof p['fromTab'] === 'number') {
       this.fromTab = p['fromTab'];
@@ -85,15 +95,6 @@ struct AddEntry {
       else if (sc === 0) this.sv = 50; else if (sc === 1) this.sv = 70;
       else this.sv = 90;
     }
-  }
-
-  syncWindow(): void {
-    const ctx = this.getUIContext().getHostContext();
-    window.getLastWindow(ctx).then((wc) => {
-      wc.setWindowBackgroundColor(resolveColors(this.darkMode, this.currentTheme).BG);
-    }).catch((err: Error) => {
-      console.error('[MoodLite] syncWindow failed: ' + JSON.stringify(err));
-    });
   }
 
   triggerEmojiBounce(): void {
@@ -135,7 +136,7 @@ struct AddEntry {
       this.saving = false;
       if (ok) {
         // 触觉反馈
-        try { vibrator.vibrate(15); } catch (_e) { console.debug('[MoodLite] vibrate skipped: ' + JSON.stringify(_e)); }
+        triggerHaptic(15);
 
         // 沉浸式成功动画
         this.showSuccessOverlay = true;
@@ -263,7 +264,7 @@ struct AddEntry {
                       }
                     } else if (mode === SliderChangeMode.End) {
                       this.sv = nearest;
-                      try { vibrator.vibrate(10); } catch (_e) { console.debug('[MoodLite] vibrate skipped: ' + JSON.stringify(_e)); }
+                      triggerHaptic(10);
                     }
                   })
                 Row() {

@@ -1,24 +1,9 @@
 {
   "app": {
-    "signingConfigs": [
-      {
-        "name": "default",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "/Users/aycxd/.ohos/config/default_MoodLite_2nQ_4HR1Urj2REcMxoqvgo2o48RTODSD-XHfvSPcM-k=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001B4CF1AC86B498397694846AC2225268FF6CB4FF82428828D47B06DE199FA8E50178D7E9DB589D45",
-          "profile": "/Users/aycxd/.ohos/config/default_MoodLite_2nQ_4HR1Urj2REcMxoqvgo2o48RTODSD-XHfvSPcM-k=.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/aycxd/.ohos/config/default_MoodLite_2nQ_4HR1Urj2REcMxoqvgo2o48RTODSD-XHfvSPcM-k=.p12",
-          "storePassword": "0000001B120CB4A0BFE67703D68C069C760B99FDE4AF2A9534BCC4D47CCE7B3FDAB02D9133874BB0FE048C"
-        }
-      }
-    ],
+    "signingConfigs": [],
     "products": [
       {
         "name": "default",
-        "signingConfig": "default",
         "targetSdkVersion": "6.0.1(21)",
         "compatibleSdkVersion": "6.0.1(21)",
         "runtimeOS": "HarmonyOS",

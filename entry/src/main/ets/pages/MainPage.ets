@@ -57,8 +57,6 @@ struct MainPage {
   syncWindow(): void {
     const ctx = this.getUIContext().getHostContext();
     window.getLastWindow(ctx).then((wc) => {
-      const C = resolveColors(this.darkMode, this.currentTheme);
-      wc.setWindowBackgroundColor(C.BG);
       wc.setWindowSystemBarProperties({
         statusBarContentColor: this.darkMode ? '#FFFFFF' : '#000000',
       });
@@ -79,7 +77,16 @@ struct MainPage {
     const navToAdd = AppStorage.get('moodlite_nav_to_add') as boolean;
     if (navToAdd === true) {
       AppStorage.delete('moodlite_nav_to_add');
-      this.getUIContext().getRouter().pushUrl({ url: 'pages/AddEntry', params: { fromTab: this.tab } });
+      try {
+        this.getUIContext().getRouter().pushUrl({
+          url: 'pages/AddEntry',
+          params: { fromTab: this.tab },
+        }).catch((err: Error) => {
+          console.error('[MoodLite] edit route failed: ' + JSON.stringify(err));
+        });
+      } catch (err) {
+        console.error('[MoodLite] edit route failed: ' + JSON.stringify(err));
+      }
     }
   }
 

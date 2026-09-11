@@ -122,21 +122,38 @@ struct Index {
 
   private navigateAfterInit(first: boolean): void {
     const intent: LaunchIntent = this.consumeLaunchIntent();
-    if (first) {
-      this.getUIContext().getRouter().replaceUrl({ url: 'pages/Welcome' });
-      return;
-    }
-    if (intent.targetPage === 'pages/AddEntry') {
-      this.getUIContext().getRouter().replaceUrl({
-        url: 'pages/AddEntry',
-        params: { fromTab: intent.tab === null ? 0 : intent.tab },
+    try {
+      const uiRouter = this.getUIContext().getRouter();
+      if (first) {
+        uiRouter.replaceUrl({ url: 'pages/Welcome' }).catch((err: Error) => {
+          this.handleNavigationFailure(err);
+        });
+        return;
+      }
+      if (intent.targetPage === 'pages/AddEntry') {
+        uiRouter.replaceUrl({
+          url: 'pages/AddEntry',
+          params: { fromTab: intent.tab === null ? 0 : intent.tab },
+        }).catch((err: Error) => {
+          this.handleNavigationFailure(err);
+        });
+        return;
+      }
+      if (intent.tab !== null) {
+        AppStorage.setOrCreate('moodlite_tab', intent.tab);
+      }
+      uiRouter.replaceUrl({ url: 'pages/MainPage' }).catch((err: Error) => {
+        this.handleNavigationFailure(err);
       });
-      return;
+    } catch (err) {
+      this.handleNavigationFailure(err as Object);
     }
-    if (intent.tab !== null) {
-      AppStorage.setOrCreate('moodlite_tab', intent.tab);
-    }
-    this.getUIContext().getRouter().replaceUrl({ url: 'pages/MainPage' });
+  }
+
+  private handleNavigationFailure(err: Object): void {
+    console.error('[MoodLite] Navigation failed: ' + JSON.stringify(err));
+    this.status = 'EMPTY';
+    this.statusMsg = '页面打开失败，请重试';
   }
 
   build() {

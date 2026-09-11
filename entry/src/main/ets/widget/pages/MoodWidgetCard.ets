@@ -5,7 +5,9 @@
  * 支持暗色模式自适应。
  */
 
-@Entry
+const widgetStorage: LocalStorage = new LocalStorage();
+
+@Entry(widgetStorage)
 @Component
 struct MoodWidgetCard {
   @LocalStorageProp('moodLabel') moodLabel: string = 'MoodLite';

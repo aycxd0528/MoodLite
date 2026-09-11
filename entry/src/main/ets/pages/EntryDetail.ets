@@ -2,7 +2,6 @@
  * EntryDetail — 记录详情页
  */
 
-import window from '@ohos.window';
 import DataManager from '../data/DataManager';
 import { Token, Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
@@ -64,7 +63,6 @@ struct EntryDetail {
   deleteDialog: CustomDialogController | null = null;
 
   aboutToAppear(): void {
-    this.syncWindow();
     this.deleteDialog = new CustomDialogController({
       builder: DeleteConfirmDialog({
         onConfirm: (): Promise<boolean> => this.doDelete()
@@ -86,15 +84,6 @@ struct EntryDetail {
     } else {
       this.notFound = true;
     }
-  }
-
-  syncWindow(): void {
-    const ctx = this.getUIContext().getHostContext();
-    window.getLastWindow(ctx).then((wc) => {
-      wc.setWindowBackgroundColor(resolveColors(this.darkMode, this.currentTheme).BG);
-    }).catch((err: Error) => {
-      console.error('[MoodLite] syncWindow failed: ' + JSON.stringify(err));
-    });
   }
 
   onEdit(): void {

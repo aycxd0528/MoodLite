@@ -2,7 +2,6 @@ import UIAbility from '@ohos.app.ability.UIAbility';
 import type Want from '@ohos.app.ability.Want';
 import type AbilityConstant from '@ohos.app.ability.AbilityConstant';
 import window from '@ohos.window';
-import router from '@ohos.router';
 import type { BusinessError } from '@ohos.base';
 import DataManager from '../data/DataManager';
 import {
@@ -30,13 +29,15 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     try {
       const mainWindow = windowStage.getMainWindowSync();
-      mainWindow.setWindowLayoutFullScreen(true);
-      const dk: boolean = (AppStorage.get('darkMode') as boolean) || false;
-      mainWindow.setWindowBackgroundColor(dk ? '#1A1A2E' : '#F7F8FA');
+      mainWindow.setWindowLayoutFullScreen(true).catch((err: Error) => {
+        console.error('[MoodLite] Full-screen setup failed: ' + JSON.stringify(err));
+      });
       mainWindow.setWindowSystemBarProperties({
         statusBarColor: '#00000000',
         navigationBarColor: '#00000000',
         isStatusBarLightIcon: false,
+      }).catch((err: Error) => {
+        console.error('[MoodLite] System bar setup failed: ' + JSON.stringify(err));
       });
     } catch (err) {
       console.error('[MoodLite] Window setup failed: ' + JSON.stringify(err));
@@ -88,16 +89,29 @@ export default class EntryAbility extends UIAbility {
   }
 
   private navigate(intent: LaunchIntent): void {
-    if (intent.targetPage === 'pages/MainPage') {
-      if (intent.tab !== null) {
-        AppStorage.setOrCreate('moodlite_tab', intent.tab);
+    window.getLastWindow(this.context).then((mainWindow: window.Window) => {
+      try {
+        const uiRouter = mainWindow.getUIContext().getRouter();
+        if (intent.targetPage === 'pages/MainPage') {
+          if (intent.tab !== null) {
+            AppStorage.setOrCreate('moodlite_tab', intent.tab);
+          }
+          uiRouter.replaceUrl({ url: 'pages/MainPage' }).catch((err: Error) => {
+            console.error('[MoodLite] MainPage route failed: ' + JSON.stringify(err));
+          });
+          return;
+        }
+        uiRouter.replaceUrl({
+          url: 'pages/AddEntry',
+          params: { fromTab: intent.tab === null ? 0 : intent.tab },
+        }).catch((err: Error) => {
+          console.error('[MoodLite] AddEntry route failed: ' + JSON.stringify(err));
+        });
+      } catch (err) {
+        console.error('[MoodLite] Route setup failed: ' + JSON.stringify(err));
       }
-      router.replaceUrl({ url: 'pages/MainPage' });
-      return;
-    }
-    router.replaceUrl({
-      url: 'pages/AddEntry',
-      params: { fromTab: intent.tab === null ? 0 : intent.tab },
+    }).catch((err: Error) => {
+      console.error('[MoodLite] Main window unavailable for route: ' + JSON.stringify(err));
     });
   }
 
