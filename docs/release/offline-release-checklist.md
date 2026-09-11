@@ -23,6 +23,7 @@
 - [x] API 21 Debug HAP：`BUILD SUCCESSFUL`，33 个构建任务完成。
 - [x] API 21 Release HAP：`BUILD SUCCESSFUL`，33 个构建任务完成。
 - [x] API 21 `ohosTest` HAP：`BUILD SUCCESSFUL`，35 个构建任务全部执行；设备侧路由安全用例已编译打包，尚未在真机运行。
+- [x] 真机冒烟入口测试：`node --test scripts/run-device-smoke.test.mjs` 通过 7/7；覆盖未签名包、无设备、多设备、飞行模式确认、SDK 根目录解析、成功报告与失败报告分支。
 - [x] 模板断言审计：`assertContain`、`let a = 'abc'` 无命中。
 - [x] 可执行源码远程残留审计：网络 API、远程 URL、AI 配置、登录/会员符号无命中。SVG 的 W3C XML 命名空间不是网络依赖，审计已限定为 `.ets/.ts/.js/.mjs/.json/.json5`。
 - [x] 权限清单：仅 `ohos.permission.PUBLISH_AGENT_REMINDER` 与 `ohos.permission.VIBRATE`。
@@ -51,6 +52,20 @@ Release 构建仍会提示“未配置 signingConfig”和“未启用混淆”�
 | §12 测试策略 | 自动化矩阵见上；`ohosTest` 测试 HAP 已成功构建；设备执行见下 | 自动与设备测试编译完成，真机执行待办 |
 | §14 实施顺序与同步 | Git 提交 `02a1596` 至 `4be558a`，以及指定飞书项目文档的批次记录与最终验收章节 | 以 GitHub 远端哈希和飞书章节回读为准 |
 | §15 非目标 | 离线、轻量与发布卫生门禁无禁用能力残留 | 已通过 |
+
+## 真机自动冒烟入口
+
+`scripts/run-device-smoke.mjs` 用于在真机到位后执行最小设备侧门禁。它要求两个 HAP 都使用绝对路径、拒绝文件名明确标记为 `unsigned` 的产物、调用 SDK 的 `verify-app` 验证签名、在多设备时要求显式选择目标，并仅在人工确认飞行模式后安装应用与测试 HAP。随后固定运行 `LaunchRouteSafety` 套件，并同时校验 Hypium 汇总与状态码，避免“命令退出 0、测试实际失败”被误判为通过。
+
+```bash
+node scripts/run-device-smoke.mjs \
+  --app-hap /绝对路径/MoodLite-signed.hap \
+  --test-hap /绝对路径/MoodLite-ohosTest-signed.hap \
+  --flight-mode-confirmed yes \
+  --target 设备序列号
+```
+
+只有一台设备时可省略 `--target`。该入口只覆盖设备侧路由安全冒烟测试，不能替代下方首次启动、记录持久化、提醒和桌面卡片等人工飞行模式验收；当前仍因没有连接真机和已签名 HAP 而未执行。
 
 ## 真机飞行模式验收
 
