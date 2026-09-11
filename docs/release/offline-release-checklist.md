@@ -10,9 +10,10 @@
 - 应用版本：`1.0.0`（`versionCode: 1000000`）
 - SDK：HarmonyOS `6.0.1(21)`，`targetSdkVersion` 与 `compatibleSdkVersion` 均为 API 21
 - 当前设备连接：无；`hdc list targets` 返回 `[Empty]`
-- 当前构建产物：`entry/build/default/outputs/default/entry-default-unsigned.hap`，9,916,970 bytes
+- 当前构建产物：`entry/build/default/outputs/default/entry-default-unsigned.hap`，9,917,730 bytes
 - 设备测试产物：`entry/build/default/outputs/ohosTest/entry-ohosTest-unsigned.hap`，10,766,138 bytes
 - 签名说明：仓库不再保存本机签名材料；当前产物为未签名 HAP，需在受控发布环境注入生产签名后再做安装和上架验收。
+- 历史签名核查：旧配置引用的 Provision Profile 仍可由 SDK 工具校验，但类型为 Debug，不是 Release，不能作为生产签名或上架证据。
 
 ## 自动化验收结果
 
@@ -99,7 +100,7 @@ node scripts/run-device-smoke.mjs \
 ## 上架前阻塞项
 
 - [ ] 连接真实 HarmonyOS 设备并完成上方全部飞行模式验收。
-- [ ] 在受控环境配置正式发布证书，生成并校验可安装的生产签名包；不得把证书、私钥或口令提交到 Git。
+- [ ] 在受控环境配置正式发布证书，生成并校验可安装的生产签名包；历史 Debug Profile 不能替代，且不得把证书、私钥或口令提交到 Git。
 - [ ] 用最终生产签名包重新执行启动、提醒和 2×2 卡片回归。
 - [ ] 决定是否启用源码混淆；若启用，需为 ArkUI 路由、FormExtensionAbility 和序列化字段补保留规则并重新回归。
 - [ ] 若该 GitHub 仓库曾对外开放，评估是否轮换旧调试签名材料并清理历史中的本机签名配置引用。仓库历史未包含证书或私钥文件。
