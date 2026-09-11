@@ -59,7 +59,7 @@
 - Consumes: `resolveColors(darkMode: boolean, preset: string)`、现有 `GlassCard`、ArkUI router。
 - Produces: `scripts/verify-offline.mjs` 的零退出码离线门禁；路由 `pages/DataPrivacyPage` 与 `pages/AboutPage`；不含 AI/网络分支的 `AddEntry` 与 `HomeTab`。
 
-- [ ] **Step 1: 写入会在当前代码上失败的离线约束脚本**
+- [x] **Step 1: 写入会在当前代码上失败的离线约束脚本**
 
 ```js
 // scripts/verify-offline.mjs
@@ -107,17 +107,17 @@ if (violations.length > 0) {
 console.log(`offline verification passed (${files.length} files scanned)`);
 ```
 
-- [ ] **Step 2: 运行脚本并确认失败原因覆盖现有联网实现**
+- [x] **Step 2: 运行脚本并确认失败原因覆盖现有联网实现**
 
 Run: `node scripts/verify-offline.mjs`
 
 Expected: FAIL，至少报告 `AiAgentClient.ets`、`DIFY_API_KEY`、`https://api.dify.ai`、Profile 外链、`ohos.permission.INTERNET` 和 `ohos.permission.READ_IMAGEVIDEO`。
 
-- [ ] **Step 3: 删除 AI 调用、配置和权限**
+- [x] **Step 3: 删除 AI 调用、配置和权限**
 
 在 `AddEntry.ets` 删除 `analyzeMood` import 与保存成功后的 `activeIntent` 分支；在 `HomeTab.ets` 删除 `AiSuggestion`、`@StorageLink('activeIntent')`、解析/动画状态和“AI 温暖提示”卡片。将 `entry/build-profile.json5` 的 `buildProfileFields` 整体删除，并从 `module.json5` 删除 `INTERNET` 与 `READ_IMAGEVIDEO` 权限。
 
-- [ ] **Step 4: 用两个本地页面替换 Profile 外链**
+- [x] **Step 4: 用两个本地页面替换 Profile 外链**
 
 `Profile.ets` 的信息项固定为“数据与隐私”和“关于 MoodLite”，点击时分别调用：
 
@@ -128,7 +128,7 @@ this.getUIContext().getRouter().pushUrl({ url: 'pages/AboutPage' });
 
 `DataPrivacyPage.ets` 明确展示：记录、标签、主题和提醒配置仅在本机；无需账号；不上传情绪内容；不调用第三方 AI；卸载或清空数据后无法由云端恢复。`AboutPage.ets` 展示应用名称、版本 `1.0.0`、产品定位与“完全离线”说明。两个页面复用现有主题、卡片、间距和返回按钮，不导入 `common`、`Want` 或浏览器能力。
 
-- [ ] **Step 5: 注册本地页面并重新运行离线检查**
+- [x] **Step 5: 注册本地页面并重新运行离线检查**
 
 在 `main_pages.json` 增加 `pages/DataPrivacyPage` 与 `pages/AboutPage`。
 
@@ -136,13 +136,13 @@ Run: `node scripts/verify-offline.mjs`
 
 Expected: PASS，输出扫描文件数且无违规项。
 
-- [ ] **Step 6: 构建当前批次**
+- [x] **Step 6: 构建当前批次**
 
 Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode module -p product=default -p module=entry@default assembleHap --no-daemon`
 
 Expected: API 21 工具链可用时 PASS；若构建在读取 ArkTS 前因本机仅有 API 26 而停止，保留完整错误证据，不改目标版本，并继续以静态门禁验证本批次。
 
-- [ ] **Step 7: 提交并同步批次**
+- [x] **Step 7: 提交并同步批次**
 
 ```bash
 git add scripts/verify-offline.mjs entry/build-profile.json5 entry/src/main/module.json5 \
@@ -198,7 +198,7 @@ git push origin main
 - Consumes: Task 1 的 `verify-offline.mjs`。
 - Produces: 只注册 `MoodWidgetCard` 的 `form_config.json`；只有 `DataManager.saveRecord()` 的主应用写入链路；没有成就或备份代码的首发包。
 
-- [ ] **Step 1: 写轻量范围检查并确认当前失败**
+- [x] **Step 1: 写轻量范围检查并确认当前失败**
 
 ```js
 // scripts/verify-lightweight-scope.mjs
@@ -237,15 +237,15 @@ Run: `node scripts/verify-lightweight-scope.mjs`
 
 Expected: FAIL，列出成就文件、`widget1`、备份目录、2×4 注册和 `quickSaveRecord`/`quick_log`。
 
-- [ ] **Step 2: 从 DataManager 和 HomeTab 删除成就状态与 UI**
+- [x] **Step 2: 从 DataManager 和 HomeTab 删除成就状态与 UI**
 
 `DataManager.ets` 删除成就 imports、keys、缓存字段、初始化读取、结算、队列 API、`AppStorage('achievements')` 同步与 `quickSaveRecord`；保留记录 CRUD、首次启动和清空本地数据。`HomeTab.ets` 只保留今日摘要、固定本地关怀文案、空状态和记录入口，删除全部成就 import、状态、弹窗、动画与素材引用。
 
-- [ ] **Step 3: 删除第二条写入链路与 2×4 卡片**
+- [x] **Step 3: 删除第二条写入链路与 2×4 卡片**
 
 `EntryFormAbility.ets` 删除 `QuickLogMessage`、`onFormEvent()`、`generateUUID`/`quickSaveRecord` imports；`form_config.json` 只保留 `MoodWidgetCard` 的 2×2 配置。同步删除 `widget1`、成就、备份文件和仅为延期功能存在的素材/字符串。
 
-- [ ] **Step 4: 修正文案与注释并执行双门禁**
+- [x] **Step 4: 修正文案与注释并执行双门禁**
 
 将 `EntryFormAbility` 与 `WidgetSyncManager` 中“同时服务 2x2 和 2x4”“快捷记录”等注释改为真实的 2×2 展示职责。
 
@@ -253,7 +253,7 @@ Run: `node scripts/verify-offline.mjs && node scripts/verify-lightweight-scope.m
 
 Expected: PASS。
 
-- [ ] **Step 5: 编译并提交同步**
+- [x] **Step 5: 编译并提交同步**
 
 Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode module -p product=default -p module=entry@default assembleHap --no-daemon`
 
@@ -306,7 +306,7 @@ git push origin main
 - Produces: `parseMoodRecords(raw: string): MoodRecord[]`、`normalizeMoodRecord(value: Object): MoodRecord | null`、`buildEditedMoodRecord(original: MoodRecord, score: number, text: string, tags: string[]): MoodRecord`。
 - Consumes: `MoodRecord`、`formatDateStr()`、`DataManager.saveRecord()` 与 `deleteRecord()`。
 
-- [ ] **Step 1: 写失败单测并注册测试套件**
+- [x] **Step 1: 写失败单测并注册测试套件**
 
 ```ts
 // entry/src/test/MoodRecordPolicy.test.ets
@@ -355,21 +355,21 @@ export default function moodRecordPolicyTest(): void {
 
 在 `List.test.ets` import 并调用 `moodRecordPolicyTest()`。
 
-- [ ] **Step 2: 运行单测并确认缺少纯函数实现**
+- [x] **Step 2: 运行单测并确认缺少纯函数实现**
 
 Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode module -p product=default -p module=entry@default test --no-daemon`
 
 Expected: API 21 工具链可用时 FAIL，错误指向 `MoodRecordPolicy` 模块或导出函数不存在；工具链不匹配时记录环境失败，不把它误报为测试失败。
 
-- [ ] **Step 3: 实现记录规范化与编辑构造函数**
+- [x] **Step 3: 实现记录规范化与编辑构造函数**
 
 `normalizeMoodRecord()` 仅接受非空字符串 ID、正有限时间戳、严格 `YYYY-MM-DD` 日期和可转为有限数值的 score。日期除正则外，还要解析年月日并用 `new Date(year, month - 1, day)` 回读验证，拒绝 `2026-02-30`、月份 0/13 等无效日期；score 先四舍五入再限制到 `[-2, 2]`。`text`/`location` 非字符串时使用空字符串，`tags`/`images` 只保留字符串元素并复制数组。`parseMoodRecords()` 捕获 JSON 错误、拒绝非数组、过滤 null，并按 `timestamp` 降序。`buildEditedMoodRecord()` 复制原对象的身份/时间/兼容字段，只替换经过限制的 score、text 与 tags。
 
-- [ ] **Step 4: 接入 DataManager 的读写缓存**
+- [x] **Step 4: 接入 DataManager 的读写缓存**
 
 `doInit()` 用 `parseMoodRecords(recordsRaw)` 预热缓存；解析损坏时记录错误并使用空数组，但 Preferences 本身打不开时仍抛错进入 Index 可重试错误态。`saveRecord()` 与 `deleteRecord()` 以当前已规范化 `cache` 构造候选数组，只有 `put()` 与 `flush()` 成功后才替换 `cache` 并异步刷新卡片。
 
-- [ ] **Step 5: 让编辑桥传递完整记录副本**
+- [x] **Step 5: 让编辑桥传递完整记录副本**
 
 `EditPayload` 改为：
 
@@ -381,11 +381,11 @@ export interface EditPayload {
 
 `setEditPayload()` 深拷贝 `tags`、`images`；`getEditPayload()` 单次消费。`EntryDetail.onEdit()` 传入完整记录，`AddEntry.aboutToAppear()` 保存 `originalRecord: MoodRecord | null`，`done()` 编辑时调用 `buildEditedMoodRecord()`，新增时仍生成新 ID、当前时间、空兼容字段。
 
-- [ ] **Step 6: 修复删除失败反馈和重复点击**
+- [x] **Step 6: 修复删除失败反馈和重复点击**
 
 为 `EntryDetail` 增加 `@State deleting: boolean = false`。`doDelete()` 在处理中直接返回；只有 `DataManager.deleteRecord()` 返回 `true` 才设置时间线 tab 并返回，返回 `false` 时留在当前页并显示“删除失败，请重试”。确认按钮在 `deleting` 时不可再次触发。
 
-- [ ] **Step 7: 运行单测、静态门禁和构建**
+- [x] **Step 7: 运行单测、静态门禁和构建**
 
 Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode module -p product=default -p module=entry@default test --no-daemon`
 
@@ -395,7 +395,7 @@ Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode m
 
 Expected: 单测覆盖三条规范化场景与编辑保留字段；静态门禁 PASS；构建在正确 API 21 工具链下 PASS。
 
-- [ ] **Step 8: 提交并同步批次**
+- [x] **Step 8: 提交并同步批次**
 
 ```bash
 git add entry/src/main/ets/model/MoodRecordPolicy.ets entry/src/test/MoodRecordPolicy.test.ets \
@@ -426,7 +426,7 @@ git push origin main
 - Produces: `recordsForMonth(records: MoodRecord[], year: number, month: number): MoodRecord[]`、`countUniqueRecordDays(records: MoodRecord[]): number`、`buildWidgetSummary(records: MoodRecord[], now: Date, darkMode: boolean): WidgetSummary`、`buildCompactMonthData(records: MoodRecord[], year: number, month: number): number[]`。
 - Consumes: `calcMonthlyStats()`、`calcTagDistribution()`、`calcStreak()`、MoodRecord 情绪映射函数。
 
-- [ ] **Step 1: 写月度隔离与唯一日期失败测试**
+- [x] **Step 1: 写月度隔离与唯一日期失败测试**
 
 ```ts
 // entry/src/test/StatsViewModel.test.ets
@@ -457,7 +457,7 @@ export default function statsViewModelTest(): void {
 }
 ```
 
-- [ ] **Step 2: 写卡片摘要失败测试**
+- [x] **Step 2: 写卡片摘要失败测试**
 
 ```ts
 // entry/src/test/WidgetViewModel.test.ets
@@ -483,19 +483,19 @@ export default function widgetViewModelTest(): void {
 
 注册两个测试套件后运行 unit test；Expected: FAIL，因为 `recordsForMonth` 与 `WidgetViewModel` 尚不存在。
 
-- [ ] **Step 3: 实现共享月份与卡片纯函数**
+- [x] **Step 3: 实现共享月份与卡片纯函数**
 
 `recordsForMonth()` 使用完整 `YYYY-MM-` 前缀过滤；`countUniqueRecordDays()` 使用 `Set<string>`；`buildWidgetSummary()` 只统计 `now` 所在月份，记录条数用于情绪占比、不重复日期用于 `recordDays`，并选择当天时间戳最大的记录作为今日状态。`buildCompactMonthData()` 接受显式年月，避免单测依赖系统时间。
 
-- [ ] **Step 4: 删除 Stats 的脆弱缓存并只传当月标签**
+- [x] **Step 4: 删除 Stats 的脆弱缓存并只传当月标签**
 
 `StatsContent.refresh()` 每次调用 `recordsForMonth(this.records, this.year, this.month)`；删除 `monthCache`、`lastRecordKey` 与 `rebuildCache()`。热力图、`calcMonthlyStats()` 和 `calcTagDistribution()` 均接收同一个 `monthRecords`。
 
-- [ ] **Step 5: 让两个卡片进程复用 WidgetViewModel**
+- [x] **Step 5: 让两个卡片进程复用 WidgetViewModel**
 
 `WidgetSyncManager.updateWidgets()` 和 `EntryFormAbility.buildWidgetData()` 都调用 `buildWidgetSummary(records, new Date(), darkMode)`，不再各自复制月度循环。主进程只额外负责 form ID 和 `formProvider.updateForm()`，Form 进程只负责读取 Preferences 与绑定数据。
 
-- [ ] **Step 6: 运行单测、双门禁和构建**
+- [x] **Step 6: 运行单测、双门禁和构建**
 
 Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode module -p product=default -p module=entry@default test --no-daemon`
 
@@ -505,7 +505,7 @@ Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode m
 
 Expected: 月份隔离、唯一记录日与卡片占比测试 PASS。
 
-- [ ] **Step 7: 提交并同步批次**
+- [x] **Step 7: 提交并同步批次**
 
 ```bash
 git add entry/src/main/ets/viewmodel/WidgetViewModel.ets \
@@ -535,7 +535,7 @@ git push origin main
 - Produces: `parseLaunchIntent(params: Record<string, Object> | undefined): LaunchIntent`，其中 `LaunchIntent` 为 `{ targetPage: string; tab: number | null }`；允许目标集合固定为 `pages/MainPage` 与 `pages/AddEntry`。
 - Consumes: `DataManager.init()`、`DataManager.isFirstLaunch()`、AppStorage keys `moodlite_pending_target` 与 `moodlite_pending_tab`。
 
-- [ ] **Step 1: 写合法、非法和缺省参数失败测试**
+- [x] **Step 1: 写合法、非法和缺省参数失败测试**
 
 ```ts
 import { describe, it, expect } from '@ohos/hypium';
@@ -558,11 +558,11 @@ export default function launchIntentTest(): void {
 
 注册测试并运行 unit test；Expected: FAIL，`LaunchIntent` 模块不存在。
 
-- [ ] **Step 2: 实现纯函数白名单**
+- [x] **Step 2: 实现纯函数白名单**
 
 `parseLaunchIntent()` 只接受两个精确字符串；tab 只接受 `0`、`1`、`3`、`4`。非法值返回空目标与 `null` tab，函数不访问 AppStorage 或 router。
 
-- [ ] **Step 3: EntryAbility 冷启动始终加载 Index，热启动只导航白名单目标**
+- [x] **Step 3: EntryAbility 冷启动始终加载 Index，热启动只导航白名单目标**
 
 `onCreate()` 调用私有 `storeLaunchIntent(want)`；该方法校验后写入临时 AppStorage。`onWindowStageCreate()` 无条件执行：
 
@@ -572,15 +572,15 @@ windowStage.loadContent('pages/Index', callback);
 
 `onNewWant()` 同样先调用 `parseLaunchIntent()`：非法目标只记录日志并忽略；`DataManager.isReady()` 为 `false` 时写入临时 AppStorage 等待 Index 消费；已经初始化时才用 `router.replaceUrl()` 导航到经过白名单校验的目标，并在导航前应用合法 tab。不得把未校验的 `targetPage` 传给 router。
 
-- [ ] **Step 4: Index 在初始化成功后消费安全目标**
+- [x] **Step 4: Index 在初始化成功后消费安全目标**
 
 `Index` 初始化成功后先读取并删除 `moodlite_pending_target`/`moodlite_pending_tab`。首次启动仍优先进入 Welcome；非首次启动时，有白名单目标就进入该目标，否则进入 MainPage。AddEntry 接收合法 tab；非法或缺失参数安全回落 MainPage。EMPTY 错误态按钮改为“重试”，重新调用初始化函数，不得绕过 DataManager 直接进主页面。每次初始化递增 `attemptId`，Promise 回调只有在捕获的 ID 等于当前 ID 且状态仍为 `LOADING` 时才允许导航，防止旧的超时请求在重试后覆盖新状态。
 
-- [ ] **Step 5: 验证 2×2 卡片目标与测试**
+- [x] **Step 5: 验证 2×2 卡片目标与测试**
 
 `MoodWidgetCard` 保持 `targetPage: 'pages/MainPage'`，不增加其他目标。运行 unit test、双门禁和 assembleHap；Expected: 白名单测试 PASS，静态门禁 PASS，正确工具链下构建 PASS。
 
-- [ ] **Step 6: 提交并同步批次**
+- [x] **Step 6: 提交并同步批次**
 
 ```bash
 git add entry/src/main/ets/common/LaunchIntent.ets entry/src/test/LaunchIntent.test.ets \
@@ -607,7 +607,7 @@ git push origin main
 - Produces: `ReminderSettings`、`enabledReminderSettings(id: number, hour: number, minute: number): ReminderSettings`、`disabledReminderSettings(): ReminderSettings`、`publishDailyReminder(ctx: Context, hour: number, minute: number): Promise<number>`、`cancelDailyReminder(id: number): Promise<boolean>`。
 - Consumes: PersistentStorage keys `isReminderOn`、`mood_reminder_id`、`reminderHour`、`reminderMinute`。
 
-- [ ] **Step 1: 写提醒状态失败测试**
+- [x] **Step 1: 写提醒状态失败测试**
 
 ```ts
 import { describe, it, expect } from '@ohos/hypium';
@@ -634,17 +634,17 @@ export default function reminderStateTest(): void {
 
 注册测试并运行 unit test；Expected: FAIL，`ReminderState` 模块不存在。
 
-- [ ] **Step 2: 实现纯状态构造器与异步系统封装**
+- [x] **Step 2: 实现纯状态构造器与异步系统封装**
 
 `ReminderManager` 不再读取或写入 AppStorage。`publishDailyReminder()` 发布成功返回正 ID，失败返回 `-1`；`cancelDailyReminder(id)` 在无有效 ID 时返回 `true`，系统回调无错误才返回 `true`。所有 Promise 在每条回调路径上只 resolve 一次。
 
-- [ ] **Step 3: 修复开启、取消和改时序**
+- [x] **Step 3: 修复开启、取消和改时序**
 
 `Profile` 增加 `@State reminderBusy`。关闭态把 Toggle 拨为开时，立即保持 `isReminderOn=false` 并打开时间选择器；用户取消不改变状态。用户确认时间后调用 `publishDailyReminder()`，只有正 ID 才一次性写入四个 PersistentStorage 字段并显示成功；失败保持关闭并 toast。
 
 关闭已有提醒时，先调用 `cancelDailyReminder(currentId)`；成功才写入 `disabledReminderSettings()`，失败保持原 ID、时间与开启状态并 toast。编辑已开启提醒时间时，先发布新提醒，再取消旧提醒；取消旧提醒失败时尽力取消新提醒并保留旧状态，向用户提示未更改。
 
-- [ ] **Step 4: 运行单测、门禁与构建**
+- [x] **Step 4: 运行单测、门禁与构建**
 
 Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode module -p product=default -p module=entry@default test --no-daemon`
 
@@ -654,7 +654,7 @@ Run: `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw --mode m
 
 Expected: ReminderState tests PASS；静态门禁 PASS；正确工具链下构建 PASS。
 
-- [ ] **Step 5: 提交并同步批次**
+- [x] **Step 5: 提交并同步批次**
 
 ```bash
 git add entry/src/main/ets/common/ReminderState.ets entry/src/test/ReminderState.test.ets \
@@ -682,11 +682,11 @@ git push origin main
 - Consumes: Tasks 1–6 的所有门禁、单测、运行时代码和已同步提交。
 - Produces: 可复核的发布检查清单、最终测试/构建证据和飞行模式人工验收记录。
 
-- [ ] **Step 1: 删除模板断言并确认测试注册完整**
+- [x] **Step 1: 删除模板断言并确认测试注册完整**
 
 删除 `LocalUnit.test.ets` 模板文件；本地 `List.test.ets` 只注册 MoodRecordPolicy、StatsViewModel、WidgetViewModel、LaunchIntent、ReminderState 五个真实套件。把 `ohosTest/ets/test/Ability.test.ets` 改为设备侧安全策略冒烟测试：调用 `parseLaunchIntent({ targetPage: 'pages/Profile' })` 并断言目标为空，再由其 `List.test.ets` 注册。运行 `rg -n "assertContain|let a = 'abc'" entry/src/test entry/src/ohosTest`，Expected: 无模板命中。
 
-- [ ] **Step 2: 执行全部自动验证**
+- [x] **Step 2: 执行全部自动验证**
 
 ```bash
 node scripts/verify-offline.mjs
@@ -701,9 +701,9 @@ node scripts/verify-lightweight-scope.mjs
 
 Expected: 两个 Node 门禁 PASS；ArkTS unit test PASS；API 21 Debug 和 Release 构建 PASS。若当前机器缺 API 21，清单必须明确标为“环境阻塞”，不得用 API 26 结果代替。
 
-- [ ] **Step 3: 审计权限、远程残留和 Git 范围**
+- [x] **Step 3: 审计权限、远程残留和 Git 范围**
 
-Run: `rg -n "@ohos\\.net|@kit\\.NetworkKit|https?://|DIFY|DEEPSEEK|API_KEY|AuthManager|LoginPage|memberType|AIAgentChatPage" entry/src/main entry/build-profile.json5`
+Run: `rg -n --glob '*.{ets,ts,js,mjs,json,json5}' "@ohos\\.net|@kit\\.NetworkKit|https?://|DIFY|DEEPSEEK|API_KEY|AuthManager|LoginPage|memberType|AIAgentChatPage" entry/src/main entry/build-profile.json5`
 
 Expected: 无命中。
 
@@ -715,11 +715,11 @@ Expected: `git diff --check` 无错误；最后一条无命中；只剩用户原
 
 `docs/release/offline-release-checklist.md` 记录设备型号、HarmonyOS 版本、构建提交和日期，并逐项勾选：首次启动欢迎页；新增记录；重启后数据存在；时间线/详情；编辑后日期不变；删除；当月统计与同日去重；主题/深色模式；提醒开启、取消选择、关闭、重启持久化；2×2 卡片展示与冷启动；设置页本地隐私/关于；系统权限页仅显示提醒与振动相关权限。
 
-- [ ] **Step 5: 回读规格并完成逐条覆盖审计**
+- [x] **Step 5: 回读规格并完成逐条覆盖审计**
 
 对设计规范第 2、3、5–12、14、15 节逐项在检查清单中链接到测试、源码或人工证据。未验证项保持未勾选，不用“未发现问题”代替正向证据。将本计划已完成步骤的复选框改为 `[x]`。
 
-- [ ] **Step 6: 提交最终验收记录并同步**
+- [x] **Step 6: 提交最终验收记录并同步**
 
 ```bash
 git add docs/release/offline-release-checklist.md \
