@@ -15,6 +15,7 @@ import { TimelineTab } from './TimelineTab';
 import { Profile } from './Profile';
 import { StatsContent } from './Stats';
 import { MonthGroup } from '../viewmodel/LazyDataSource';
+import { consumeRefresh, setRefreshHandler } from '../common/EditBridge';
 
 const TAB_ICONS: Record<number, [Resource, Resource]> = {
   0: [$r('app.media.ic_today'), $r('app.media.ic_today_active')],
@@ -40,6 +41,10 @@ struct MainPage {
   }
 
   aboutToAppear(): void {
+    setRefreshHandler(() => {
+      this.reload();
+      consumeRefresh();
+    });
     this.reload();
     const rp = this.getUIContext().getRouter().getParams() as Record<string, Object>;
     if (rp && typeof rp['fromTab'] === 'number') {
@@ -67,26 +72,12 @@ struct MainPage {
 
   onPageShow(): void {
     this.reload();
+    consumeRefresh();
     this.syncWindow();
     const savedTab = AppStorage.get('moodlite_tab') as number;
     if (typeof savedTab === 'number') {
       this.tab = savedTab;
       AppStorage.delete('moodlite_tab');
-    }
-    // 编辑流程重定向
-    const navToAdd = AppStorage.get('moodlite_nav_to_add') as boolean;
-    if (navToAdd === true) {
-      AppStorage.delete('moodlite_nav_to_add');
-      try {
-        this.getUIContext().getRouter().pushUrl({
-          url: 'pages/AddEntry',
-          params: { fromTab: this.tab },
-        }).catch((err: Error) => {
-          console.error('[MoodLite] edit route failed: ' + JSON.stringify(err));
-        });
-      } catch (err) {
-        console.error('[MoodLite] edit route failed: ' + JSON.stringify(err));
-      }
     }
   }
 

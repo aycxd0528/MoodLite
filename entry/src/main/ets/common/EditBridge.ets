@@ -11,6 +11,7 @@ export interface EditPayload {
 
 let _payload: EditPayload | null = null;
 let _needsRefresh: boolean = false;
+let _refreshHandler: (() => void) | null = null;
 
 function copyRecord(record: MoodRecord): MoodRecord {
   return {
@@ -35,8 +36,16 @@ export function getEditPayload(): EditPayload | null {
   const p = _payload; _payload = null; return p;
 }
 
+/** 注册当前 MainPage 的记录刷新处理器。 */
+export function setRefreshHandler(handler: () => void): void {
+  _refreshHandler = handler;
+}
+
 /** AddEntry 保存成功后调用，通知 MainPage 刷新 */
-export function signalRefresh(): void { _needsRefresh = true; }
+export function signalRefresh(): void {
+  _needsRefresh = true;
+  _refreshHandler?.();
+}
 
 /** MainPage onPageShow 中检查，消费后自动清除 */
 export function consumeRefresh(): boolean {

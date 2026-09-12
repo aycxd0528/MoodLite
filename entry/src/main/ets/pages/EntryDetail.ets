@@ -91,9 +91,12 @@ struct EntryDetail {
     setEditPayload({
       record: this.record,
     });
-    AppStorage.setOrCreate('moodlite_tab', 1);
-    AppStorage.setOrCreate('moodlite_nav_to_add', true);
-    this.getUIContext().getRouter().back();
+    this.getUIContext().getRouter().replaceUrl({
+      url: 'pages/AddEntry',
+      params: { fromTab: 1 },
+    }).catch((err: Error) => {
+      console.error('[MoodLite] edit route failed: ' + JSON.stringify(err));
+    });
   }
 
   onDelete(): void {

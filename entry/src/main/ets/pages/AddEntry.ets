@@ -10,7 +10,7 @@ import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, generateUUID, formatDateStr, DEFAULT_TAGS } from '../model/MoodRecord';
 import { buildEditedMoodRecord } from '../model/MoodRecordPolicy';
-import { getEditPayload } from '../common/EditBridge';
+import { getEditPayload, signalRefresh } from '../common/EditBridge';
 
 interface FaceEntry {
   min: number; max: number; icon: Resource; label: string; color: string; ms: number;
@@ -135,6 +135,7 @@ struct AddEntry {
       const ok = await DataManager.saveRecord(record);
       this.saving = false;
       if (ok) {
+        signalRefresh();
         // 触觉反馈
         triggerHaptic(15);
 
