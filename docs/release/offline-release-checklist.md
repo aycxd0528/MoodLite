@@ -51,7 +51,7 @@ Release 构建仍会提示“未配置 signingConfig”和“未启用混淆”�
 | §10 提醒状态 | [`ReminderState.test.ets`](../../entry/src/test/ReminderState.test.ets)、[`ReminderManager.ets`](../../entry/src/main/ets/common/ReminderManager.ets)、[`Profile.ets`](../../entry/src/main/ets/pages/Profile.ets) | 状态构造通过；系统发布/取消待真机 |
 | §11 错误处理 | `Index` 重试/竞态保护、DataManager 落盘后更新、保存/删除/提醒失败分支 | 源码与构建通过；系统失败路径待真机 |
 | §12 测试策略 | 自动化矩阵见上；`ohosTest` 测试 HAP 已成功构建；设备执行见下 | 自动与设备测试编译完成，真机执行待办 |
-| §14 实施顺序与同步 | Git 提交 `02a1596` 至 `4be558a`，以及指定飞书项目文档的批次记录与最终验收章节 | 以 GitHub 远端哈希和飞书章节回读为准 |
+| §14 实施顺序与同步 | Git 提交 `02a1596` 至 `4be558a`，以及历史 Tasks 1–7 已以 GitHub/飞书回读验证的批次记录与最终验收章节 | 历史同步已完成；本节不作为本轮增量同步完成证据，本轮以包含本节的 GitHub 远端提交与飞书回读为准 |
 | §15 非目标 | 离线、轻量与发布卫生门禁无禁用能力残留 | 已通过 |
 
 ## 真机自动冒烟入口
@@ -66,7 +66,21 @@ node scripts/run-device-smoke.mjs \
   --target 设备序列号
 ```
 
-只有一台设备时可省略 `--target`。该入口只覆盖设备侧路由安全冒烟测试，不能替代下方首次启动、记录持久化、提醒和桌面卡片等人工飞行模式验收；当前仍因没有连接真机和已签名 HAP 而未执行。
+只有一台设备时可省略 `--target`。该入口只覆盖设备侧路由安全冒烟测试，不能替代下方首次启动、记录持久化、提醒和桌面卡片等人工飞行模式验收；当前仍因没有连接真机和可用于真机验收的生产签名 HAP 而未执行。
+
+## 模拟器补充验证（不替代真机证据）
+
+- 验收日期：2026-09-12（Asia/Shanghai）
+- 设备：HarmonyOS 模拟器，`127.0.0.1:5555`，`const.product.name=emulator`，`const.ohos.apiversion=23`
+- 验收所基于的运行时代码提交：`981d51fa2c0289fedc31a951435315b3e0c6426b`（本轮文档提交以 Git log 及后续同步记录为准）
+- 已发现使用本机 Debug profile 签名的 HAP（app 为 Release buildMode、test 为 ohosTest Debug buildMode；均非生产签名）：
+  - `entry/build/default/outputs/default/entry-default-signed.hap`，SHA-256 `b6273bf7ef63ec8ae24ace80b9cdd800b1a19a862b87ca19aaf088034d56c3f4`
+  - `entry/build/default/outputs/ohosTest/entry-ohosTest-signed.hap`，SHA-256 `1affa5b6abf3c5ac26bdbbe12a9a76d95f720f38a2a566fabc8655378cc6954b`
+- 两个 HAP 均经 `hap-sign-tool verify-app` 校验成功，profile type 明确为 `debug`；Debug/Release app 构建均 `BUILD SUCCESSFUL`（33 tasks），ArkTS unit test `BUILD SUCCESSFUL`（20 tasks，10/10 pass）。ohosTest 首次 SignHap 因 `11014003/keystore password incorrect` 失败，未改配置，带 `--stacktrace` 原命令重试后 `BUILD SUCCESSFUL`（35 tasks）。
+- `hdc list targets` 返回单个模拟器；`node --test scripts/run-device-smoke.test.mjs` 通过 7/7。在线模拟器安装 app/test HAP 成功，`aa test ... class LaunchRouteSafety` 返回 Hypium `Tests run: 1, Failure: 0, Error: 0, Pass: 1`、`OHOS_REPORT_CODE: 0`；此证据不替代真机飞行模式。
+- 执行前网络状态：模拟器 `eth0` 为 `10.0.2.15`、`UP BROADCAST RUNNING`，`hidumper --net` 显示至外部地址的 ESTABLISHED/CLOSE_WAIT 连接，`ping 1.1.1.1` 成功；因此无法称为断网。
+- 断网决策：未执行断网。`hdc shell` 身份为 `uid=2000(shell)` 且 `CapEff=0`；虽然系统提供 `ifconfig ... down`，但没有证据证明对模拟器接口执行后可由同一权限安全恢复，也没有可审计的模拟器飞行模式 API。为避免改变共享模拟器网络状态，未关闭 `eth0`、`wifi_eth` 或 `wlan0`。
+- 模拟器结果仅证明连接、工具、产物和在线设备侧路由安全冒烟的补充事实；未勾选任何真机飞行模式条目，未生成生产签名或上架证据。网络恢复验证不适用（网络未被修改）。
 
 ## 真机飞行模式验收
 
