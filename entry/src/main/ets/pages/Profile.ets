@@ -136,12 +136,21 @@ struct ThemePickerDialog {
 @Component
 export struct Profile {
   @StorageLink('darkMode') darkMode: boolean = false;
-  @StorageLink('isReminderOn') isReminderOn: boolean = false;
+  @StorageLink('isReminderOn') @Watch('syncReminderSwitch') isReminderOn: boolean = false;
   @StorageLink('reminderHour') reminderHour: number = 20;
   @StorageLink('reminderMinute') reminderMinute: number = 0;
   @StorageLink('mood_reminder_id') reminderId: number = -1;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State reminderBusy: boolean = false;
+  @State reminderSwitchOn: boolean = false;
+
+  aboutToAppear(): void {
+    this.syncReminderSwitch();
+  }
+
+  syncReminderSwitch(): void {
+    this.reminderSwitchOn = this.isReminderOn;
+  }
 
   private appContext(): Context {
     const uiCtx: UIContext = this.getUIContext();
@@ -312,13 +321,15 @@ export struct Profile {
                             .onClick(() => { if (!this.reminderBusy) this.showTimeDialog(); })
                         }
 
-                        Toggle({ type: ToggleType.Switch, isOn: this.isReminderOn })
+                        Toggle({ type: ToggleType.Switch, isOn: this.reminderSwitchOn })
                           .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK)
                           .enabled(!this.reminderBusy)
                           .onChange((v: boolean) => {
-                            if (this.reminderBusy) return;
+                            // Toggle 会先改变自身状态；显式回写才能在取消/失败时还原外观。
+                            this.reminderSwitchOn = v;
+                            this.syncReminderSwitch();
+                            if (this.reminderBusy || v === this.isReminderOn) return;
                             if (v) {
-                              this.isReminderOn = false;
                               this.showTimeDialog();
                             } else {
                               this.disableReminder();

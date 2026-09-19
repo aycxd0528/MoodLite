@@ -6,9 +6,20 @@
  */
 
 import reminderAgentManager from '@ohos.reminderAgentManager';
+import notificationManager from '@ohos.notificationManager';
+import common from '@ohos.app.ability.common';
 
 /** 发布每日提醒。仅返回系统结果，不读写界面或持久状态。 */
-export function publishDailyReminder(_ctx: Context, hour: number, minute: number): Promise<number> {
+export async function publishDailyReminder(ctx: Context, hour: number, minute: number): Promise<number> {
+  try {
+    if (!await notificationManager.isNotificationEnabled()) {
+      await notificationManager.requestEnableNotification(ctx as common.UIAbilityContext);
+    }
+    if (!await notificationManager.isNotificationEnabled()) return -1;
+  } catch (err) {
+    console.error('[MoodLite] notification permission unavailable: ' + JSON.stringify(err));
+    return -1;
+  }
   return new Promise<number>((resolve) => {
     const alarm: reminderAgentManager.ReminderRequestAlarm = {
       reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_ALARM,
@@ -16,14 +27,19 @@ export function publishDailyReminder(_ctx: Context, hour: number, minute: number
       minute: minute,
       daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
       title: 'MoodLite 提醒',
-      content: '记录今天的心情吧',
+      content: '点击通知，记录今天的心情吧',
+      wantAgent: {
+        pkgName: 'com.aycxd.moodlite',
+        abilityName: 'EntryAbility',
+        parameters: { targetPage: 'pages/MainPage' },
+      },
       actionButton: [{
-        title: '去记录',
+        title: '关闭',
         type: reminderAgentManager.ActionButtonType.ACTION_BUTTON_TYPE_CLOSE,
       }],
       ringDuration: 5,
-      snoozeTimes: 1,
-      timeInterval: 5,
+      snoozeTimes: 0,
+      timeInterval: 0,
     };
 
     try {

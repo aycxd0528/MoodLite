@@ -3,6 +3,7 @@ import statsViewModelTest from './StatsViewModel.test';
 import widgetViewModelTest from './WidgetViewModel.test';
 import launchIntentTest from './LaunchIntent.test';
 import reminderStateTest from './ReminderState.test';
+import editBridgeTest from './EditBridge.test';
 
 export default function testsuite() {
   moodRecordPolicyTest();
@@ -10,4 +11,5 @@ export default function testsuite() {
   widgetViewModelTest();
   launchIntentTest();
   reminderStateTest();
+  editBridgeTest();
 }

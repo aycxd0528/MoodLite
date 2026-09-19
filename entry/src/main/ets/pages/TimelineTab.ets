@@ -61,12 +61,11 @@ export struct TimelineTab {
       let sum = 0;
       for (const r of v.records) sum += r.score;
       v.dominantScore = sum / v.records.length;
-      // 同一天内按时间升序（旧→新）
-      v.records.sort((a, b) => a.timestamp - b.timestamp);
+      // 最新记录优先，与本地存储和首页的排序保持一致。
+      v.records.sort((a, b) => b.timestamp - a.timestamp);
       result.push(v);
     });
-    // 按日期升序（旧日期在上）
-    result.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+    result.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
     return result;
   }
 
@@ -199,7 +198,8 @@ export struct TimelineTab {
                 .shadow({ radius: 12, color: 'rgba(0,0,0,0.08)', offsetY: 4 })
                 .padding({ bottom: 16 })
               }
-            }, (day: DayGroup) => day.dateStr)
+            // 编辑不改变日期或记录 ID，内容变更也必须让 ArkUI 更新该日分组。
+            }, (day: DayGroup) => day.dateStr + ':' + JSON.stringify(day.records))
 
             ListItem() { Row() }.height(140)
           }

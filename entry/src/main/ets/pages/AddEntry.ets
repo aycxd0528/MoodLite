@@ -64,13 +64,16 @@ struct AddEntry {
   private successTimer1: number = -1;
   private successTimer2: number = -1;
   private originalRecord: MoodRecord | null = null;
+  private pageActive: boolean = false;
 
   aboutToDisappear(): void {
+    this.pageActive = false;
     if (this.successTimer1 !== -1) { clearTimeout(this.successTimer1); this.successTimer1 = -1; }
     if (this.successTimer2 !== -1) { clearTimeout(this.successTimer2); this.successTimer2 = -1; }
   }
 
   aboutToAppear(): void {
+    this.pageActive = true;
     const p = this.getUIContext().getRouter().getParams() as Record<string, Object>;
     if (p && typeof p['fromTab'] === 'number') {
       this.fromTab = p['fromTab'];
@@ -109,7 +112,7 @@ struct AddEntry {
   }
 
   async done(): Promise<void> {
-    if (this.saving) return;
+    if (this.saving || this.showSuccessOverlay || !this.pageActive) return;
     if (this.txt.trim().length === 0) {
       try { this.getUIContext().getPromptAction().showToast({ message: '请写点什么吧', duration: 1500 }); } catch (_e) { console.debug('[MoodLite] toast failed: ' + JSON.stringify(_e)); }
       return;
@@ -133,9 +136,10 @@ struct AddEntry {
         };
       }
       const ok = await DataManager.saveRecord(record);
-      this.saving = false;
       if (ok) {
-        signalRefresh();
+        await signalRefresh();
+        // 落盘期间用户可能已返回；数据仍需刷新，但旧页面不能再导航。
+        if (!this.pageActive) return;
         // 触觉反馈
         triggerHaptic(15);
 
@@ -153,6 +157,7 @@ struct AddEntry {
         // 沉浸式过渡：展示 800ms → 退出动画 300ms → 跳转
         this.successTimer1 = setTimeout(() => {
           this.successTimer1 = -1;
+          if (!this.pageActive) return;
           this.getUIContext()?.animateTo({ duration: 300, curve: Curve.EaseIn }, () => {
             this.successScale = 0.5;
             this.successOpacity = 0.0;
@@ -160,19 +165,20 @@ struct AddEntry {
           });
           this.successTimer2 = setTimeout(() => {
             this.successTimer2 = -1;
+            if (!this.pageActive) return;
             this.showSuccessOverlay = false;
             AppStorage.setOrCreate('moodlite_tab', this.fromTab);
             this.getUIContext().getRouter().back();
           }, 350);
         }, 800);
-      } else {
+      } else if (this.pageActive) {
         console.error('[MoodLite] saveRecord returned false');
         try {
           this.getUIContext().getPromptAction().showToast({ message: '保存失败，请重试', duration: 2000 });
         } catch (_e) { console.debug('[MoodLite] toast failed: ' + JSON.stringify(_e)); }
       }
     } finally {
-      this.saving = false;
+      if (this.pageActive) this.saving = false;
     }
   }
 

@@ -7,7 +7,7 @@ import { Token, Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
-import { setEditPayload } from '../common/EditBridge';
+import { clearEditPayload, setEditPayload } from '../common/EditBridge';
 
 @CustomDialog
 struct DeleteConfirmDialog {
@@ -88,13 +88,14 @@ struct EntryDetail {
 
   onEdit(): void {
     if (!this.record) return;
-    setEditPayload({
+    const pending = setEditPayload({
       record: this.record,
     });
     this.getUIContext().getRouter().replaceUrl({
       url: 'pages/AddEntry',
       params: { fromTab: 1 },
     }).catch((err: Error) => {
+      clearEditPayload(pending);
       console.error('[MoodLite] edit route failed: ' + JSON.stringify(err));
     });
   }

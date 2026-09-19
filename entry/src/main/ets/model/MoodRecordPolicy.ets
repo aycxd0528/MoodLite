@@ -45,7 +45,8 @@ function stringArray(value: Object | undefined): string[] {
   return result;
 }
 
-export function normalizeMoodRecord(value: Object): MoodRecord | null {
+export function normalizeMoodRecord(value: Object | null | undefined): MoodRecord | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   const raw = value as RawMoodRecord;
   if (typeof raw.id !== 'string' || raw.id.trim().length === 0) return null;
   if (typeof raw.timestamp !== 'number' || !Number.isFinite(raw.timestamp) || raw.timestamp <= 0) return null;

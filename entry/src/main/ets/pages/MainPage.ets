@@ -15,7 +15,7 @@ import { TimelineTab } from './TimelineTab';
 import { Profile } from './Profile';
 import { StatsContent } from './Stats';
 import { MonthGroup } from '../viewmodel/LazyDataSource';
-import { consumeRefresh, setRefreshHandler } from '../common/EditBridge';
+import { clearRefreshHandler, consumeRefresh, RefreshHandler, setRefreshHandler } from '../common/EditBridge';
 
 const TAB_ICONS: Record<number, [Resource, Resource]> = {
   0: [$r('app.media.ic_today'), $r('app.media.ic_today_active')],
@@ -32,6 +32,7 @@ struct MainPage {
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State records: MoodRecord[] = [];
   @State groupedRecords: MonthGroup[] = [];
+  private refreshHandler: RefreshHandler = async (): Promise<void> => this.reload();
 
   pageTransition() {
     PageTransitionEnter({ duration: 200, curve: Curve.EaseOut })
@@ -41,11 +42,10 @@ struct MainPage {
   }
 
   aboutToAppear(): void {
-    setRefreshHandler(() => {
-      this.reload();
-      consumeRefresh();
+    setRefreshHandler(this.refreshHandler);
+    this.reload().catch((err: Error) => {
+      console.error('[MoodLite] initial records refresh failed: ' + JSON.stringify(err));
     });
-    this.reload();
     const rp = this.getUIContext().getRouter().getParams() as Record<string, Object>;
     if (rp && typeof rp['fromTab'] === 'number') {
       this.tab = rp['fromTab'];
@@ -71,14 +71,21 @@ struct MainPage {
   }
 
   onPageShow(): void {
-    this.reload();
-    consumeRefresh();
+    if (consumeRefresh()) {
+      this.reload().catch((err: Error) => {
+        console.error('[MoodLite] page-show records refresh failed: ' + JSON.stringify(err));
+      });
+    }
     this.syncWindow();
     const savedTab = AppStorage.get('moodlite_tab') as number;
     if (typeof savedTab === 'number') {
       this.tab = savedTab;
       AppStorage.delete('moodlite_tab');
     }
+  }
+
+  aboutToDisappear(): void {
+    clearRefreshHandler(this.refreshHandler);
   }
 
   async reload(): Promise<void> {

@@ -21,6 +21,22 @@ export default function moodRecordPolicyTest(): void {
       expect(parseMoodRecords('{broken').length).assertEqual(0);
     });
 
+    it('preservesValidRecordsAroundNullAndOtherInvalidEntries', 0, () => {
+      const raw: string = '[{"id":"older","timestamp":100,"dateStr":"2026-09-01",' +
+        '"score":-1,"text":"keep older","tags":["休息"]},' +
+        'null,42,true,"invalid",[],{},' +
+        '{"id":"newer","timestamp":300,"dateStr":"2026-09-03",' +
+        '"score":2,"text":"keep newer","tags":["工作"]}]';
+      const records: MoodRecord[] = parseMoodRecords(raw);
+      expect(records.length).assertEqual(2);
+      expect(records[0].id).assertEqual('newer');
+      expect(records[0].text).assertEqual('keep newer');
+      expect(records[0].tags[0]).assertEqual('工作');
+      expect(records[1].id).assertEqual('older');
+      expect(records[1].text).assertEqual('keep older');
+      expect(records[1].tags[0]).assertEqual('休息');
+    });
+
     it('rejectsImpossibleCalendarDates', 0, () => {
       const raw: string = '[{"id":"bad-date","timestamp":100,"dateStr":"2026-02-30",' +
         '"score":0,"text":""}]';
