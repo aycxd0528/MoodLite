@@ -12,7 +12,7 @@ interface PrivacyItem {
 }
 
 const PRIVACY_ITEMS: PrivacyItem[] = [
-  { title: '只保存在本机', detail: '情绪记录、标签、主题与提醒配置仅保存在你的设备中。' },
+  { title: '只保存在本机', detail: '情绪记录、标签与主题配置仅保存在你的设备中。' },
   { title: '无需账号', detail: '使用 MoodLite 不需要注册、登录或提供个人身份信息。' },
   { title: '不上传情绪内容', detail: '应用不包含网络访问能力，也不会把日记内容发送到服务器。' },
   { title: '不调用第三方 AI', detail: '记录与统计均在本地完成，不接入第三方分析或生成服务。' },

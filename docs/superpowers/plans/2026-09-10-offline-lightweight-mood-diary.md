@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 将 MoodLite 收敛为完全离线、无需登录，并可在飞行模式下完成记录、历史、编辑删除、月度统计、主题、本地提醒和 2×2 卡片闭环的轻量情绪日记。
+> **2026-09-20 范围修订：** 用户批准定时通知延后，以优先上架。本计划中与 Reminder Agent 相关的旧任务仅作实施历史；当前绑定范围以修订后的 Spec 和首发包验收清单为准。
+
+**Goal:** 将 MoodLite 收敛为完全离线、无需登录，并可在飞行模式下完成记录、历史、编辑删除、月度统计、主题和 2×2 卡片闭环的轻量情绪日记。
 
 **Architecture:** 保留 Stage 模型、ArkUI、ArkTS 和 Preferences，以 `DataManager` 为本地单一事实来源；把记录规范化、编辑合并、统计摘要、卡片摘要与启动意图校验提取为可单测的纯函数。运行时不保留网络、账号、AI、成就、2×4 卡片或第二条写入链路；每个可验证批次都提交到 `main`，推送 GitHub，并追加到同一份 MoodLite 飞书项目文档。
 
-**Tech Stack:** HarmonyOS 6.0.1 / API 21、ArkTS、ArkUI、Preferences、Reminder Agent、FormExtensionAbility、Hypium、Node.js 静态约束脚本、Git、飞书云文档 v2。
+**Tech Stack:** HarmonyOS 6.0.1 / API 21、ArkTS、ArkUI、Preferences、FormExtensionAbility、Hypium、Node.js 静态约束脚本、Git、飞书云文档 v2。
 
 **Spec:** `docs/superpowers/specs/2026-09-10-offline-lightweight-mood-diary-design.md`
 
@@ -15,10 +17,10 @@
 - `targetSdkVersion` 与 `compatibleSdkVersion` 固定为 `6.0.1(21)`，不得为适配本机工具链而提升。
 - 应用运行时不得请求网络、打开网页、引用远程 URL、AI 服务地址或 API Key。
 - 情绪数据只保存在本机 Preferences；不添加登录、会员、云同步、备份、导出、图片、位置或社交功能。
-- 只保留 `ohos.permission.PUBLISH_AGENT_REMINDER` 和 `ohos.permission.VIBRATE` 两项实际使用权限。
+- 仅保留记录交互实际使用的 `ohos.permission.VIBRATE`；首发包不声明提醒权限。
 - 旧数据中的 `images` 与 `location` 只做兼容读取和编辑保留，新记录固定写入 `[]` 与 `''`。
 - 编辑只允许改变 `score`、`text`、`tags`，必须保留 `id`、`timestamp`、`dateStr`、`images`、`location`。
-- 保存、删除、提醒发布或取消失败时，界面不得提前显示成功状态。
+- 保存或删除失败时，界面不得提前显示成功状态。
 - 统计与卡片中的“记录天数”都按当月不重复 `dateStr` 计算。
 - 桌面卡片启动目标只允许 `pages/MainPage` 与 `pages/AddEntry`，且必须先经过 `Index` 和 `DataManager.init()`。
 - 每个批次只暂存计划列出的文件；不提交 `.DS_Store`、`AGENTS.md` 或用户的无关改动。
@@ -35,7 +37,6 @@
 - `entry/src/main/ets/viewmodel/WidgetViewModel.ets`：生成 2×2 卡片使用的纯数据摘要，供主进程和 Form 进程共用。
 - `entry/src/main/ets/common/LaunchIntent.ets`：解析和白名单校验卡片启动参数。
 - `entry/src/main/ets/data/DataManager.ets`：唯一的主应用记录持久化入口，成功落盘后才更新缓存和卡片。
-- `entry/src/main/ets/common/ReminderManager.ets`：只封装系统提醒发布/取消结果，不直接改 UI 持久状态。
 - `entry/src/main/ets/pages/DataPrivacyPage.ets` 与 `AboutPage.ets`：完全本地的信息页面。
 - `entry/src/test/*.test.ets`：纯函数单元测试；`entry/src/test/List.test.ets` 统一注册。
 
@@ -594,7 +595,9 @@ git push origin main
 
 ---
 
-### Task 6: 让提醒开关与系统实际状态保持一致
+### Task 6（历史）：提醒实现（已被 2026-09-20 首发范围修订移除）
+
+> 本任务记录已完成过的实施历史，不再是首发要求。当前包删除下述模块、状态、入口、图标、测试和权限，并由离线门禁防止回归。
 
 **Files:**
 - Create: `entry/src/main/ets/common/ReminderState.ets`

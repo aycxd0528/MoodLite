@@ -18,10 +18,6 @@ import {
 } from '../common/LaunchIntent';
 
 // 全局持久化状态初始化（应在应用入口最早执行）
-PersistentStorage.persistProp('isReminderOn', false);
-PersistentStorage.persistProp('reminderHour', 20);
-PersistentStorage.persistProp('reminderMinute', 0);
-PersistentStorage.persistProp('mood_reminder_id', -1);
 PersistentStorage.persistProp('darkMode', false);
 PersistentStorage.persistProp('currentTheme', 'blossomPink');
 

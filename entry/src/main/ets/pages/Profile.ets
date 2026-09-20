@@ -2,67 +2,17 @@
  * Profile — v2.0 设置/我的（深色模式全适配 + 主题选择器）
  */
 
-import { Token, R, S, F } from '../common/styles';
+import { R, S, F } from '../common/styles';
 import { GlassCard } from '../common/components/GlassCard';
-import { cancelDailyReminder, publishDailyReminder } from '../common/ReminderManager';
-import {
-  ReminderSettings,
-  disabledReminderSettings,
-  enabledReminderSettings,
-} from '../common/ReminderState';
 import ThemeManager, { ThemePreset, ThemePresetEntry, resolveColors } from '../common/ThemeManager';
 
 interface SItem { icon: Resource; label: string; toggle: boolean; }
 
 const ITEMS: SItem[] = [
-  { icon: $r('app.media.ic_bell'),            label: '提醒设置',     toggle: true  },
   { icon: $r('app.media.ic_moon'),            label: '深色模式',     toggle: true  },
   { icon: $r('app.media.ic_shield'),          label: '数据与隐私',   toggle: false },
   { icon: $r('app.media.ic_info'),            label: '关于 MoodLite',toggle: false },
 ];
-
-// ========== 时间选择器弹窗 ==========
-
-@CustomDialog
-struct TimePickerDialog {
-  @StorageLink('darkMode') darkMode: boolean = false;
-  @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
-  controller: CustomDialogController = new CustomDialogController({ builder: TimePickerDialog() });
-  hour: number = 20;
-  minute: number = 0;
-  onConfirm?: (h: number, m: number) => void;
-
-  build() {
-    Column() {
-      Text('选择提醒时间').fontSize(F.BODY).fontWeight(FontWeight.Bold)
-        .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN).margin({ bottom: S.MD })
-
-      TimePicker({
-        selected: new Date(2000, 0, 1, this.hour, this.minute),
-        format: TimePickerFormat.HOUR_MINUTE,
-      })
-      .width('100%').height(160)
-      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
-      .selectedTextStyle({ color: resolveColors(this.darkMode, this.currentTheme).PINK, font: { size: 18, weight: FontWeight.Medium } })
-      .disappearTextStyle({ color: resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY, font: { size: 14 } })
-      .onChange((v: TimePickerResult) => {
-        if (v.hour !== undefined) this.hour = v.hour;
-        if (v.minute !== undefined) this.minute = v.minute;
-      })
-
-      Button('确定')
-        .width('100%').height(44).margin({ top: S.MD })
-        .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.BUTTON)
-        .fontSize(F.BODY).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
-        .onClick(() => {
-          if (this.onConfirm) this.onConfirm(this.hour, this.minute);
-          this.controller.close();
-        })
-    }
-    .width('100%').padding(S.LG)
-    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).CARD)
-  }
-}
 
 // ========== 主题选择器弹窗 ==========
 
@@ -136,57 +86,7 @@ struct ThemePickerDialog {
 @Component
 export struct Profile {
   @StorageLink('darkMode') darkMode: boolean = false;
-  @StorageLink('isReminderOn') @Watch('syncReminderSwitch') isReminderOn: boolean = false;
-  @StorageLink('reminderHour') reminderHour: number = 20;
-  @StorageLink('reminderMinute') reminderMinute: number = 0;
-  @StorageLink('mood_reminder_id') reminderId: number = -1;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
-  @State reminderBusy: boolean = false;
-  @State reminderSwitchOn: boolean = false;
-
-  aboutToAppear(): void {
-    this.syncReminderSwitch();
-  }
-
-  syncReminderSwitch(): void {
-    this.reminderSwitchOn = this.isReminderOn;
-  }
-
-  private appContext(): Context {
-    const uiCtx: UIContext = this.getUIContext();
-    const hostCtx: Context | undefined = uiCtx.getHostContext();
-    if (!hostCtx) {
-      throw new Error('Failed to get application context');
-    }
-    return hostCtx;
-  }
-
-  private timeDialog: CustomDialogController = new CustomDialogController({
-    builder: TimePickerDialog({
-      hour: this.reminderHour,
-      minute: this.reminderMinute,
-      onConfirm: (h: number, m: number) => {
-        this.updateReminder(h, m);
-      }
-    }),
-    autoCancel: true,
-    alignment: DialogAlignment.Bottom,
-  });
-
-  showTimeDialog(): void {
-    this.timeDialog = new CustomDialogController({
-      builder: TimePickerDialog({
-        hour: this.reminderHour,
-        minute: this.reminderMinute,
-        onConfirm: (h: number, m: number) => {
-          this.updateReminder(h, m);
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Bottom,
-    });
-    this.timeDialog.open();
-  }
 
   private themeDialog: CustomDialogController = new CustomDialogController({
     builder: ThemePickerDialog(),
@@ -201,73 +101,6 @@ export struct Profile {
       alignment: DialogAlignment.Bottom,
     });
     this.themeDialog.open();
-  }
-
-  fmtTime(): string {
-    return String(this.reminderHour).padStart(2, '0') + ':' + String(this.reminderMinute).padStart(2, '0');
-  }
-
-  private applyReminderSettings(settings: ReminderSettings): void {
-    this.isReminderOn = settings.isOn;
-    this.reminderId = settings.id;
-    this.reminderHour = settings.hour;
-    this.reminderMinute = settings.minute;
-  }
-
-  private showReminderToast(message: string): void {
-    try {
-      this.getUIContext().getPromptAction().showToast({ message: message, duration: 2000 });
-    } catch (err) {
-      console.debug('[MoodLite] reminder toast failed: ' + JSON.stringify(err));
-    }
-  }
-
-  private async updateReminder(hour: number, minute: number): Promise<void> {
-    if (this.reminderBusy) return;
-    const previousId: number = this.isReminderOn ? this.reminderId : -1;
-    this.reminderBusy = true;
-    try {
-      const newId: number = await publishDailyReminder(this.appContext(), hour, minute);
-      if (newId <= 0) {
-        this.showReminderToast('提醒创建失败，请重试');
-        return;
-      }
-      if (previousId > 0) {
-        const oldCanceled: boolean = await cancelDailyReminder(previousId);
-        if (!oldCanceled) {
-          await cancelDailyReminder(newId);
-          this.showReminderToast('原提醒未能取消，时间未更改');
-          return;
-        }
-      }
-      this.applyReminderSettings(enabledReminderSettings(newId, hour, minute));
-      this.showReminderToast(previousId > 0 ? '提醒时间已更新' : '提醒已开启');
-    } catch (err) {
-      console.error('[MoodLite] updateReminder failed: ' + JSON.stringify(err));
-      this.showReminderToast('提醒设置失败，请重试');
-    } finally {
-      this.reminderBusy = false;
-    }
-  }
-
-  private async disableReminder(): Promise<void> {
-    if (this.reminderBusy) return;
-    const currentId: number = this.reminderId;
-    this.reminderBusy = true;
-    try {
-      const canceled: boolean = await cancelDailyReminder(currentId);
-      if (!canceled) {
-        this.showReminderToast('提醒关闭失败，请重试');
-        return;
-      }
-      this.applyReminderSettings(disabledReminderSettings());
-      this.showReminderToast('提醒已关闭');
-    } catch (err) {
-      console.error('[MoodLite] disableReminder failed: ' + JSON.stringify(err));
-      this.showReminderToast('提醒关闭失败，请重试');
-    } finally {
-      this.reminderBusy = false;
-    }
   }
 
   build() {
@@ -310,32 +143,7 @@ export struct Profile {
                     Blank()
 
                     if (it.toggle) {
-                      if (it.label === '提醒设置') {
-                        if (this.isReminderOn) {
-                          Text(this.fmtTime())
-                            .fontSize(F.BODY).fontWeight(FontWeight.Medium)
-                            .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).margin({ right: S.SM })
-                            .padding({ left: S.SM, right: S.SM, top: 4, bottom: 4 })
-                            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT).borderRadius(12)
-                            .enabled(!this.reminderBusy)
-                            .onClick(() => { if (!this.reminderBusy) this.showTimeDialog(); })
-                        }
-
-                        Toggle({ type: ToggleType.Switch, isOn: this.reminderSwitchOn })
-                          .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK)
-                          .enabled(!this.reminderBusy)
-                          .onChange((v: boolean) => {
-                            // Toggle 会先改变自身状态；显式回写才能在取消/失败时还原外观。
-                            this.reminderSwitchOn = v;
-                            this.syncReminderSwitch();
-                            if (this.reminderBusy || v === this.isReminderOn) return;
-                            if (v) {
-                              this.showTimeDialog();
-                            } else {
-                              this.disableReminder();
-                            }
-                          })
-                      } else if (it.label === '深色模式') {
+                      if (it.label === '深色模式') {
                         Toggle({ type: ToggleType.Switch, isOn: this.darkMode })
                           .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK)
                           .onChange((v: boolean) => { this.darkMode = v; })

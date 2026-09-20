@@ -1,21 +1,23 @@
 # MoodLite 完全离线轻量版发布验收清单
 
-**当前结论（2026-09-19 晚）：核心记录及 2×2 桌面卡片模拟器回归通过，正式签名候选包已重建和校验。用户已决定首发不做定时通知；提醒代码与权限尚未从候选包移除，待范围确认后执行。真机飞行模式验收仍未完成，当前不宣称可直接上架。**
+**当前结论（2026-09-20）：首发包已完整移除定时通知、代理提醒权限及相关状态；核心记录闭环和 2×2 桌面卡片已在独立 Release QA 模拟器回归，正式签名 APP/HAP 已重建并校验。当前无已知代码、构建或签名阻塞，可提交 AppGallery 审核；由于没有真机，不声称已完成真机飞行模式验收，也不保证商店审核结果。**
 
-## 最新增量验收：2026-09-19 19:39
+## 最新首发候选包：2026-09-20
 
-- 本节所在提交包含 `EntryFormAbility.ets` 的卡片 ID 修复，以及 `scripts/widget-form.test.mjs` 的两项回归测试。
-- 实际故障：桌面已添加卡片，但保存记录后仍显示空状态；日志为 `formIds count=0`。代码误用 `ohos.extra.param.key.formIdentity`，而 SDK 定义为 `formInfo.FormParam.IDENTITY_KEY`（`ohos.extra.param.key.form_identity`）。现统一使用 SDK 常量提取 ID。
-- 回归先红后绿：新测试在原代码上 0/2，修复后 2/2；连同设备冒烟脚本测试共 9/9。测试执行真实扩展类及视图模型，仅替换系统服务，不等同于设备测试。
-- 命令：`node --test scripts/widget-form.test.mjs scripts/run-device-smoke.test.mjs`。卡片测试使用 DevEco 自带 TypeScript；非默认安装位置通过 `DEVECO_STUDIO_HOME` 指向 DevEco 的 `Contents` 目录。
-- ArkTS 单元测试重新执行：15/15，6 套件，0 failure / 0 error；Release `assembleApp` 成功，42 tasks。离线、轻量化与 diff 门禁通过。
-- 独立 API 23 Release QA 模拟器：正式包覆盖安装成功；新加卡片读取已有记录，显示“愉悦 / 连续 1 天”；强制结束应用后点击卡片可冷启动进入主界面；编辑记录后卡片立即显示“低落 / 连续 1 天”；删除本轮 `widget-qa-20260919` 测试记录后，时间线和卡片均恢复空状态。
-- 日志确认注册和更新均使用同一系统 ID `1664727083`。原模拟器与数据未动；仅在独立 QA 模拟器移除了本轮旧测试卡片并重新添加，测试记录已清理。
-- 当前 APP：`build/outputs/default/MoodLite-default-signed.app`，9,669,313 bytes，SHA-256 `68bf011e90fe79e4ede1f9b23addece66f5cf1ec371dc8e1698eb4ca6460530a`。
-- 当前 HAP：`entry/build/default/outputs/default/entry-default-signed.hap`，9,969,088 bytes，SHA-256 `eba47ccea671971c43a211c301fc820589be0a6cac22580bac0ab96cbe1b3657`。
-- 两个当前产物均通过 SDK `verify-app`。本机 `build-profile.json5` 与签名密钥、证书、Profile 均保持不变。
-- 首发范围变更：定时通知后移；不再推进代理提醒能力申请或更换 Profile。待移除提醒入口、系统调用和权限、修订隐私文案后，必须重新生成候选包并执行最终回归。下节提醒能力错误仅是旧功能的诊断历史，不是要求用户继续申请能力。
-- 上述为模拟器证据，不能冒充真实设备飞行模式验收；也不是对应用商店审核通过的保证。
+- 范围：保留首次启动、五档情绪、文字与标签、时间线/详情/编辑/删除、月度统计、主题/深色模式和 2×2 桌面卡片。AI、账号、定时通知、图片与位置等非首发能力不进包。
+- 定时通知删减：已删除设置入口、时间选择器、`ReminderManager`、提醒状态模型与四项持久化键、图标、单测及 `ohos.permission.PUBLISH_AGENT_REMINDER`。隐私页同步删除“提醒配置”表述；代理提醒能力申请和 Profile 更换不再是上架前置条件。
+- 权限：构建后清单与模拟器 `bm dump` 均确认仅剩 `ohos.permission.VIBRATE`，供记录滑块与保存触觉反馈使用；无网络、媒体读取或提醒权限。
+- 门禁：离线脚本先在旧代码上报出 4 处提醒残留，删减后通过（29 个运行时文件）；轻量化门禁与 `git diff --check` 通过。
+- 自动化：ArkTS 13/13（5 套件），`Failure: 0, Error: 0`；Node 9/9（设备冒烟入口 7 项 + 卡片边界 2 项）；Release `assembleApp` 42 tasks，`BUILD SUCCESSFUL`。卡片用例覆盖系统 ID 注册以及已有当日记录的实际摘要。
+- 模拟器：正式 HAP 覆盖安装成功。设置页仅显示深色模式、数据与隐私、关于、主题风格；无提醒入口。隐私页显示“情绪记录、标签与主题配置仅保存在你的设备中”。
+- 桌面卡片：修复系统 `form_identity` 参数读取（GitHub `bad9437ce1630bd62062f21eb1b8c852adc6c0a8`）。Release QA 实测可添加，强制结束后点击可冷启动，编辑后从“愉悦 / 连续 1 天”立即更新为“低落 / 连续 1 天”，删除测试记录后恢复空状态。测试记录已清理，原模拟器与数据未动。
+- APP：`build/outputs/default/MoodLite-default-signed.app`，9,660,438 bytes，SHA-256 `1686ba8f4a746ac4b86ee8b58e75665417804fa517642a9e188352a6e6d51715`。
+- HAP：`entry/build/default/outputs/default/entry-default-signed.hap`，9,948,121 bytes，SHA-256 `a3bac243496916bd0c9b214c27e097d115c1903f1dfe764ce3653374ea039d5d`。
+- 两个产物均通过 SDK `verify-app`；继续使用原有正式签名。密钥、证书、Profile、密码与本机 `build-profile.json5` 未改动、未打印、未提交。
+- 独立审查：卡片修复和提醒删减均无 Critical / Important / Minor 问题，可合入。
+- 剩余风险：因无真机，未完成真实设备飞行模式、厂商实机桌面卡片与应用商店安装后验收。这是设备覆盖风险，不再是提醒能力或签名阻塞。当前包可用于提交审核，若上架后取得真机，建议立即补一轮安装/升级/飞行模式验收。
+
+> 以下 2026-09-19 及更早章节仅作历史证据；其中提醒能力申请、提醒真机验收和旧产物哈希已被本节的首发范围与候选包取代。
 
 ## 历史验收：2026-09-19 上午
 
@@ -110,8 +112,8 @@ Release 构建仍会提示“未配置 signingConfig”和“未启用混淆”�
 | §7 轻量化 | [`verify-lightweight-scope.mjs`](../../scripts/verify-lightweight-scope.mjs) | 已通过 |
 | §8 本地记录正确性 | [`MoodRecordPolicy.ets`](../../entry/src/main/ets/model/MoodRecordPolicy.ets)、[`DataManager.ets`](../../entry/src/main/ets/data/DataManager.ets) | 单测通过；重启持久化待真机 |
 | §9 统计口径 | [`StatsViewModel.ets`](../../entry/src/main/ets/viewmodel/StatsViewModel.ets)、[`WidgetViewModel.ets`](../../entry/src/main/ets/viewmodel/WidgetViewModel.ets) | 已通过单测 |
-| §10 提醒状态 | [`ReminderState.test.ets`](../../entry/src/test/ReminderState.test.ets)、[`ReminderManager.ets`](../../entry/src/main/ets/common/ReminderManager.ets)、[`Profile.ets`](../../entry/src/main/ets/pages/Profile.ets) | 状态构造通过；系统发布/取消待真机 |
-| §11 错误处理 | `Index` 重试/竞态保护、DataManager 落盘后更新、保存/删除/提醒失败分支 | 源码与构建通过；系统失败路径待真机 |
+| §10 定时通知延后 | 首发范围修订、离线门禁与构建后权限清单 | 提醒 UI、实现、状态、测试和权限均已移除；不属于本次真机验收 |
+| §11 错误处理 | `Index` 重试/竞态保护、DataManager 落盘后更新、保存/删除失败分支 | 源码与构建通过；设备交互待真机 |
 | §12 测试策略 | 自动化矩阵见上；`ohosTest` 测试 HAP 已成功构建；设备执行见下 | 自动与设备测试编译完成，真机执行待办 |
 | §14 实施顺序与同步 | Git 提交 `02a1596` 至 `4be558a`，以及历史 Tasks 1–7 已以 GitHub/飞书回读验证的批次记录与最终验收章节 | 历史同步已完成；本节不作为本轮增量同步完成证据，本轮以包含本节的 GitHub 远端提交与飞书回读为准 |
 | §15 非目标 | 离线、轻量与发布卫生门禁无禁用能力残留 | 已通过 |
@@ -128,7 +130,7 @@ node scripts/run-device-smoke.mjs \
   --target 设备序列号
 ```
 
-只有一台设备时可省略 `--target`。该入口只覆盖设备侧路由安全冒烟测试，不能替代下方首次启动、记录持久化、提醒和桌面卡片等人工飞行模式验收；当前仍因没有连接真机和可用于真机验收的生产签名 HAP 而未执行。
+只有一台设备时可省略 `--target`。该入口只覆盖设备侧路由安全冒烟测试，不能替代下方首次启动、记录持久化和桌面卡片等人工飞行模式验收；当前已有正式签名 HAP，但因没有连接真机而未执行。
 
 ## 模拟器补充验证（不替代真机证据）
 
@@ -144,7 +146,7 @@ node scripts/run-device-smoke.mjs \
 - 断网决策：未执行断网。`hdc shell` 身份为 `uid=2000(shell)` 且 `CapEff=0`；虽然系统提供 `ifconfig ... down`，但没有证据证明对模拟器接口执行后可由同一权限安全恢复，也没有可审计的模拟器飞行模式 API。为避免改变共享模拟器网络状态，未关闭 `eth0`、`wifi_eth` 或 `wlan0`。
 - 模拟器结果仅证明连接、工具、产物和在线设备侧路由安全冒烟的补充事实；未勾选任何真机飞行模式条目，未生成生产签名或上架证据。网络恢复验证不适用（网络未被修改）。
 
-## 真机飞行模式验收
+## 首发范围真机飞行模式验收
 
 执行前填写：
 
@@ -165,15 +167,12 @@ node scripts/run-device-smoke.mjs \
 - [ ] 删除成功后才离开详情；记录从时间线、首页、统计和卡片摘要中消失。
 - [ ] 当月热力图、占比和标签只使用当前月；同一天多条记录只计一个记录日。
 - [ ] 切换主题与深色模式后重启，设置仍保留。
-- [ ] 关闭态打开提醒时先弹时间选择器；取消选择后开关保持关闭。
-- [ ] 确认提醒后系统实际创建提醒、开关和时间正确；修改时间不会遗留重复提醒。
-- [ ] 关闭提醒后系统实际取消；重启后提醒配置与系统状态一致。
 - [ ] 添加 2×2 卡片，摘要、当天情绪和记录天数正确。
 - [ ] 从卡片冷启动应用时先初始化本地数据，再进入安全目标；卡片更新可见。
 - [ ] “数据与隐私”和“关于 MoodLite”均为本地页面，内容正确且不打开浏览器。
-- [ ] 系统应用权限页只显示提醒与振动相关权限，不显示网络或媒体读取权限。
+- [ ] 系统应用权限页只显示振动相关权限，不显示网络、媒体读取或代理提醒权限。
 
-## 上架前阻塞项
+## 历史上架前阻塞项（已被 2026-09-20 结论取代）
 
 - [ ] 连接真实 HarmonyOS 设备并完成上方全部飞行模式验收。
 - [x] 使用现有正式发布证书生成并校验 Release 签名 APP/HAP，并在独立模拟器安装成功；详见 2026-09-19 产物与哈希。证书、私钥、口令和本机配置未提交到 Git。
@@ -182,4 +181,4 @@ node scripts/run-device-smoke.mjs \
 - [x] 当前候选包保持既有未混淆配置；若后续启用，需为 ArkUI 路由、FormExtensionAbility 和序列化字段补保留规则并重新回归。
 - [ ] 若该 GitHub 仓库曾对外开放，评估是否轮换旧调试签名材料并清理历史中的本机签名配置引用。仓库历史未包含证书或私钥文件。
 
-全部阻塞项和真机条目获得正向证据前，本清单结论保持“已出正式签名候选包，尚不可直接上架”。
+【历史结论】本段已被文首 2026-09-20 最新首发候选包结论取代。

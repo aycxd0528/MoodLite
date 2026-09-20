@@ -15,6 +15,7 @@ const forbidden = [
   ['internet permission', /ohos\.permission\.INTERNET/],
   ['media read permission', /ohos\.permission\.READ_IMAGEVIDEO/],
   ['account residue', /AuthManager|LoginPage|memberType|AIAgentChatPage/],
+  ['deferred reminder residue', /@ohos\.reminderAgentManager|@ohos\.notificationManager|ohos\.permission\.PUBLISH_AGENT_REMINDER|ReminderManager|ReminderState|isReminderOn|reminderHour|reminderMinute|mood_reminder_id|提醒设置|选择提醒时间/],
 ];
 
 async function filesAt(path) {
