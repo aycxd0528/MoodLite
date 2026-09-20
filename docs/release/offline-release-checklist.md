@@ -1,8 +1,23 @@
 # MoodLite 完全离线轻量版发布验收清单
 
-**当前结论（2026-09-19）：已生成并校验正式 Release 签名 APP/HAP，核心记录模拟器回归通过；代理提醒能力校验失败，且真机飞行模式及桌面卡片验收未完成，当前不可直接上架。**
+**当前结论（2026-09-19 晚）：核心记录及 2×2 桌面卡片模拟器回归通过，正式签名候选包已重建和校验。用户已决定首发不做定时通知；提醒代码与权限尚未从候选包移除，待范围确认后执行。真机飞行模式验收仍未完成，当前不宣称可直接上架。**
 
-## 最新验收：2026-09-19
+## 最新增量验收：2026-09-19 19:39
+
+- 本节所在提交包含 `EntryFormAbility.ets` 的卡片 ID 修复，以及 `scripts/widget-form.test.mjs` 的两项回归测试。
+- 实际故障：桌面已添加卡片，但保存记录后仍显示空状态；日志为 `formIds count=0`。代码误用 `ohos.extra.param.key.formIdentity`，而 SDK 定义为 `formInfo.FormParam.IDENTITY_KEY`（`ohos.extra.param.key.form_identity`）。现统一使用 SDK 常量提取 ID。
+- 回归先红后绿：新测试在原代码上 0/2，修复后 2/2；连同设备冒烟脚本测试共 9/9。测试执行真实扩展类及视图模型，仅替换系统服务，不等同于设备测试。
+- 命令：`node --test scripts/widget-form.test.mjs scripts/run-device-smoke.test.mjs`。卡片测试使用 DevEco 自带 TypeScript；非默认安装位置通过 `DEVECO_STUDIO_HOME` 指向 DevEco 的 `Contents` 目录。
+- ArkTS 单元测试重新执行：15/15，6 套件，0 failure / 0 error；Release `assembleApp` 成功，42 tasks。离线、轻量化与 diff 门禁通过。
+- 独立 API 23 Release QA 模拟器：正式包覆盖安装成功；新加卡片读取已有记录，显示“愉悦 / 连续 1 天”；强制结束应用后点击卡片可冷启动进入主界面；编辑记录后卡片立即显示“低落 / 连续 1 天”；删除本轮 `widget-qa-20260919` 测试记录后，时间线和卡片均恢复空状态。
+- 日志确认注册和更新均使用同一系统 ID `1664727083`。原模拟器与数据未动；仅在独立 QA 模拟器移除了本轮旧测试卡片并重新添加，测试记录已清理。
+- 当前 APP：`build/outputs/default/MoodLite-default-signed.app`，9,669,313 bytes，SHA-256 `68bf011e90fe79e4ede1f9b23addece66f5cf1ec371dc8e1698eb4ca6460530a`。
+- 当前 HAP：`entry/build/default/outputs/default/entry-default-signed.hap`，9,969,088 bytes，SHA-256 `eba47ccea671971c43a211c301fc820589be0a6cac22580bac0ab96cbe1b3657`。
+- 两个当前产物均通过 SDK `verify-app`。本机 `build-profile.json5` 与签名密钥、证书、Profile 均保持不变。
+- 首发范围变更：定时通知后移；不再推进代理提醒能力申请或更换 Profile。待移除提醒入口、系统调用和权限、修订隐私文案后，必须重新生成候选包并执行最终回归。下节提醒能力错误仅是旧功能的诊断历史，不是要求用户继续申请能力。
+- 上述为模拟器证据，不能冒充真实设备飞行模式验收；也不是对应用商店审核通过的保证。
+
+## 历史验收：2026-09-19 上午
 
 - 运行时代码：`7161fb0886667eaee9671b93e3ce89c577710b97`，`main`，版本 `1.0.0` / `1000000`，目标与最低 SDK 仍为 API 21。
 - 签名：复用用户现有正式发布签名；未更改、重新生成或提交密钥、证书、Profile、密码及本机 `build-profile.json5`。本机配置前后 SHA-256 一致；仓库版本仍不含签名材料。

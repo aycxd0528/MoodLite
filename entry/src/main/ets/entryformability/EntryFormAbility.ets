@@ -9,6 +9,7 @@
 import FormExtensionAbility from '@ohos.app.form.FormExtensionAbility';
 import formBindingData from '@ohos.app.form.formBindingData';
 import formProvider from '@ohos.app.form.formProvider';
+import formInfo from '@ohos.app.form.formInfo';
 import dataPreferences from '@ohos.data.preferences';
 import { MoodRecord } from '../model/MoodRecord';
 import { parseMoodRecords } from '../model/MoodRecordPolicy';
@@ -59,7 +60,7 @@ export default class EntryFormAbility extends FormExtensionAbility {
 
   private extractFormId(want: Record<string, Object>): string {
     const params = want['parameters'] as Record<string, Object>;
-    return (params?.['ohos.extra.param.key.formIdentity'] as string) || '';
+    return (params?.[formInfo.FormParam.IDENTITY_KEY] as string) || '';
   }
 
   private isDarkMode(): boolean {
@@ -70,11 +71,10 @@ export default class EntryFormAbility extends FormExtensionAbility {
     try {
       const records = await readRecords(this.context);
       const data: WidgetSummary = buildWidgetSummary(records, new Date(), this.isDarkMode());
-      const formInfo = formBindingData.createFormBindingData(data);
-      const params = want['parameters'] as Record<string, Object>;
-      const formId = params?.['ohos.extra.param.key.formIdentity'] as string;
+      const binding = formBindingData.createFormBindingData(data);
+      const formId = this.extractFormId(want);
       if (formId) {
-        formProvider.updateForm(formId, formInfo);
+        formProvider.updateForm(formId, binding);
       }
     } catch (err) {
       console.error('[MoodLite] loadAndUpdate failed: ' + JSON.stringify(err));
