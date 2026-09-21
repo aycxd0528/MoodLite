@@ -9,6 +9,7 @@
 import DataManager from '../data/DataManager';
 import { Token, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
+import { syncSystemBars } from '../common/SystemBarManager';
 import {
   LaunchIntent,
   LaunchParameters,
@@ -35,6 +36,7 @@ struct Index {
 
   aboutToAppear(): void {
     console.info('[MoodLite] Index.aboutToAppear — begin');
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
     this.initialize();
   }
 
@@ -159,7 +161,7 @@ struct Index {
         Text('MoodLite')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
         Text('轻心记')
           .fontSize(14)
           .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
@@ -199,7 +201,7 @@ struct Index {
 
           Button('重试')
             .width(180).height(48)
-            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+            .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
             .borderRadius(24)
             .fontSize(F.BODY)
             .fontWeight(FontWeight.Medium)

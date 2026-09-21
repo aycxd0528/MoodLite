@@ -56,7 +56,7 @@ struct ThemePickerDialog {
             if (this.currentTheme === item.preset) {
               Text('✓')
                 .fontSize(F.SUBTITLE)
-                .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                .fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
                 .fontWeight(FontWeight.Bold)
             }
           }
@@ -145,18 +145,13 @@ export struct Profile {
                     if (it.toggle) {
                       if (it.label === '深色模式') {
                         Toggle({ type: ToggleType.Switch, isOn: this.darkMode })
-                          .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                          .selectedColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
                           .onChange((v: boolean) => { this.darkMode = v; })
                       }
                     } else {
                       Image($r('app.media.ic_right_arrow')).width(16).height(16)
                         .objectFit(ImageFit.Contain)
-                        .fillColor(this.darkMode ? '#E8E8EC' : '#9CA3AF')
-                        .colorFilter(
-                          this.darkMode
-                            ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                            : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
-                        )
+                        .fillColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                     }
                   }
                   .width('100%').height(56).alignItems(VerticalAlign.Center)
@@ -187,18 +182,13 @@ export struct Profile {
 
                   Text(ThemeManager.getDisplayName(this.currentTheme as ThemePreset))
                     .fontSize(F.BODY).fontWeight(FontWeight.Medium)
-                    .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK).margin({ right: S.SM })
+                    .fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT).margin({ right: S.SM })
                     .padding({ left: S.SM, right: S.SM, top: 4, bottom: 4 })
                     .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT).borderRadius(12)
 
                   Image($r('app.media.ic_right_arrow')).width(16).height(16)
                     .objectFit(ImageFit.Contain)
-                    .fillColor(this.darkMode ? '#E8E8EC' : '#9CA3AF')
-                    .colorFilter(
-                      this.darkMode
-                        ? [-1, 0, 0, 0, 255, 0, -1, 0, 0, 255, 0, 0, -1, 0, 255, 0, 0, 0, 1, 0]
-                        : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
-                    )
+                    .fillColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 }
                 .width('100%').height(56).alignItems(VerticalAlign.Center)
                 .onClick(() => { this.showThemeDialog(); })
@@ -213,7 +203,7 @@ export struct Profile {
         }
         .padding({ left: S.LG, right: S.LG, top: S.XS })
       }
-      .layoutWeight(1).scrollBar(BarState.Off)
+      .layoutWeight(1).scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
     }
     .width('100%').height('100%')
   }

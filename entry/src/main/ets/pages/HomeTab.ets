@@ -75,9 +75,9 @@ export struct HomeTab {
                 Text(this.label)
                   .fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                   .fontColor(this.score >= 1
-                    ? resolveColors(this.darkMode, this.currentTheme).PINK
+                    ? resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT
                     : this.score <= -1
-                      ? resolveColors(this.darkMode, this.currentTheme).BLUE
+                      ? resolveColors(this.darkMode, this.currentTheme).BLUE_DEEP
                       : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
                 Text(this.comfort)
                   .fontSize(F.CAPTION).lineHeight(22).textAlign(TextAlign.Center)
@@ -89,7 +89,7 @@ export struct HomeTab {
 
             Button('再记一笔')
               .width('100%').height(48)
-              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
               .borderRadius(24)
               .fontSize(F.BODY).fontWeight(FontWeight.Medium)
               .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
@@ -112,7 +112,7 @@ export struct HomeTab {
                   .margin({ top: S.XS })
                 Button('开始记录今天的心情')
                   .width('100%').height(48).margin({ top: S.XL })
-                  .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                  .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
                   .borderRadius(24)
                   .fontSize(F.BODY).fontWeight(FontWeight.Medium)
                   .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)

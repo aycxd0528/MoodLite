@@ -6,6 +6,10 @@
  */
 
 const widgetStorage: LocalStorage = new LocalStorage();
+const WIDGET_LIGHT_BG: string = '#FFF7F9';
+const WIDGET_DARK_BG: string = '#1E1E32';
+const WIDGET_LIGHT_SECONDARY: string = '#5F6B7A';
+const WIDGET_DARK_SECONDARY: string = '#B4B7C5';
 
 @Entry(widgetStorage)
 @Component
@@ -50,7 +54,7 @@ struct MoodWidgetCard {
         if (this.streak > 0) {
           Text('连续 ' + this.streak + ' 天')
             .fontSize(11)
-            .fontColor(this.darkMode ? '#AAAAAA' : '#9CA3AF')
+            .fontColor(this.darkMode ? WIDGET_DARK_SECONDARY : WIDGET_LIGHT_SECONDARY)
             .margin({ top: 3 })
         }
 
@@ -68,6 +72,8 @@ struct MoodWidgetCard {
       .borderRadius(24)
     }
     .width('100%').height('100%')
+    .backgroundColor(this.darkMode ? WIDGET_DARK_BG : WIDGET_LIGHT_BG)
+    .borderRadius(24)
     .onClick(() => {
       postCardAction(this, {
         action: 'router',

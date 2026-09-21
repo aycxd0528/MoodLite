@@ -5,7 +5,6 @@
  * 中心 ⊕(索引2) 凸起圆球 + offset({y:-15}) → router.pushUrl(AddEntry)
  */
 
-import window from '@ohos.window';
 import DataManager from '../data/DataManager';
 import { Shadow, R, S, F, L } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
@@ -16,6 +15,7 @@ import { Profile } from './Profile';
 import { StatsContent } from './Stats';
 import { MonthGroup } from '../viewmodel/LazyDataSource';
 import { clearRefreshHandler, consumeRefresh, RefreshHandler, setRefreshHandler } from '../common/EditBridge';
+import { syncSystemBars } from '../common/SystemBarManager';
 
 const TAB_ICONS: Record<number, [Resource, Resource]> = {
   0: [$r('app.media.ic_today'), $r('app.media.ic_today_active')],
@@ -28,16 +28,16 @@ const TAB_ICONS: Record<number, [Resource, Resource]> = {
 @Component
 struct MainPage {
   @State tab: number = 0;
-  @StorageLink('darkMode') darkMode: boolean = false;
+  @StorageLink('darkMode') @Watch('syncWindow') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
   @State records: MoodRecord[] = [];
   @State groupedRecords: MonthGroup[] = [];
   private refreshHandler: RefreshHandler = async (): Promise<void> => this.reload();
 
   pageTransition() {
-    PageTransitionEnter({ duration: 200, curve: Curve.EaseOut })
+    PageTransitionEnter({ duration: 220, curve: Curve.EaseOut })
       .opacity(0.6)
-    PageTransitionExit({ duration: 150, curve: Curve.EaseIn })
+    PageTransitionExit({ duration: 220, curve: Curve.EaseIn })
       .opacity(0)
   }
 
@@ -60,14 +60,7 @@ struct MainPage {
   }
 
   syncWindow(): void {
-    const ctx = this.getUIContext().getHostContext();
-    window.getLastWindow(ctx).then((wc) => {
-      wc.setWindowSystemBarProperties({
-        statusBarContentColor: this.darkMode ? '#FFFFFF' : '#000000',
-      });
-    }).catch((err: Error) => {
-      console.error('[MoodLite] syncWindow failed: ' + JSON.stringify(err));
-    });
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
   }
 
   onPageShow(): void {
@@ -189,12 +182,12 @@ struct MainPage {
         Image(this.tab === i ? activeIcon : normalIcon)
           .width(24).height(24).objectFit(ImageFit.Contain)
           .fillColor(this.tab === i
-            ? resolveColors(this.darkMode, this.currentTheme).PINK
-            : (this.darkMode ? resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY : '#FAFAFA'))
+            ? resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT
+            : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY)
           .scale({ x: this.tab === i ? 1.08 : 1.0, y: this.tab === i ? 1.08 : 1.0 })
           .animation({ duration: 180, curve: Curve.EaseOut })
         Text(lbl).fontSize(F.SMALL)
-          .fontColor(this.tab === i ? resolveColors(this.darkMode, this.currentTheme).PINK : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
+          .fontColor(this.tab === i ? resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
       }
       .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
     }
@@ -205,10 +198,10 @@ struct MainPage {
     Column() {
       Button() {
         Image($r('app.media.ic_plus')).width(28).height(28)
-          .fillColor(Color.White)
+          .fillColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
       }
       .width(L.CENTER_BTN).height(L.CENTER_BTN).borderRadius(R.FULL)
-      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
       .shadow({ radius: 16, color: resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT, offsetY: 6 })
       .offset({ y: -18 })
       .onClick(() => {

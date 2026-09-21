@@ -5,12 +5,17 @@
 import { GlassCard } from '../common/components/GlassCard';
 import { F, R, S } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
+import { syncSystemBars } from '../common/SystemBarManager';
 
 @Entry
 @Component
 struct AboutPage {
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+
+  aboutToAppear(): void {
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
+  }
 
   build() {
     Stack({ alignContent: Alignment.Top }) {

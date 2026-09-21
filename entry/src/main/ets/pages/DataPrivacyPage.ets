@@ -5,6 +5,7 @@
 import { GlassCard } from '../common/components/GlassCard';
 import { F, R, S } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
+import { syncSystemBars } from '../common/SystemBarManager';
 
 interface PrivacyItem {
   title: string;
@@ -23,6 +24,10 @@ const PRIVACY_ITEMS: PrivacyItem[] = [
 struct DataPrivacyPage {
   @StorageLink('darkMode') darkMode: boolean = false;
   @StorageLink('currentTheme') currentTheme: string = 'blossomPink';
+
+  aboutToAppear(): void {
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
+  }
 
   build() {
     Stack({ alignContent: Alignment.Top }) {
@@ -62,7 +67,7 @@ struct DataPrivacyPage {
               Column({ space: S.SM }) {
                 Image($r('app.media.ic_shield'))
                   .width(48).height(48).objectFit(ImageFit.Contain)
-                  .fillColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                  .fillColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
                 Text('你的心情，只属于你')
                   .fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
                   .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
@@ -80,7 +85,7 @@ struct DataPrivacyPage {
                   Row({ space: S.SM }) {
                     Text('✓')
                       .fontSize(F.BODY).fontWeight(FontWeight.Bold)
-                      .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                      .fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
                     Column({ space: 4 }) {
                       Text(item.title)
                         .fontSize(F.BODY).fontWeight(FontWeight.Medium)

@@ -5,6 +5,7 @@
 import DataManager from '../data/DataManager';
 import { Token, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
+import { syncSystemBars } from '../common/SystemBarManager';
 
 @Entry
 @Component
@@ -17,6 +18,7 @@ struct Welcome {
   @State btnOffY: number = 30;
 
   aboutToAppear(): void {
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
     this.getUIContext()?.animateTo({ duration: 600, curve: Curve.EaseOut }, () => {
       this.cardOpacity = 1;
       this.cardOffY = 0;
@@ -51,7 +53,7 @@ struct Welcome {
           Text('MoodLite')
             .fontSize(42)
             .fontWeight(FontWeight.Bold)
-            .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+            .fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
             .letterSpacing(1)
         }
         .alignItems(HorizontalAlign.Center)
@@ -76,7 +78,7 @@ struct Welcome {
               .fontSize(16)
               .fontWeight(FontWeight.Medium)
               .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
-              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+              .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
               .borderRadius(R.BUTTON)
               .shadow({ radius: 15, color: 'rgba(255,122,154,0.4)', offsetY: 8 })
               .onClick(() => {

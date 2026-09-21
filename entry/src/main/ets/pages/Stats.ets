@@ -217,7 +217,8 @@ export struct StatsContent {
                 Text('低落').fontSize(12).fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY).margin({ top: 2 })
                 Stack({ alignContent: Alignment.Start }) {
                   Column().width(40).height(4).backgroundColor(this.darkMode ? Dark.BAR_TRACK : Token.BAR_TRACK).borderRadius(2)
-                  Column().width(40 * this.sadPercent / 100).height(4).backgroundColor(Token.BLUE_DEEP).borderRadius(2)
+                  Column().width(40 * this.sadPercent / 100).height(4)
+                    .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BLUE_DEEP).borderRadius(2)
                 }.margin({ top: S.XS })
               }.alignItems(HorizontalAlign.Center).layoutWeight(1)
 
@@ -271,7 +272,7 @@ export struct StatsContent {
                         .width(Math.max(4, 140 * td.count / this.tagDistributions[0].count))
                         .backgroundColor(
                           td.avgScore >= 0.5 ? resolveColors(this.darkMode, this.currentTheme).PINK
-                          : td.avgScore <= -0.5 ? Token.BLUE_DEEP
+                          : td.avgScore <= -0.5 ? resolveColors(this.darkMode, this.currentTheme).BLUE_DEEP
                           : (this.darkMode ? Dark.BAR_NEUTRAL : Token.BAR_NEUTRAL)
                         )
                         .borderRadius(4)
@@ -287,9 +288,9 @@ export struct StatsContent {
                     Text((td.avgScore >= 0 ? '+' : '') + td.avgScore.toFixed(1))
                       .fontSize(F.TINY)
                       .fontColor(
-                        td.avgScore >= 0.5 ? resolveColors(this.darkMode, this.currentTheme).PINK
-                        : td.avgScore <= -0.5 ? Token.BLUE_DEEP
-                        : Token.TEXT_GRAY
+                        td.avgScore >= 0.5 ? resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT
+                        : td.avgScore <= -0.5 ? resolveColors(this.darkMode, this.currentTheme).BLUE_DEEP
+                        : resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY
                       )
                   }
                   .alignItems(HorizontalAlign.End).width(48)
@@ -305,6 +306,6 @@ export struct StatsContent {
       }
       .padding({ left: S.LG, right: S.LG, top: S.XS })
     }
-    .width('100%').scrollBar(BarState.Off).align(Alignment.TopStart)
+    .width('100%').scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring).align(Alignment.TopStart)
   }
 }

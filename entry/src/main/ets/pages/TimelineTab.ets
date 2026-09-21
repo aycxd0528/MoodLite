@@ -3,7 +3,7 @@
  * 月份导航 + 按日合并卡片 + 时间线竖线 + 精确设计规格
  */
 
-import { Token, S, F } from '../common/styles';
+import { S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
@@ -80,8 +80,9 @@ export struct TimelineTab {
   }
 
   getEmotionColor(score: number): string {
-    const mc = score >= 0.5 ? 3 : (score <= -0.5 ? 1 : 2);
-    return heatmapColor(mc, Math.abs(score) >= 1 ? 1.5 : 0.5, true, this.darkMode);
+    if (score >= 0.5) return resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT;
+    if (score <= -0.5) return resolveColors(this.darkMode, this.currentTheme).BLUE_DEEP;
+    return resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY;
   }
 
   // 委托至 StatsViewModel 共享实现
@@ -205,6 +206,7 @@ export struct TimelineTab {
           }
           .width('100%').layoutWeight(1)
           .padding({ left: 16, right: 16 })
+          .edgeEffect(EdgeEffect.Spring)
         }
       }
       .width('100%').height('100%')

@@ -3,11 +3,12 @@
  */
 
 import DataManager from '../data/DataManager';
-import { Token, Shadow, R, S, F } from '../common/styles';
+import { Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, getMoodIconResource, getMoodLabel } from '../model/MoodRecord';
 import { clearEditPayload, setEditPayload } from '../common/EditBridge';
+import { syncSystemBars } from '../common/SystemBarManager';
 
 @CustomDialog
 struct DeleteConfirmDialog {
@@ -28,12 +29,12 @@ struct DeleteConfirmDialog {
       Row({ space: 12 }) {
         Button('取消').fontSize(14)
           .backgroundColor(resolveColors(this.darkMode, this.currentTheme).BAR_TRACK)
-          .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_SECONDARY)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
           .layoutWeight(1).onClick(() => { this.controller.close(); })
         Button(this.confirming ? '删除中…' : '删除')
           .fontSize(14)
-          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).DELETE_RED)
-          .fontColor(Color.White)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).DANGER_BG)
+          .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
           .layoutWeight(1)
           .enabled(!this.confirming)
           .onClick(async () => {
@@ -63,6 +64,7 @@ struct EntryDetail {
   deleteDialog: CustomDialogController | null = null;
 
   aboutToAppear(): void {
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
     this.deleteDialog = new CustomDialogController({
       builder: DeleteConfirmDialog({
         onConfirm: (): Promise<boolean> => this.doDelete()
@@ -136,9 +138,9 @@ struct EntryDetail {
   }
 
   pageTransition() {
-    PageTransitionEnter({ duration: 200, curve: Curve.EaseOut })
+    PageTransitionEnter({ duration: 220, curve: Curve.EaseOut })
       .opacity(0.6)
-    PageTransitionExit({ duration: 150, curve: Curve.EaseIn })
+    PageTransitionExit({ duration: 220, curve: Curve.EaseIn })
       .opacity(0)
   }
 
@@ -159,7 +161,7 @@ struct EntryDetail {
             Text('编辑').fontSize(14).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
           }
           .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.FULL)
+          .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG).borderRadius(R.FULL)
           .shadow(Shadow.CARD)
           .onClick(() => { this.onEdit(); })
         }
@@ -198,7 +200,7 @@ struct EntryDetail {
                       Text(t)
                         .fontSize(F.CAPTION).padding({ left: 10, right: 10, top: 3, bottom: 3 })
                         .borderRadius(R.FULL)
-                        .fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                        .fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
                         .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT)
                         .margin({ right: 6 })
                     }, (t: string) => t)
@@ -218,8 +220,10 @@ struct EntryDetail {
             // 删除按钮
             Button() {
               Row({ space: 6 }) {
-                Image($r('app.media.ic_delete')).width(16).height(16).fillColor(Token.DELETE_RED)
-                Text('删除记录').fontSize(F.BODY).fontColor(Token.DELETE_RED)
+                Image($r('app.media.ic_delete')).width(16).height(16)
+                  .fillColor(resolveColors(this.darkMode, this.currentTheme).DELETE_RED)
+                Text('删除记录').fontSize(F.BODY)
+                  .fontColor(resolveColors(this.darkMode, this.currentTheme).DELETE_RED)
               }
               .justifyContent(FlexAlign.Center)
             }
@@ -232,7 +236,7 @@ struct EntryDetail {
           }
           .padding({ left: S.LG, right: S.LG, top: S.XS })
         }
-        .layoutWeight(1).scrollBar(BarState.Off)
+        .layoutWeight(1).scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
       }
     }
     .width('100%').height('100%')

@@ -11,6 +11,7 @@ import {
   PENDING_TARGET_KEY,
   parseLaunchIntent,
 } from '../common/LaunchIntent';
+import { systemBarProperties } from '../common/SystemBarManager';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -32,11 +33,7 @@ export default class EntryAbility extends UIAbility {
       mainWindow.setWindowLayoutFullScreen(true).catch((err: Error) => {
         console.error('[MoodLite] Full-screen setup failed: ' + JSON.stringify(err));
       });
-      mainWindow.setWindowSystemBarProperties({
-        statusBarColor: '#00000000',
-        navigationBarColor: '#00000000',
-        isStatusBarLightIcon: false,
-      }).catch((err: Error) => {
+      mainWindow.setWindowSystemBarProperties(systemBarProperties(false)).catch((err: Error) => {
         console.error('[MoodLite] System bar setup failed: ' + JSON.stringify(err));
       });
     } catch (err) {

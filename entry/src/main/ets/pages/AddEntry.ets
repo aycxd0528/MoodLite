@@ -5,23 +5,24 @@
 import curves from '@ohos.curves';
 import vibrator from '@ohos.vibrator';
 import DataManager from '../data/DataManager';
-import { Token, Shadow, R, S, F } from '../common/styles';
+import { Shadow, R, S, F } from '../common/styles';
 import { resolveColors } from '../common/ThemeManager';
+import { syncSystemBars } from '../common/SystemBarManager';
 import { GlassCard } from '../common/components/GlassCard';
 import { MoodRecord, generateUUID, formatDateStr, DEFAULT_TAGS } from '../model/MoodRecord';
 import { buildEditedMoodRecord } from '../model/MoodRecordPolicy';
 import { getEditPayload, signalRefresh } from '../common/EditBridge';
 
 interface FaceEntry {
-  min: number; max: number; icon: Resource; label: string; color: string; ms: number;
+  min: number; max: number; icon: Resource; label: string; ms: number;
 }
 
 const FT: FaceEntry[] = [
-  { min: 0,  max: 20, icon: $r('app.media.ic_face_terrible'), label: '很糟糕', color: '#8FB7E8', ms: -2 },
-  { min: 21, max: 40, icon: $r('app.media.ic_face_bad'),      label: '不太好', color: Token.BLUE,  ms: -1 },
-  { min: 41, max: 60, icon: $r('app.media.ic_face_neutral'),   label: '平静',   color: Token.TEXT_GRAY, ms:  0 },
-  { min: 61, max: 80, icon: $r('app.media.ic_face_good'),      label: '不错',   color: Token.PINK, ms:  1 },
-  { min: 81, max: 100,icon: $r('app.media.ic_face_awesome'),   label: '很棒',   color: Token.PINK, ms:  2 },
+  { min: 0,  max: 20, icon: $r('app.media.ic_face_terrible'), label: '很糟糕', ms: -2 },
+  { min: 21, max: 40, icon: $r('app.media.ic_face_bad'),      label: '不太好', ms: -1 },
+  { min: 41, max: 60, icon: $r('app.media.ic_face_neutral'),   label: '平静',   ms:  0 },
+  { min: 61, max: 80, icon: $r('app.media.ic_face_good'),      label: '不错',   ms:  1 },
+  { min: 81, max: 100,icon: $r('app.media.ic_face_awesome'),   label: '很棒',   ms:  2 },
 ];
 
 function findFace(v: number): FaceEntry {
@@ -74,6 +75,7 @@ struct AddEntry {
 
   aboutToAppear(): void {
     this.pageActive = true;
+    syncSystemBars(this.getUIContext().getHostContext(), this.darkMode);
     const p = this.getUIContext().getRouter().getParams() as Record<string, Object>;
     if (p && typeof p['fromTab'] === 'number') {
       this.fromTab = p['fromTab'];
@@ -198,12 +200,20 @@ struct AddEntry {
     return this.selectedTags.filter(t => DEFAULT_TAGS.indexOf(t) < 0);
   }
 
+  moodTextColor(): string {
+    const colors = resolveColors(this.darkMode, this.currentTheme);
+    const moodScore = findFace(this.sv).ms;
+    if (moodScore > 0) return colors.ACCENT_TEXT;
+    if (moodScore < 0) return colors.BLUE_DEEP;
+    return colors.TEXT_GRAY;
+  }
+
   @Builder tagChip(tag: string) {
     Text(tag)
       .fontSize(F.CAPTION)
       .padding({ left: 14, right: 14, top: 6, bottom: 6 })
       .borderRadius(R.FULL)
-      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? resolveColors(this.darkMode, this.currentTheme).PINK : resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
+      .fontColor(this.selectedTags.indexOf(tag) >= 0 ? resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT : resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
       .backgroundColor(this.selectedTags.indexOf(tag) >= 0
         ? resolveColors(this.darkMode, this.currentTheme).PINK_LIGHT
         : resolveColors(this.darkMode, this.currentTheme).BAR_BG)
@@ -219,9 +229,9 @@ struct AddEntry {
   }
 
   pageTransition() {
-    PageTransitionEnter({ duration: 200, curve: Curve.EaseOut })
+    PageTransitionEnter({ duration: 220, curve: Curve.EaseOut })
       .opacity(0.6)
-    PageTransitionExit({ duration: 150, curve: Curve.EaseIn })
+    PageTransitionExit({ duration: 220, curve: Curve.EaseIn })
       .opacity(0)
   }
 
@@ -239,9 +249,14 @@ struct AddEntry {
               .fillColor(resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN)
               .onClick(() => { this.getUIContext().getRouter().back(); })
             Blank()
-            Text('完成').fontSize(14).fontWeight(FontWeight.Medium).fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
+            Text('完成').fontSize(14).fontWeight(FontWeight.Medium)
+              .fontColor(this.saving
+                ? resolveColors(this.darkMode, this.currentTheme).TEXT_MAIN
+                : resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
               .padding({ left: 16, right: 16, top: 7, bottom: 7 })
-              .backgroundColor(this.saving ? resolveColors(this.darkMode, this.currentTheme).TEXT_GRAY : resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.FULL)
+              .backgroundColor(this.saving
+                ? resolveColors(this.darkMode, this.currentTheme).BAR_TRACK
+                : resolveColors(this.darkMode, this.currentTheme).ACTION_BG).borderRadius(R.FULL)
               .shadow(Shadow.CARD)
               .onClick(() => { this.done(); })
           }
@@ -256,11 +271,11 @@ struct AddEntry {
                 Image(findFace(this.sv).icon).width(120).height(120).objectFit(ImageFit.Contain)
                   .margin({ bottom: S.MD }).scale({ x: this.emojiScale, y: this.emojiScale }).opacity(this.emojiOpacity)
                 Text(findFace(this.sv).label).fontSize(F.SUBTITLE).fontWeight(FontWeight.Bold)
-                  .fontColor(findFace(this.sv).color).margin({ bottom: S.MD })
+                  .fontColor(this.moodTextColor()).margin({ bottom: S.MD })
                 Slider({ value: this.sv, min: 0, max: 100, step: 1, style: SliderStyle.OutSet })
-                  .width('100%').blockColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                  .width('100%').blockColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG)
                   .trackColor(resolveColors(this.darkMode, this.currentTheme).BLUE_LIGHT)
-                  .selectedColor(resolveColors(this.darkMode, this.currentTheme).PINK).showTips(false).onChange((v: number, mode: SliderChangeMode) => {
+                  .selectedColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG).showTips(false).onChange((v: number, mode: SliderChangeMode) => {
                     const nearest = this.MOOD_SNAPS.reduce((prev, curr) =>
                       Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev
                     );
@@ -321,14 +336,14 @@ struct AddEntry {
 
                     Button('确定')
                       .height(36).fontSize(F.CAPTION)
-                      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).PINK).borderRadius(R.TINY)
+                      .backgroundColor(resolveColors(this.darkMode, this.currentTheme).ACTION_BG).borderRadius(R.TINY)
                       .fontColor(resolveColors(this.darkMode, this.currentTheme).BTN_TEXT)
                       .onClick(() => { this.addCustomTag(); })
                   }
                   .width('100%')
                 } else {
                   Text('+ 自定义标签')
-                    .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).PINK)
+                    .fontSize(F.CAPTION).fontColor(resolveColors(this.darkMode, this.currentTheme).ACCENT_TEXT)
                     .padding({ top: 2 })
                     .onClick(() => { this.showCustomInput = true; })
                 }
