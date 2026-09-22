@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -7,6 +8,10 @@ const ROOT = process.cwd();
 
 function source(path) {
   return readFileSync(join(ROOT, path), 'utf8');
+}
+
+function sha256(path) {
+  return createHash('sha256').update(readFileSync(join(ROOT, path))).digest('hex');
 }
 
 function relativeLuminance(hex) {
@@ -70,6 +75,44 @@ test('all theme text and action colors meet the cloud-test contrast thresholds',
   }
   expectContrast('WidgetLight', widgetColors, 'WIDGET_LIGHT_SECONDARY', 'WIDGET_LIGHT_BG', 4.5);
   expectContrast('WidgetDark', widgetColors, 'WIDGET_DARK_SECONDARY', 'WIDGET_DARK_BG', 4.5);
+});
+
+test('every release icon surface uses the approved MoodLite artwork', () => {
+  const approvedHash = '14b1258ddd52f0730cc35e0f864047b4c35e759773e8da1c48af18d979c0436f';
+  const iconPaths = [
+    'AppScope/resources/base/media/app_icon.png',
+    'entry/src/main/resources/base/media/app_icon.png',
+  ];
+  for (const path of iconPaths) {
+    assert.ok(existsSync(join(ROOT, path)), `${path} is missing`);
+    assert.equal(sha256(path), approvedHash, `${path} does not contain the approved icon`);
+  }
+
+  const appProfile = source('AppScope/app.json5');
+  assert.match(appProfile, /"icon"\s*:\s*"\$media:app_icon"/);
+  assert.doesNotMatch(appProfile, /\$media:layered_image/);
+
+  const moduleProfile = source('entry/src/main/module.json5');
+  assert.match(moduleProfile, /"icon"\s*:\s*"\$media:app_icon"/);
+  assert.match(moduleProfile, /"startWindowIcon"\s*:\s*"\$media:app_icon"/);
+  assert.doesNotMatch(moduleProfile, /\$media:layered_image/);
+
+  for (const path of [
+    'entry/src/main/ets/pages/AboutPage.ets',
+    'entry/src/main/ets/pages/Index.ets',
+  ]) {
+    assert.match(source(path), /app\.media\.app_icon/, `${path} does not use the approved app icon`);
+  }
+});
+
+test('the desktop icon resolves to MoodLite EntryAbility', () => {
+  const moduleProfile = JSON.parse(source('entry/src/main/module.json5'));
+  const entryAbility = moduleProfile.module.abilities.find((ability) => ability.name === 'EntryAbility');
+  assert.ok(entryAbility, 'EntryAbility is missing from the module profile');
+  const launcherSkill = (entryAbility.skills ?? []).find((skill) =>
+    skill.actions?.includes('ohos.want.action.home') &&
+    skill.entities?.includes('entity.system.home'));
+  assert.ok(launcherSkill, 'EntryAbility is not registered as the desktop launcher target');
 });
 
 test('decorative brand colors are not used directly for text, icons, or selected controls', () => {

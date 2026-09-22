@@ -1,6 +1,20 @@
 # MoodLite 完全离线轻量版发布验收清单
 
-**当前结论（2026-09-21）：已针对 AppGallery 云测报告 `1308463973898596095` 完成色彩对比度、状态栏、滚动边界反馈与全屏转场四类整改。新正式签名 APP/HAP 已重建、验签，并在独立 Release QA 模拟器完成明暗主题与隐私页返回按钮实看。当前无已知代码、构建或签名阻塞，可重新上传云测/提交审核；只有 AppGallery 复测才能确认云测告警已消除，且由于没有真机，不声称已完成真机验收或保证商店审核结果。**
+**当前结论（2026-09-22）：已完成 AppGallery 上架审核反馈中的应用图标不一致、系统模板图标和点击桌面图标进入应用信息设置页三项整改。正式 APP/HAP 已使用原签名重建并验签；独立 Release QA 模拟器同时验证了按包名/Ability 精确启动和桌面图标点击启动，两条路径均以前台 `com.aycxd.moodlite:entry:EntryAbility` 结束。当前无已知代码、构建或签名阻塞，可重新上传云测/提交审核；平台复测与商店审核仍是外部结果，且由于没有真机，不声称已完成真机验收或保证过审。**
+
+## AppGallery 上架审核整改候选包：2026-09-22
+
+- 输入反馈：审核报告共 3 个错误，分别为提交图标与安装图标不一致、安装后显示系统模板图标，以及点击应用图标进入手机设置页、无法进入应用。
+- 图标：以用户提供的 1,254×1,254 图三原图作为唯一正式图标；原图、AppScope 图标和 Entry 图标 SHA-256 均为 `14b1258ddd52f0730cc35e0f864047b4c35e759773e8da1c48af18d979c0436f`。AppScope、桌面、Ability、启动窗口、加载页和关于页均指向 `app_icon`。
+- 模板清理：删除 AppScope 与 Entry 下的蓝色四宫格 `background`、`foreground`、`layered_image` 资源以及旧 `startIcon`，发布清单不再引用 `layered_image`。
+- 启动根因：`EntryAbility` 原缺少桌面启动 skill。修复前，在独立 QA 模拟器中按包名/Ability 精确启动可正常进入 MoodLite，但点击桌面 MoodLite 图标会打开 `com.huawei.hmos.settings` 的应用信息页，完整复现审核问题。新增 `ohos.want.action.home` 与 `entity.system.home` 后，桌面点击和精确启动均使 `com.aycxd.moodlite:entry:EntryAbility` 处于 `FOREGROUND`，设置页保持 `BACKGROUND`。
+- 回归：新增正式图标 SHA-256、AppScope/Ability/启动窗口清单引用、应用内图标引用以及桌面启动 skill 检查。对应测试分别经历预期 RED 后转为 GREEN；Node 全量为 16/16。
+- 构建：Release `assembleApp` 42 tasks，`BUILD SUCCESSFUL`；构建后清单 `buildMode=release`、`debug=false`，权限仍仅为 `ohos.permission.VIBRATE`。
+- 模拟器：`MoodLite Release QA` 使用独立 HDC 端口 `127.0.0.1:15557`；为排除旧安装和图标缓存，只清除了该 QA 模拟器中的旧 MoodLite 数据后全新安装。原模拟器及用户数据未动。
+- APP：`build/outputs/default/MoodLite-default-signed.app`，9,850,195 bytes，SHA-256 `f5a4fb5d4f5e6f651a8bb6b97049a3282a238edd5ad098d2a8decc8032819232`。
+- HAP：`entry/build/default/outputs/default/entry-default-signed.hap`，10,130,340 bytes，SHA-256 `7e3e79bc2139029979cb32c19311a0947a909323ee43af5efdc8489cfd6f6f12`。
+- 签名：APP/HAP 均通过 SDK `verify-app`，摘要校验为 true；HAP Profile 类型为 release，权限签名验证成功。沿用原正式签名；密钥、证书、Profile、密码及本机 `build-profile.json5` 未修改、未提交，配置 SHA-256 仍为 `3120ce4a1c71b9f94589d6139342ee057fd24bb641376ed862e4b5dd7871587f`。
+- 复测边界：本地证据证明最终候选包中的图标身份和启动入口已整改，不能把尚未重新运行的 AppGallery 云测或审核表述为通过。上传本候选 APP 后需重新提交并保存新报告。
 
 ## AppGallery 云测整改候选包：2026-09-21
 
