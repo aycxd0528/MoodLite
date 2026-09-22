@@ -64,6 +64,8 @@ class DataManager {
 
       this.ready = true;
       console.info('[MoodLite] DataManager init complete — ' + this.cache.length + ' records cached');
+      // 为旧版本升级后的已有数据建立跨进程卡片快照。
+      await WidgetSyncManager.updateWidgets(this.context!, this.cache);
     } catch (err) {
       this.ready = false;
       const msg = '[MoodLite] Preferences init failed: ' + JSON.stringify(err);
@@ -133,11 +135,9 @@ class DataManager {
       // 落盘成功，更新内存缓存
       this.cache = filtered;
 
-      // 数据已安全落盘，异步通知（非阻塞）
+      // 数据已安全落盘；在保存结束前发出桌面卡片更新。
       if (this.context) {
-        WidgetSyncManager.updateWidgets(this.context, filtered).catch((e: Error) => {
-          console.error('[MoodLite] WidgetSync failed (non-blocking): ' + JSON.stringify(e));
-        });
+        await WidgetSyncManager.updateWidgets(this.context, filtered);
       }
       return true;
     });
@@ -155,9 +155,7 @@ class DataManager {
       this.cache = filtered;
 
       if (this.context) {
-        WidgetSyncManager.updateWidgets(this.context, filtered).catch((e: Error) => {
-          console.error('[MoodLite] WidgetSync failed (non-blocking): ' + JSON.stringify(e));
-        });
+        await WidgetSyncManager.updateWidgets(this.context, filtered);
       }
       return true;
     });

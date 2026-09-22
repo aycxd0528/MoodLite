@@ -111,6 +111,14 @@ export function countUniqueRecordDays(records: MoodRecord[]): number {
   return dates.size;
 }
 
+/**
+ * ArkUI ForEach 会按 key 复用节点；同一日的聚合结果变化时，key 也必须变化。
+ */
+export function calendarCellRenderKey(cell: CalendarDayItem): string {
+  const scope: string = cell.isCurrentMonth ? 'c' : 'p';
+  return cell.dateStr + '_' + scope + '_' + cell.count + '_' + cell.avgScore + '_' + cell.moodCode;
+}
+
 /** 根据正/负记录数计算情绪代码 (1=低落 2=平静 3=愉悦 4=混合) */
 export function computeMoodCode(posCount: number, negCount: number): number {
   if (posCount > 0 && negCount > 0) {

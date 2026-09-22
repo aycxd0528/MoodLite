@@ -30,9 +30,10 @@ struct MoodWidgetCard {
   build() {
     Stack() {
       // 装饰光晕
-      Circle()
+      Column()
         .width('70%').height('70%')
         .backgroundColor(this.darkMode ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 139, 167, 0.06)')
+        .borderRadius(360)
         .blendMode(BlendMode.SRC_OVER)
         .position({ x: '-15%', y: '-15%' })
 

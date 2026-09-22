@@ -34,7 +34,7 @@ export default function editBridgeTest(): void {
       expect(getEditPayload()).assertNull();
     });
 
-    it('doesNotRequestSecondPageShowRefreshAfterImmediateHandler', 0, async () => {
+    it('alwaysReloadsWhenMainPageBecomesVisibleAfterImmediateHandler', 0, async () => {
       let refreshCount: number = 0;
       setRefreshHandler(() => { refreshCount += 1; });
 
@@ -42,7 +42,7 @@ export default function editBridgeTest(): void {
       const shouldReloadOnPageShow: boolean = consumeRefresh();
 
       expect(refreshCount).assertEqual(1);
-      expect(shouldReloadOnPageShow).assertFalse();
+      expect(shouldReloadOnPageShow).assertTrue();
     });
 
     it('keepsPageShowFallbackWhenAsyncImmediateHandlerFails', 0, async () => {

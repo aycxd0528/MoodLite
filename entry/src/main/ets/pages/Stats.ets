@@ -8,6 +8,7 @@ import { resolveColors } from '../common/ThemeManager';
 import { GlassCard } from '../common/components/GlassCard';
 import {
   generateCalendarGrid,
+  calendarCellRenderKey,
   calcMonthlyStats,
   heatmapColor,
   calcTagDistribution,
@@ -119,7 +120,7 @@ export struct StatsContent {
                       try { this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2000 }); } catch (_e) { console.debug('[MoodLite] toast failed: ' + JSON.stringify(_e)); }
                     })
                 }
-              }, (cell: CalendarDayItem) => cell.dateStr + (cell.isCurrentMonth ? '_c' : '_p'))
+              }, (cell: CalendarDayItem) => calendarCellRenderKey(cell))
             }
             .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
             .rowsTemplate('1fr 1fr 1fr 1fr 1fr 1fr')

@@ -10,7 +10,6 @@ export interface EditPayload {
 }
 
 let _payload: EditPayload | null = null;
-let _skipNextPageShowRefresh: boolean = false;
 export type RefreshHandler = () => void | Promise<void>;
 let _refreshHandler: RefreshHandler | null = null;
 
@@ -58,13 +57,11 @@ export function clearRefreshHandler(handler: RefreshHandler): void {
 
 /** AddEntry 保存成功后调用，通知 MainPage 刷新 */
 export async function signalRefresh(): Promise<boolean> {
-  _skipNextPageShowRefresh = false;
   const handler = _refreshHandler;
   if (handler === null) return false;
   try {
     await handler();
     if (_refreshHandler !== handler) return false;
-    _skipNextPageShowRefresh = true;
     return true;
   } catch (err) {
     console.error('[MoodLite] immediate refresh failed: ' + JSON.stringify(err));
@@ -74,9 +71,5 @@ export async function signalRefresh(): Promise<boolean> {
 
 /** MainPage 返回时判断是否需要执行回退刷新。 */
 export function consumeRefresh(): boolean {
-  if (_skipNextPageShowRefresh) {
-    _skipNextPageShowRefresh = false;
-    return false;
-  }
   return true;
 }
